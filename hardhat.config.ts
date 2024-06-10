@@ -1,4 +1,5 @@
 import '@nomicfoundation/hardhat-toolbox';
+import '@openzeppelin/hardhat-upgrades';
 require('hardhat-contract-sizer');
 
 const config = {
