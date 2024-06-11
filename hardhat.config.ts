@@ -1,5 +1,6 @@
 import '@nomicfoundation/hardhat-toolbox';
-require('hardhat-contract-sizer');
+import '@openzeppelin/hardhat-upgrades';
+import 'hardhat-contract-sizer';
 
 const config = {
   solidity: {
