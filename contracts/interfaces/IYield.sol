@@ -6,5 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 
 interface IYield {
+  event Stake(address indexed user, uint256 inputAmount, uint256 stakedAmount);
+
   function stake(uint256 amount) external returns (uint256);
 }

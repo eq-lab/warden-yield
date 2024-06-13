@@ -13,8 +13,9 @@ describe('Staking', () => {
     await token.connect(user).approve(yieldContract.target, stakeAmount);
     await yieldContract.connect(user).stake(stakeAmount);
 
-    expect(await yieldContract.inputAmount(user.address)).to.be.eq(stakeAmount);
-    expect(await yieldContract.stakedAmount(user.address)).to.be.eq(stakeAmount);
+    expect(await yieldContract.userInputAmount(user.address)).to.be.eq(stakeAmount);
+    expect(await yieldContract.userStakedAmount(user.address)).to.be.eq(stakeAmount);
+    expect(await yieldContract.totalInputAmount()).to.be.eq(stakeAmount);
     expect(await yieldContract.totalStakedAmount()).to.be.eq(stakeAmount);
   });
 });

@@ -9,12 +9,14 @@ import "./YieldStorage.sol";
 
 abstract contract YieldBase is UUPSUpgradeable, Ownable2StepUpgradeable, YieldStorage, IYield {
   address public token;
+  address public stakedToken;
   address public underlyingProtocolAddress;
 
-  function initialize(address _token, address _underlyingProtocolAddress) public initializer {
+  function initialize(address _token, address _stakedToken, address _underlyingProtocolAddress) public initializer {
     __Ownable_init(msg.sender);
     __UUPSUpgradeable_init();
     token = _token;
+    stakedToken = _stakedToken;
     underlyingProtocolAddress = _underlyingProtocolAddress;
   }
 
@@ -22,12 +24,8 @@ abstract contract YieldBase is UUPSUpgradeable, Ownable2StepUpgradeable, YieldSt
 
   function stake(uint256 amount) external returns (uint256 stakedAmount) {
     stakedAmount = _stake(amount);
-
-    StakingData storage $ =  _getStakingDataStorage();
-    $._totalInputAmount += amount;
-    $._inputAmount[msg.sender] += amount;
-    $._stakedAmount[msg.sender] += stakedAmount;
-    $._totalStakedAmount += stakedAmount;
+    _addStake(msg.sender, amount, stakedAmount);
+    emit Stake(msg.sender, amount, stakedAmount);
   }
 
   function _stake(uint256 amount) internal virtual returns (uint256);

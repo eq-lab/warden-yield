@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity =0.8.26;
 
-contract YieldStorage {
+abstract contract YieldStorage {
   /// @custom:storage-location erc7201:eq-lab.storage.StakingData
   struct StakingData {
     uint256 _totalStakedAmount;
@@ -20,6 +20,14 @@ contract YieldStorage {
     }
   }
 
+  function _addStake(address user, uint256 inputAmount, uint256 stakedAmount) internal {
+     StakingData storage $ =  _getStakingDataStorage();
+    $._totalInputAmount += inputAmount;
+    $._inputAmount[user] += inputAmount;
+    $._stakedAmount[user] += stakedAmount;
+    $._totalStakedAmount += stakedAmount;
+  }
+
   function totalInputAmount() public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._totalInputAmount;
@@ -30,12 +38,12 @@ contract YieldStorage {
     return $._totalStakedAmount;
   }
 
-  function inputAmount(address user) public view returns (uint256) {
+  function userInputAmount(address user) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._inputAmount[user];
   }
 
-  function stakedAmount(address user) public view returns (uint256) {
+  function userStakedAmount(address user) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._stakedAmount[user];
   }

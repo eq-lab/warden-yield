@@ -17,7 +17,7 @@ export async function deployYieldContract(
   tokenAddress: string,
   protocolAddress: string,
 ): Promise<YieldTest> {
-  return upgrades.deployProxy(new YieldTest__factory().connect(owner), [tokenAddress, protocolAddress], {
+  return upgrades.deployProxy(new YieldTest__factory().connect(owner), [tokenAddress, tokenAddress, protocolAddress], {
     initializer: 'initialize',
   }) as unknown as Promise<YieldTest>;
 }
