@@ -12,7 +12,8 @@ abstract contract YieldStorage {
   }
 
   // keccak256(abi.encode(uint256(keccak256("eq-lab.storage.StakingData")) - 1)) & ~bytes32(uint256(0xff))
-  bytes32 private constant StakingDataStorageLocation = 0x69b3bfac4ac6bf246ceef7427e431f481bd6bde26467dffa51aa8b49ac672600;
+  bytes32 private constant StakingDataStorageLocation =
+    0x69b3bfac4ac6bf246ceef7427e431f481bd6bde26467dffa51aa8b49ac672600;
 
   function _getStakingDataStorage() internal pure returns (StakingData storage $) {
     assembly {
@@ -21,7 +22,7 @@ abstract contract YieldStorage {
   }
 
   function _addStake(address user, uint256 inputAmount, uint256 stakedAmount) internal {
-     StakingData storage $ =  _getStakingDataStorage();
+    StakingData storage $ = _getStakingDataStorage();
     $._totalInputAmount += inputAmount;
     $._inputAmount[user] += inputAmount;
     $._stakedAmount[user] += stakedAmount;
