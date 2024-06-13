@@ -3,10 +3,8 @@ import { ethers, upgrades } from 'hardhat';
 import {
   MintableERC20,
   MintableERC20__factory,
-  YieldPrimaryTest,
-  YieldPrimaryTest__factory,
-  YieldStorage,
-  YieldStorage__factory,
+  YieldTest,
+  YieldTest__factory
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 
@@ -14,30 +12,20 @@ export async function deployToken(owner: SignerWithAddress): Promise<MintableERC
   return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
 }
 
-export async function deployYieldStorage(
+export async function deployYieldContract(
   owner: SignerWithAddress,
-  primaryContract: string,
-  token: string
-): Promise<YieldStorage> {
-  return upgrades.deployProxy(new YieldStorage__factory().connect(owner), [primaryContract, token], {
+  tokenAddress: string,
+  protocolAddress: string,
+): Promise<YieldTest> {
+  return upgrades.deployProxy(new YieldTest__factory().connect(owner), [tokenAddress, protocolAddress], {
     initializer: 'initialize',
-  }) as unknown as Promise<YieldStorage>;
-}
-
-export async function deployPrimaryContract(
-  owner: SignerWithAddress,
-  protocolAddress: string
-): Promise<YieldPrimaryTest> {
-  return upgrades.deployProxy(new YieldPrimaryTest__factory().connect(owner), [protocolAddress], {
-    initializer: 'initialize',
-  }) as unknown as Promise<YieldPrimaryTest>;
+  }) as unknown as Promise<YieldTest>;
 }
 
 export async function testFixture(): Promise<{
   owner: SignerWithAddress;
   token: MintableERC20;
-  primary: YieldPrimaryTest;
-  yieldStorage: YieldStorage;
+  yieldContract: YieldTest;
 }> {
   const users = (await ethers.getSigners()).slice(0, 5);
   const owner = users[0];
@@ -47,13 +35,11 @@ export async function testFixture(): Promise<{
 
   await Promise.all(users.map(user => token.connect(owner).mint(user.address, amount)));
 
-  const primary = await deployPrimaryContract(owner, ethers.ZeroAddress);
-  const yieldStorage = await deployYieldStorage(owner, await primary.getAddress(), await token.getAddress());
+  const yieldContract = await deployYieldContract(owner, await token.getAddress(), ethers.ZeroAddress);
 
   return {
     owner,
     token,
-    primary,
-    yieldStorage,
+    yieldContract,
   };
 }
