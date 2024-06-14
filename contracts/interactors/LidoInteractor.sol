@@ -2,12 +2,13 @@
 pragma solidity =0.8.26;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 import '../interfaces/IWETH9.sol';
 import '../interfaces/Lido/IWstETH.sol';
 import '../interfaces/Lido/IStETH.sol';
 
-abstract contract LidoInteractor {
+abstract contract LidoInteractor is Initializable {
   using SafeERC20 for IERC20;
 
   /// @custom:storage-location erc7201:eq-lab.storage.LidoInteractor
@@ -27,6 +28,13 @@ abstract contract LidoInteractor {
     }
   }
 
+  function __LidoInteractor_init(address stETH, address wstETH, address wETH9) internal onlyInitializing {
+    LidoInteractorData storage $ = _getLidoInteractorDataStorage();
+    $.stETH = stETH;
+    $.wstETH = wstETH;
+    $.wETH9 = wETH9;
+  }
+
   function _stake(uint256 ethAmount) internal returns (uint256 wstEthStakedAmount) {
     LidoInteractorData memory data = _getLidoInteractorDataStorage();
 
@@ -34,7 +42,7 @@ abstract contract LidoInteractor {
       IERC20(data.wETH9).safeTransferFrom(msg.sender, address(this), ethAmount);
       IWETH9(data.wETH9).withdraw(ethAmount);
     } else if (msg.value != ethAmount) {
-      revert("Wrong msg.value");
+      revert('Wrong msg.value');
     }
 
     // call lido, get stEth
