@@ -61,11 +61,17 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
 
   const [owner] = await ethers.getSigners();
 
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+
   const lidoYield = (await upgrades.deployProxy(
     await new LidoYield__factory().connect(owner),
     [stEthAddress, wStEthAddress, weth9Address],
     {
       initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: maxFeePerGas,
+      }
     }
   )) as unknown as LidoYield;
 
