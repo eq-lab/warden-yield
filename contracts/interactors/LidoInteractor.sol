@@ -27,6 +27,10 @@ abstract contract LidoInteractor is Initializable {
       $.slot := LidoInteractorDataStorageLocation
     }
   }
+  
+  receive() external payable {
+    require(msg.sender == _getLidoInteractorDataStorage().wETH9, 'Not WETH9');
+  }
 
   function __LidoInteractor_init(address stETH, address wstETH, address wETH9) internal onlyInitializing {
     LidoInteractorData storage $ = _getLidoInteractorDataStorage();

@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { createLidoFork } from '../shared/fixtures';
 import { ethers } from 'hardhat';
-import { parseEther } from 'ethers';
+import { formatEther, parseEther } from 'ethers';
 import { setTokenBalance } from '../shared/utils';
 
 describe('LidoYield', () => {
@@ -34,8 +34,9 @@ describe('LidoYield', () => {
 
     const input = parseEther('1');
     await setTokenBalance(await weth9.getAddress(), user.address, input);
+    await weth9.connect(user).approve(lidoYield.target, input);
 
-    await lidoYield.connect(user).stake(input, { value: input });
+    await lidoYield.connect(user).stake(input);
     expect(await lidoYield.totalInputAmount()).to.be.eq(input);
     expect(await lidoYield.userInputAmount(user.address)).to.be.eq(input);
 
