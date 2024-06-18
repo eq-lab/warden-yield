@@ -7,6 +7,8 @@ import {
   LidoYield__factory,
   ERC20,
   ERC20__factory,
+  TestYieldStorage,
+  TestYieldStorage__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 
@@ -24,10 +26,19 @@ export async function deployYieldContract(
   }) as unknown as Promise<LidoYield>;
 }
 
-export async function testFixture(): Promise<{
+export async function deployTestYieldStorageContract(
+  owner: SignerWithAddress,
+  tokenAddress: string,
+  protocolAddress: string
+): Promise<TestYieldStorage> {
+  return upgrades.deployProxy(new TestYieldStorage__factory().connect(owner), [], {
+    initializer: 'initialize',
+  }) as unknown as Promise<TestYieldStorage>;
+}
+
+export async function testYieldStorageFixture(): Promise<{
   owner: SignerWithAddress;
-  token: MintableERC20;
-  yieldContract: LidoYield;
+  testYieldStorage: TestYieldStorage;
 }> {
   const users = (await ethers.getSigners()).slice(0, 5);
   const owner = users[0];
@@ -37,12 +48,11 @@ export async function testFixture(): Promise<{
 
   await Promise.all(users.map((user) => token.connect(owner).mint(user.address, amount)));
 
-  const yieldContract = await deployYieldContract(owner, await token.getAddress(), ethers.ZeroAddress);
+  const testYieldStorage = await deployTestYieldStorageContract(owner, await token.getAddress(), ethers.ZeroAddress);
 
   return {
     owner,
-    token,
-    yieldContract,
+    testYieldStorage,
   };
 }
 
@@ -71,7 +81,7 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
       initializer: 'initialize',
       txOverrides: {
         maxFeePerGas: maxFeePerGas,
-      }
+      },
     }
   )) as unknown as LidoYield;
 

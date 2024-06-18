@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { createLidoFork } from '../shared/fixtures';
 import { ethers } from 'hardhat';
-import { formatEther, parseEther } from 'ethers';
+import { parseEther } from 'ethers';
 import { setTokenBalance } from '../shared/utils';
 
 describe('LidoYield', () => {
