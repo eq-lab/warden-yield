@@ -1,6 +1,13 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { ethers, upgrades } from 'hardhat';
-import { MintableERC20, MintableERC20__factory, YieldTest, YieldTest__factory } from '../../typechain-types';
+import {
+  MintableERC20,
+  MintableERC20__factory,
+  LidoYield,
+  LidoYield__factory,
+  ERC20,
+  ERC20__factory,
+} from '../../typechain-types';
 import { parseUnits } from 'ethers';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
@@ -11,16 +18,16 @@ export async function deployYieldContract(
   owner: SignerWithAddress,
   tokenAddress: string,
   protocolAddress: string
-): Promise<YieldTest> {
-  return upgrades.deployProxy(new YieldTest__factory().connect(owner), [tokenAddress, tokenAddress, protocolAddress], {
+): Promise<LidoYield> {
+  return upgrades.deployProxy(new LidoYield__factory().connect(owner), [tokenAddress, tokenAddress, protocolAddress], {
     initializer: 'initialize',
-  }) as unknown as Promise<YieldTest>;
+  }) as unknown as Promise<LidoYield>;
 }
 
 export async function testFixture(): Promise<{
   owner: SignerWithAddress;
   token: MintableERC20;
-  yieldContract: YieldTest;
+  yieldContract: LidoYield;
 }> {
   const users = (await ethers.getSigners()).slice(0, 5);
   const owner = users[0];
@@ -36,5 +43,41 @@ export async function testFixture(): Promise<{
     owner,
     token,
     yieldContract,
+  };
+}
+
+export interface LidoForkTestData {
+  weth9: ERC20;
+  stEth: ERC20;
+  wStEth: ERC20;
+  lidoYield: LidoYield;
+  owner: SignerWithAddress;
+}
+
+export async function createLidoFork(): Promise<LidoForkTestData> {
+  const weth9Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+  const stEthAddress = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
+  const wStEthAddress = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
+
+  const [owner] = await ethers.getSigners();
+
+  const lidoYield = (await upgrades.deployProxy(
+    await new LidoYield__factory().connect(owner),
+    [stEthAddress, wStEthAddress, weth9Address],
+    {
+      initializer: 'initialize',
+    }
+  )) as unknown as LidoYield;
+
+  const weth9 = ERC20__factory.connect(weth9Address, owner);
+  const stEth = ERC20__factory.connect(stEthAddress, owner);
+  const wStEth = ERC20__factory.connect(wStEthAddress, owner);
+
+  return {
+    weth9,
+    stEth,
+    wStEth,
+    lidoYield,
+    owner,
   };
 }
