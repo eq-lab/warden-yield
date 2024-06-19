@@ -4,6 +4,7 @@ pragma solidity =0.8.26;
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
+import '../interfaces/EigenLayer/IDelegationManager.sol';
 import '../interfaces/EigenLayer/IStrategyManager.sol';
 import '../interfaces/EigenLayer/IStrategy.sol';
 import '../interfaces/Lido/IStETH.sol';
@@ -16,6 +17,8 @@ abstract contract EigenLayerInteractor is Initializable {
     address stETH;
     address strategy;
     address strategyManager;
+    address delegationManager;
+    address operator;
   }
 
   // keccak256(abi.encode(uint256(keccak256("eq-lab.storage.EigenLayerInteractor")) - 1)) & ~bytes32(uint256(0xff))
@@ -31,9 +34,14 @@ abstract contract EigenLayerInteractor is Initializable {
   function __EigenLayerInteractor_init(
     address stETH,
     address strategy,
-    address strategyManager
+    address strategyManager,
+    address delegationManager,
+    address operator
   ) internal onlyInitializing {
     require(address(IStrategy(strategy).underlyingToken()) == stETH, 'Wrong strategy or token');
+
+    SignatureWithExpiry memory defaultSignature;
+    IDelegationManager(delegationManager).delegateTo(operator, defaultSignature, bytes32(0));
 
     EigenLayerInteractorData storage $ = _getEigenLayerInteractorDataStorage();
     $.stETH = stETH;

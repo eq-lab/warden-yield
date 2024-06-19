@@ -13,6 +13,8 @@ import {
   IStrategy,
   IStrategyManager__factory,
   IStrategy__factory,
+  IDelegationManager,
+  IDelegationManager__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 
@@ -65,6 +67,8 @@ export interface LidoForkTestData {
   stEth: ERC20;
   eigenLayerStrategyManager: IStrategyManager;
   eigenLayerStrategy: IStrategy;
+  eigenLayerDelegationManager: IDelegationManager;
+  eigenLayerOperator: string;
   lidoYield: LidoYield;
   owner: SignerWithAddress;
 }
@@ -74,6 +78,8 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
   const stEthAddress = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
   const elStrategyManager = '0x858646372CC42E1A627fcE94aa7A7033e7CF075A';
   const elStrategy = '0x93c4b944D05dfe6df7645A86cd2206016c51564D';
+  const elDelegationManager = '0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A';
+  const eigenLayerOperator = '0x71C6F7Ed8C2d4925d0bAf16f6A85BB1736D412eb';
 
   const [owner] = await ethers.getSigners();
 
@@ -82,7 +88,7 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
 
   const lidoYield = (await upgrades.deployProxy(
     await new LidoYield__factory().connect(owner),
-    [stEthAddress, weth9Address, elStrategy, elStrategyManager],
+    [stEthAddress, weth9Address, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
       txOverrides: {
@@ -95,6 +101,7 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
   const stEth = ERC20__factory.connect(stEthAddress, owner);
   const eigenLayerStrategyManager = IStrategyManager__factory.connect(elStrategyManager, owner);
   const eigenLayerStrategy = IStrategy__factory.connect(elStrategy, owner);
+  const eigenLayerDelegationManager = IDelegationManager__factory.connect(elDelegationManager, owner);
 
   return {
     weth9,
@@ -102,6 +109,8 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
     lidoYield,
     eigenLayerStrategyManager,
     eigenLayerStrategy,
+    eigenLayerDelegationManager,
+    eigenLayerOperator,
     owner,
   };
 }

@@ -17,10 +17,17 @@ contract LidoYield is
   YieldStorage,
   ILidoYield
 {
-  function initialize(address stETH, address wETH9, address elStrategy, address elStrategyManager) external initializer {
+  function initialize(
+    address stETH,
+    address wETH9,
+    address elStrategy,
+    address elStrategyManager,
+    address elDelegationManager,
+    address elOperator
+  ) external initializer {
     __Ownable_init(msg.sender);
     __UUPSUpgradeable_init();
-    __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager);
+    __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager, elDelegationManager, elOperator);
     __LidoInteractor_init(stETH, wETH9);
   }
 
