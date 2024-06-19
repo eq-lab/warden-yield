@@ -9,6 +9,10 @@ import {
   ERC20__factory,
   TestYieldStorage,
   TestYieldStorage__factory,
+  IStrategyManager,
+  IStrategy,
+  IStrategyManager__factory,
+  IStrategy__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 
@@ -59,7 +63,8 @@ export async function testYieldStorageFixture(): Promise<{
 export interface LidoForkTestData {
   weth9: ERC20;
   stEth: ERC20;
-  wStEth: ERC20;
+  eigenLayerStrategyManager: IStrategyManager;
+  eigenLayerStrategy: IStrategy;
   lidoYield: LidoYield;
   owner: SignerWithAddress;
 }
@@ -67,7 +72,8 @@ export interface LidoForkTestData {
 export async function createLidoFork(): Promise<LidoForkTestData> {
   const weth9Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
   const stEthAddress = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
-  const wStEthAddress = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0';
+  const elStrategyManager = '0x858646372CC42E1A627fcE94aa7A7033e7CF075A';
+  const elStrategy = '0x93c4b944D05dfe6df7645A86cd2206016c51564D';
 
   const [owner] = await ethers.getSigners();
 
@@ -76,7 +82,7 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
 
   const lidoYield = (await upgrades.deployProxy(
     await new LidoYield__factory().connect(owner),
-    [stEthAddress, wStEthAddress, weth9Address],
+    [stEthAddress, weth9Address, elStrategy, elStrategyManager],
     {
       initializer: 'initialize',
       txOverrides: {
@@ -87,13 +93,15 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
 
   const weth9 = ERC20__factory.connect(weth9Address, owner);
   const stEth = ERC20__factory.connect(stEthAddress, owner);
-  const wStEth = ERC20__factory.connect(wStEthAddress, owner);
+  const eigenLayerStrategyManager = IStrategyManager__factory.connect(elStrategyManager, owner);
+  const eigenLayerStrategy = IStrategy__factory.connect(elStrategy, owner);
 
   return {
     weth9,
     stEth,
-    wStEth,
     lidoYield,
+    eigenLayerStrategyManager,
+    eigenLayerStrategy,
     owner,
   };
 }

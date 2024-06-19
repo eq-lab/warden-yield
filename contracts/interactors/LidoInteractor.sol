@@ -14,7 +14,6 @@ abstract contract LidoInteractor is Initializable {
   /// @custom:storage-location erc7201:eq-lab.storage.LidoInteractor
   struct LidoInteractorData {
     address stETH;
-    address wstETH;
     address wETH9;
   }
 
@@ -32,14 +31,13 @@ abstract contract LidoInteractor is Initializable {
     require(msg.sender == _getLidoInteractorDataStorage().wETH9, 'Not WETH9');
   }
 
-  function __LidoInteractor_init(address stETH, address wstETH, address wETH9) internal onlyInitializing {
+  function __LidoInteractor_init(address stETH, address wETH9) internal onlyInitializing {
     LidoInteractorData storage $ = _getLidoInteractorDataStorage();
     $.stETH = stETH;
-    $.wstETH = wstETH;
     $.wETH9 = wETH9;
   }
 
-  function _stake(uint256 ethAmount) internal returns (uint256 wstEthStakedAmount) {
+  function _lidoStake(uint256 ethAmount) internal returns (uint256 stEthStakedAmount) {
     LidoInteractorData memory data = _getLidoInteractorDataStorage();
 
     if (msg.value == 0) {
@@ -49,11 +47,6 @@ abstract contract LidoInteractor is Initializable {
       revert('Wrong msg.value');
     }
 
-    // call lido, get stEth
-    uint256 stEthStakedAmount = IStETH(data.stETH).submit{value: ethAmount}(address(0));
-
-    // wrap stEth to wsthEth
-    IERC20(data.stETH).approve(data.wstETH, stEthStakedAmount);
-    wstEthStakedAmount = IWstETH(data.wstETH).wrap(stEthStakedAmount);
+    stEthStakedAmount = IStETH(data.stETH).submit{value: ethAmount}(address(0));
   }
 }
