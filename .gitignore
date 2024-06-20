@@ -1,6 +1,7 @@
 node_modules
 typechain
 typechain-types
+.idea
 
 #Hardhat files
 cache
