@@ -69,7 +69,7 @@ describe('LidoYield', () => {
   });
 });
 
-describe.only('LidoYield init errors', () => {
+describe('LidoYield init errors', () => {
   it('wrong operator', async () => {
     const [owner, notOperator] = await ethers.getSigners();
     await expect(
