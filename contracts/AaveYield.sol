@@ -74,7 +74,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
       uint256 coeff = IAavePool(aavePool).getReserveNormalizedIncome(token);
       if (coeff == 0) revert Errors.UnknownToken(token);
 
-      _setTokenAllowance(token, true);
+      _setTokenAllowance(token, false);
     }
   }
 
