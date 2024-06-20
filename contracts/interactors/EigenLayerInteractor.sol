@@ -14,7 +14,7 @@ abstract contract EigenLayerInteractor is Initializable {
 
   /// @custom:storage-location erc7201:eq-lab.storage.EigenLayerInteractor
   struct EigenLayerInteractorData {
-    address stETH;
+    address underlyingToken;
     address strategy;
     address strategyManager;
     address delegationManager;
@@ -32,30 +32,33 @@ abstract contract EigenLayerInteractor is Initializable {
   }
 
   function __EigenLayerInteractor_init(
-    address stETH,
+    address underlyingToken,
     address strategy,
     address strategyManager,
     address delegationManager,
     address operator
   ) internal onlyInitializing {
-    require(address(IStrategy(strategy).underlyingToken()) == stETH, 'Wrong strategy or token');
+    require(address(IStrategy(strategy).underlyingToken()) == underlyingToken, 'Wrong strategy or token');
 
+    require(IDelegationManager(delegationManager).isOperator(operator), 'Wrong operator address');
     SignatureWithExpiry memory defaultSignature;
     IDelegationManager(delegationManager).delegateTo(operator, defaultSignature, bytes32(0));
 
     EigenLayerInteractorData storage $ = _getEigenLayerInteractorDataStorage();
-    $.stETH = stETH;
+    $.underlyingToken = underlyingToken;
     $.strategy = strategy;
     $.strategyManager = strategyManager;
+    $.delegationManager = delegationManager;
+    $.operator = operator;
   }
 
-  function _eigenLayerRestake(uint256 stEthAmount) internal returns (uint256 shares) {
+  function _eigenLayerRestake(uint256 underlyingTokenAmount) internal returns (uint256 shares) {
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
-    IERC20(data.stETH).approve(data.strategyManager, stEthAmount);
+    IERC20(data.underlyingToken).approve(data.strategyManager, underlyingTokenAmount);
     shares = IStrategyManager(data.strategyManager).depositIntoStrategy(
       IStrategy(data.strategy),
-      IERC20(data.stETH),
-      stEthAmount
+      IERC20(data.underlyingToken),
+      underlyingTokenAmount
     );
   }
 }
