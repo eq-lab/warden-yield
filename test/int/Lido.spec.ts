@@ -41,7 +41,7 @@ describe('LidoYield', () => {
     const userWethBalanceBefore = await weth9.balanceOf(user.address);
     await weth9.connect(user).approve(lidoYield.target, input);
 
-    await lidoYield.connect(user).stake(input, { value: input });
+    await lidoYield.connect(user).stake(input);
     expect(await lidoYield.totalStakedAmount(weth9Address)).to.be.eq(input);
     expect(await lidoYield.userStakedAmount(user.address, weth9Address)).to.be.eq(input);
 
