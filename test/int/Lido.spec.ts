@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { createLidoFork } from '../shared/fixtures';
+import { createLidoFork, deployLidoYieldContract } from '../shared/fixtures';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
-import { setTokenBalance } from '../shared/utils';
+import { EthAddressData, setTokenBalance } from '../shared/utils';
 
 describe('LidoYield', () => {
   it('user stake, native', async () => {
@@ -66,5 +66,37 @@ describe('LidoYield', () => {
     expect(event.args[1]).to.be.eq(lidoYield.target);
     expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
     expect(event.args[3]).to.be.eq(contractShares);
+  });
+});
+
+describe.only('LidoYield init errors', () => {
+  it('wrong operator', async () => {
+    const [owner, notOperator] = await ethers.getSigners();
+    await expect(
+      deployLidoYieldContract(
+        owner,
+        EthAddressData.stEth,
+        EthAddressData.weth,
+        EthAddressData.elStrategy,
+        EthAddressData.elStrategyManager,
+        EthAddressData.elDelegationManager,
+        notOperator.address
+      )
+    ).to.be.revertedWith('Wrong operator address');
+  });
+
+  it('wrong underlying token', async () => {
+    const [owner] = await ethers.getSigners();
+    await expect(
+      deployLidoYieldContract(
+        owner,
+        EthAddressData.weth,
+        EthAddressData.weth,
+        EthAddressData.elStrategy,
+        EthAddressData.elStrategyManager,
+        EthAddressData.elDelegationManager,
+        EthAddressData.eigenLayerOperator
+      )
+    ).to.be.revertedWith('Wrong strategy or token');
   });
 });

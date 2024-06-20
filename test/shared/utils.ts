@@ -1,7 +1,16 @@
 import { ethers } from 'hardhat';
 
+export enum EthAddressData {
+  weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+  stEth = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+  elStrategyManager = '0x858646372CC42E1A627fcE94aa7A7033e7CF075A',
+  elStrategy = '0x93c4b944D05dfe6df7645A86cd2206016c51564D',
+  elDelegationManager = '0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A',
+  eigenLayerOperator = '0x71C6F7Ed8C2d4925d0bAf16f6A85BB1736D412eb',
+}
+
 export const TokenBalanceStorage: Map<string, string> = new Map([
-  ['0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', '0000000000000000000000000000000000000000000000000000000000000003'], // weth9
+  [EthAddressData.weth, '0000000000000000000000000000000000000000000000000000000000000003'],
 ]);
 
 function getAccountBalanceStorageSlot(account: string, tokenMappingSlot: string): string {

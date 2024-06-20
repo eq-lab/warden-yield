@@ -17,19 +17,34 @@ import {
   IDelegationManager__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
+import { EthAddressData } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
   return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
 }
 
-export async function deployYieldContract(
+export async function deployLidoYieldContract(
   owner: SignerWithAddress,
-  tokenAddress: string,
-  protocolAddress: string
+  stEth: string,
+  weth: string,
+  elStrategy: string,
+  elStrategyManager: string,
+  elDelegationManager: string,
+  eigenLayerOperator: string
 ): Promise<LidoYield> {
-  return upgrades.deployProxy(new LidoYield__factory().connect(owner), [tokenAddress, tokenAddress, protocolAddress], {
-    initializer: 'initialize',
-  }) as unknown as Promise<LidoYield>;
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+
+  return upgrades.deployProxy(
+    await new LidoYield__factory().connect(owner),
+    [stEth, weth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
+    {
+      initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: maxFeePerGas,
+      },
+    }
+  ) as unknown as LidoYield;
 }
 
 export async function deployTestYieldStorageContract(
@@ -74,34 +89,21 @@ export interface LidoForkTestData {
 }
 
 export async function createLidoFork(): Promise<LidoForkTestData> {
-  const weth9Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
-  const stEthAddress = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
-  const elStrategyManager = '0x858646372CC42E1A627fcE94aa7A7033e7CF075A';
-  const elStrategy = '0x93c4b944D05dfe6df7645A86cd2206016c51564D';
-  const elDelegationManager = '0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A';
-  const eigenLayerOperator = '0x71C6F7Ed8C2d4925d0bAf16f6A85BB1736D412eb';
-
   const [owner] = await ethers.getSigners();
-
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-
-  const lidoYield = (await upgrades.deployProxy(
-    await new LidoYield__factory().connect(owner),
-    [stEthAddress, weth9Address, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
-    {
-      initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
-    }
-  )) as unknown as LidoYield;
-
-  const weth9 = ERC20__factory.connect(weth9Address, owner);
-  const stEth = ERC20__factory.connect(stEthAddress, owner);
-  const eigenLayerStrategyManager = IStrategyManager__factory.connect(elStrategyManager, owner);
-  const eigenLayerStrategy = IStrategy__factory.connect(elStrategy, owner);
-  const eigenLayerDelegationManager = IDelegationManager__factory.connect(elDelegationManager, owner);
+  const lidoYield = await deployLidoYieldContract(
+    owner,
+    EthAddressData.stEth,
+    EthAddressData.weth,
+    EthAddressData.elStrategy,
+    EthAddressData.elStrategyManager,
+    EthAddressData.elDelegationManager,
+    EthAddressData.eigenLayerOperator
+  );
+  const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
+  const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
+  const eigenLayerStrategyManager = IStrategyManager__factory.connect(EthAddressData.elStrategyManager, owner);
+  const eigenLayerStrategy = IStrategy__factory.connect(EthAddressData.elStrategy, owner);
+  const eigenLayerDelegationManager = IDelegationManager__factory.connect(EthAddressData.elDelegationManager, owner);
 
   return {
     weth9,
@@ -110,7 +112,7 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
     eigenLayerStrategyManager,
     eigenLayerStrategy,
     eigenLayerDelegationManager,
-    eigenLayerOperator,
+    eigenLayerOperator: EthAddressData.eigenLayerOperator,
     owner,
   };
 }
