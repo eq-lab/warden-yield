@@ -77,7 +77,7 @@ export async function testYieldStorageFixture(): Promise<{
   };
 }
 
-export interface LidoForkTestData {
+export interface EthYieldForkTestData {
   weth9: ERC20;
   stEth: ERC20;
   eigenLayerStrategyManager: IStrategyManager;
@@ -88,7 +88,7 @@ export interface LidoForkTestData {
   owner: SignerWithAddress;
 }
 
-export async function createLidoFork(): Promise<LidoForkTestData> {
+export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
   const [owner] = await ethers.getSigners();
   const EthYield = await deployEthYieldContract(
     owner,

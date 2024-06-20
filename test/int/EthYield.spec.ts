@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { createLidoFork, deployEthYieldContract } from '../shared/fixtures';
+import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
 import { EthAddressData, setTokenBalance } from '../shared/utils';
@@ -9,7 +9,7 @@ import { EthAddressData, setTokenBalance } from '../shared/utils';
 describe('EthYield', () => {
   it('user stake, native', async () => {
     const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield } =
-      await loadFixture(createLidoFork);
+      await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
     const [_, user] = await ethers.getSigners();
@@ -38,7 +38,7 @@ describe('EthYield', () => {
 
   it('user stake, weth', async () => {
     const { eigenLayerStrategy, eigenLayerDelegationManager, eigenLayerOperator, weth9, EthYield } =
-      await loadFixture(createLidoFork);
+      await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
     const [_, user] = await ethers.getSigners();
@@ -66,6 +66,17 @@ describe('EthYield', () => {
     expect(event.args[1]).to.be.eq(EthYield.target);
     expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
     expect(event.args[3]).to.be.eq(contractShares);
+  });
+
+  it('user stake, wrong msg.value', async () => {
+    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield } =
+      await loadFixture(createEthYieldFork);
+    // set up during EthYield contract init
+    expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
+    const [_, user] = await ethers.getSigners();
+
+    const input = parseEther('1');
+    await expect(EthYield.connect(user).stake(input, { value: input - 1n })).to.be.revertedWith('Wrong msg.value');
   });
 });
 
