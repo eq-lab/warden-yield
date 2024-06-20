@@ -3,8 +3,8 @@ import { ethers, upgrades } from 'hardhat';
 import {
   MintableERC20,
   MintableERC20__factory,
-  LidoYield,
-  LidoYield__factory,
+  EthYield,
+  EthYield__factory,
   ERC20,
   ERC20__factory,
   TestYieldStorage,
@@ -23,7 +23,7 @@ export async function deployToken(owner: SignerWithAddress): Promise<MintableERC
   return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
 }
 
-export async function deployLidoYieldContract(
+export async function deployEthYieldContract(
   owner: SignerWithAddress,
   stEth: string,
   weth: string,
@@ -31,12 +31,12 @@ export async function deployLidoYieldContract(
   elStrategyManager: string,
   elDelegationManager: string,
   eigenLayerOperator: string
-): Promise<LidoYield> {
+): Promise<EthYield> {
   const blockNumber = await owner.provider.getBlockNumber();
   const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
 
   return upgrades.deployProxy(
-    await new LidoYield__factory().connect(owner),
+    await new EthYield__factory().connect(owner),
     [stEth, weth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
@@ -44,7 +44,7 @@ export async function deployLidoYieldContract(
         maxFeePerGas: maxFeePerGas,
       },
     }
-  ) as unknown as LidoYield;
+  ) as unknown as EthYield;
 }
 
 export async function deployTestYieldStorageContract(
@@ -84,13 +84,13 @@ export interface LidoForkTestData {
   eigenLayerStrategy: IStrategy;
   eigenLayerDelegationManager: IDelegationManager;
   eigenLayerOperator: string;
-  lidoYield: LidoYield;
+  EthYield: EthYield;
   owner: SignerWithAddress;
 }
 
 export async function createLidoFork(): Promise<LidoForkTestData> {
   const [owner] = await ethers.getSigners();
-  const lidoYield = await deployLidoYieldContract(
+  const EthYield = await deployEthYieldContract(
     owner,
     EthAddressData.stEth,
     EthAddressData.weth,
@@ -108,7 +108,7 @@ export async function createLidoFork(): Promise<LidoForkTestData> {
   return {
     weth9,
     stEth,
-    lidoYield,
+    EthYield,
     eigenLayerStrategyManager,
     eigenLayerStrategy,
     eigenLayerDelegationManager,

@@ -1,46 +1,46 @@
 import { expect } from 'chai';
 
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { createLidoFork, deployLidoYieldContract } from '../shared/fixtures';
+import { createLidoFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
 import { EthAddressData, setTokenBalance } from '../shared/utils';
 
-describe('LidoYield', () => {
+describe('EthYield', () => {
   it('user stake, native', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, lidoYield } =
+    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield } =
       await loadFixture(createLidoFork);
-    // set up during lidoYield contract init
-    expect(await eigenLayerDelegationManager.delegatedTo(lidoYield.target)).to.be.eq(eigenLayerOperator);
+    // set up during EthYield contract init
+    expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
     const [_, user] = await ethers.getSigners();
 
     const userEthBalanceBefore = await user.provider.getBalance(user.address);
     const filter = eigenLayerDelegationManager.filters.OperatorSharesIncreased;
 
     const input = parseEther('1');
-    await lidoYield.connect(user).stake(input, { value: input });
+    await EthYield.connect(user).stake(input, { value: input });
 
-    expect(await lidoYield.totalInputAmount()).to.be.eq(input);
-    expect(await lidoYield.userInputAmount(user.address)).to.be.eq(input);
+    expect(await EthYield.totalInputAmount()).to.be.eq(input);
+    expect(await EthYield.userInputAmount(user.address)).to.be.eq(input);
 
     const userEthBalanceAfter = await user.provider.getBalance(user.address);
     expect(userEthBalanceBefore - userEthBalanceAfter).to.be.gte(input);
 
-    const contractShares = await eigenLayerStrategy.shares(lidoYield.target);
-    expect(contractShares).to.be.eq(await lidoYield.totalStakedAmount());
+    const contractShares = await eigenLayerStrategy.shares(EthYield.target);
+    expect(contractShares).to.be.eq(await EthYield.totalStakedAmount());
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
-    expect(event.args[1]).to.be.eq(lidoYield.target);
+    expect(event.args[1]).to.be.eq(EthYield.target);
     expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
     expect(event.args[3]).to.be.eq(contractShares);
   });
 
   it('user stake, weth', async () => {
-    const { eigenLayerStrategy, eigenLayerDelegationManager, eigenLayerOperator, weth9, lidoYield } =
+    const { eigenLayerStrategy, eigenLayerDelegationManager, eigenLayerOperator, weth9, EthYield } =
       await loadFixture(createLidoFork);
-    // set up during lidoYield contract init
-    expect(await eigenLayerDelegationManager.delegatedTo(lidoYield.target)).to.be.eq(eigenLayerOperator);
+    // set up during EthYield contract init
+    expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
     const [_, user] = await ethers.getSigners();
 
     const filter = eigenLayerDelegationManager.filters.OperatorSharesIncreased;
@@ -48,32 +48,32 @@ describe('LidoYield', () => {
     const input = parseEther('1');
     await setTokenBalance(await weth9.getAddress(), user.address, input);
     const userWethBalanceBefore = await weth9.balanceOf(user.address);
-    await weth9.connect(user).approve(lidoYield.target, input);
+    await weth9.connect(user).approve(EthYield.target, input);
 
-    await lidoYield.connect(user).stake(input);
+    await EthYield.connect(user).stake(input);
 
-    expect(await lidoYield.totalInputAmount()).to.be.eq(input);
-    expect(await lidoYield.userInputAmount(user.address)).to.be.eq(input);
+    expect(await EthYield.totalInputAmount()).to.be.eq(input);
+    expect(await EthYield.userInputAmount(user.address)).to.be.eq(input);
 
     const userWethBalanceAfter = await weth9.balanceOf(user.address);
     expect(userWethBalanceBefore - userWethBalanceAfter).to.be.eq(input);
 
-    const contractShares = await eigenLayerStrategy.shares(lidoYield.target);
-    expect(contractShares).to.be.eq(await lidoYield.totalStakedAmount());
+    const contractShares = await eigenLayerStrategy.shares(EthYield.target);
+    expect(contractShares).to.be.eq(await EthYield.totalStakedAmount());
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
-    expect(event.args[1]).to.be.eq(lidoYield.target);
+    expect(event.args[1]).to.be.eq(EthYield.target);
     expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
     expect(event.args[3]).to.be.eq(contractShares);
   });
 });
 
-describe('LidoYield init errors', () => {
+describe('EthYield init errors', () => {
   it('wrong operator', async () => {
     const [owner, notOperator] = await ethers.getSigners();
     await expect(
-      deployLidoYieldContract(
+      deployEthYieldContract(
         owner,
         EthAddressData.stEth,
         EthAddressData.weth,
@@ -88,7 +88,7 @@ describe('LidoYield init errors', () => {
   it('wrong underlying token', async () => {
     const [owner] = await ethers.getSigners();
     await expect(
-      deployLidoYieldContract(
+      deployEthYieldContract(
         owner,
         EthAddressData.weth,
         EthAddressData.weth,

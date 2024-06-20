@@ -6,16 +6,16 @@ import '@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol';
 
 import './interactors/EigenLayerInteractor.sol';
 import './interactors/LidoInteractor.sol';
-import './interfaces/ILidoYield.sol';
+import './interfaces/IEthYield.sol';
 import './YieldStorage.sol';
 
-contract LidoYield is
+contract EthYield is
   UUPSUpgradeable,
   Ownable2StepUpgradeable,
   EigenLayerInteractor,
   LidoInteractor,
   YieldStorage,
-  ILidoYield
+  IEthYield
 {
   function initialize(
     address stETH,
