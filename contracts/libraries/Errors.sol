@@ -5,6 +5,7 @@ library Errors {
     error ZeroAddress();
     error NotAllowedToken(address);
     error TokenAlreadyAllowed(address);
+    error TokenAlreadyDisallowed(address);
     error UnknownToken(address);
     error ZeroAmount();
     error WithdrawalsDisabled();

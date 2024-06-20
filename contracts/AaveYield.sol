@@ -68,11 +68,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
     uint256 tokensCount = tokens.length;
     for (uint256 i = 0; i < tokensCount; i++) {
       address token = tokens[i];
-      if (getTokenAllowance(token)) revert Errors.TokenAlreadyAllowed(token);
-
-      address aavePool = getAavePool();
-      uint256 coeff = IAavePool(aavePool).getReserveNormalizedIncome(token);
-      if (coeff == 0) revert Errors.UnknownToken(token);
+      if (getTokenAllowance(token)) revert Errors.TokenAlreadyDisallowed(token);
 
       _setTokenAllowance(token, false);
     }
