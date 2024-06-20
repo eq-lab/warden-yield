@@ -31,6 +31,7 @@ abstract contract AaveInteractor is Initializable {
 
   function __AaveInteractor_init(address aavePool, address[] calldata tokens) internal onlyInitializing {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    if (aavePool == address(0)) revert Errors.ZeroAddress();
     $.aavePool = aavePool;
 
     uint256 tokensCount = tokens.length;
