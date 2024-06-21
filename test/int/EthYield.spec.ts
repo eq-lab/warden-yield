@@ -5,6 +5,7 @@ import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
 import { EthAddressData, setTokenBalance } from '../shared/utils';
+import { EthYield__factory } from '../../typechain-types';
 
 describe('EthYield', () => {
   it('user stake, native', async () => {
@@ -69,14 +70,16 @@ describe('EthYield', () => {
   });
 
   it('user stake, wrong msg.value', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield } =
-      await loadFixture(createEthYieldFork);
+    const { eigenLayerDelegationManager, eigenLayerOperator, EthYield } = await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
-    await expect(EthYield.connect(user).stake(input, { value: input - 1n })).to.be.revertedWith('Wrong msg.value');
+    await expect(EthYield.connect(user).stake(input, { value: input - 1n })).to.be.revertedWithCustomError(
+      EthYield,
+      'WrongMsgValue'
+    );
   });
 });
 
@@ -93,7 +96,7 @@ describe('EthYield init errors', () => {
         EthAddressData.elDelegationManager,
         notOperator.address
       )
-    ).to.be.revertedWith('Wrong operator address');
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongOperator');
   });
 
   it('wrong underlying token', async () => {
@@ -108,6 +111,6 @@ describe('EthYield init errors', () => {
         EthAddressData.elDelegationManager,
         EthAddressData.eigenLayerOperator
       )
-    ).to.be.revertedWith('Wrong strategy or token');
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'UnknownToken');
   });
 });

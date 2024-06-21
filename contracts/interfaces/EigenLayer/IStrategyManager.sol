@@ -16,4 +16,6 @@ interface IStrategyManager {
   function stakerStrategyShares(address user, IStrategy strategy) external view returns (uint256 shares);
 
   function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory);
+
+  function strategyIsWhitelistedForDeposit(IStrategy strategy) external view returns (bool);
 }

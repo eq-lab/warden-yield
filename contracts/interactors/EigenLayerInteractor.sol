@@ -4,6 +4,7 @@ pragma solidity =0.8.26;
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
+import '../libraries/Errors.sol';
 import '../interfaces/EigenLayer/IDelegationManager.sol';
 import '../interfaces/EigenLayer/IStrategyManager.sol';
 import '../interfaces/EigenLayer/IStrategy.sol';
@@ -38,9 +39,11 @@ abstract contract EigenLayerInteractor is Initializable {
     address delegationManager,
     address operator
   ) internal onlyInitializing {
-    require(address(IStrategy(strategy).underlyingToken()) == underlyingToken, 'Wrong strategy or token');
+    if (!IStrategyManager(strategyManager).strategyIsWhitelistedForDeposit(IStrategy(strategy)))
+      revert Errors.WrongStrategy(strategy);
+    if (address(IStrategy(strategy).underlyingToken()) != underlyingToken) revert Errors.UnknownToken(underlyingToken);
+    if (!IDelegationManager(delegationManager).isOperator(operator)) revert Errors.WrongOperator(operator);
 
-    require(IDelegationManager(delegationManager).isOperator(operator), 'Wrong operator address');
     SignatureWithExpiry memory defaultSignature;
     IDelegationManager(delegationManager).delegateTo(operator, defaultSignature, bytes32(0));
 
@@ -53,6 +56,7 @@ abstract contract EigenLayerInteractor is Initializable {
   }
 
   function _eigenLayerRestake(uint256 underlyingTokenAmount) internal returns (uint256 shares) {
+    if (underlyingTokenAmount == 0) revert Errors.ZeroAmount();
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
     IERC20(data.underlyingToken).approve(data.strategyManager, underlyingTokenAmount);
     shares = IStrategyManager(data.strategyManager).depositIntoStrategy(
