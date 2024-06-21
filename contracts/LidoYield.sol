@@ -19,7 +19,8 @@ contract LidoYield is UUPSUpgradeable, Ownable2StepUpgradeable, LidoInteractor, 
 
   function stake(uint256 amount) external payable returns (uint256 shares) {
     shares = _stake(amount);
-    _addStake(msg.sender, getWeth(), amount, shares);
-    emit Stake(msg.sender, amount, shares);
+    address weth = getWeth();
+    _addStake(msg.sender, weth, amount, shares);
+    emit Stake(msg.sender, weth, amount, shares);
   }
 }

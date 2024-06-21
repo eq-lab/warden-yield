@@ -7,13 +7,9 @@ import '@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol';
 import './libraries/Errors.sol';
 import './interactors/AaveInteractor.sol';
 import './YieldStorage.sol';
+import './interfaces/IAaveYield.sol';
 
-contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, YieldStorage {
-  event Stake(address indexed user, address indexed token, uint256 stakedAmount, uint256 shares);
-  event Withdraw(address indexed user, address indexed token, uint256 withdrawAmount);
-  event EnableWithdrawals();
-  event DisableWithdrawals();
-
+contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, YieldStorage, IAaveYield {
   function initialize(address aavePool, address[] calldata tokens) external initializer {
     __Ownable_init(msg.sender);
     __UUPSUpgradeable_init();
@@ -22,7 +18,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
 
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-  function stake(address token, uint256 amount) external payable returns (uint256 shares) {
+  function stake(address token, uint256 amount) external returns (uint256 shares) {
     shares = _stake(token, amount);
     _addStake(msg.sender, token, amount, shares);
 
@@ -30,7 +26,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
   }
 
   function withdraw(address token) external returns (uint256 withdrawAmount) {
-    if (!isWithdrawalsEnabled()) revert Errors.WithdrawalsDisabled();
+    if (!areWithdrawalsEnabled()) revert Errors.WithdrawalsDisabled();
 
     withdrawAmount = getAvailableToWithdraw(msg.sender, token);
 
@@ -52,12 +48,12 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
 
   function allowTokens(address[] calldata tokens) external onlyOwner {
     uint256 tokensCount = tokens.length;
-    for (uint256 i = 0; i < tokensCount; i++) {
+    for (uint256 i; i < tokensCount; ++i) {
       address token = tokens[i];
       if (getTokenAllowance(token)) revert Errors.TokenAlreadyAllowed(token);
 
       address aavePool = getAavePool();
-      uint256 coeff = IAavePool(aavePool).getReserveNormalizedIncome(token);
+      uint256 coeff = IPool(aavePool).getReserveNormalizedIncome(token);
       if (coeff == 0) revert Errors.UnknownToken(token);
 
       _setTokenAllowance(token, true);
@@ -66,7 +62,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
 
   function disallowTokens(address[] calldata tokens) external onlyOwner {
     uint256 tokensCount = tokens.length;
-    for (uint256 i = 0; i < tokensCount; i++) {
+    for (uint256 i; i < tokensCount; ++i) {
       address token = tokens[i];
       if (getTokenAllowance(token)) revert Errors.TokenAlreadyDisallowed(token);
 

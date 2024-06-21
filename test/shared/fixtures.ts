@@ -24,7 +24,7 @@ export async function deployToken(owner: SignerWithAddress): Promise<MintableERC
 
 export async function deployTestYieldStorageContract(
   owner: SignerWithAddress,
-  tokenAddress: string,
+  tokenAddress: string
 ): Promise<TestYieldStorage> {
   return upgrades.deployProxy(new TestYieldStorage__factory().connect(owner), [tokenAddress], {
     initializer: 'initialize',
@@ -49,7 +49,7 @@ export async function testYieldStorageFixture(): Promise<{
   return {
     owner,
     testYieldStorage,
-    weth9
+    weth9,
   };
 }
 

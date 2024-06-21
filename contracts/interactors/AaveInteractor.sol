@@ -2,20 +2,21 @@
 pragma solidity =0.8.26;
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {WadRayMath} from '@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol';
-import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+import '@aave/core-v3/contracts/interfaces/IPool.sol';
 
 import '../libraries/Errors.sol';
-import '../interfaces/Aave/IAavePool.sol';
 import '../interfaces/Aave/IAToken.sol';
 
 abstract contract AaveInteractor is Initializable {
+  using SafeERC20 for IERC20;
   using WadRayMath for uint256;
 
   /// @custom:storage-location erc7201:eq-lab.storage.AaveInteractor
   struct AaveInteractorData {
     address aavePool;
-    bool isWithdrawalsEnabled;
+    bool areWithdrawalsEnabled;
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
   }
 
@@ -35,9 +36,9 @@ abstract contract AaveInteractor is Initializable {
     $.aavePool = aavePool;
 
     uint256 tokensCount = tokens.length;
-    for (uint256 i = 0; i < tokensCount; i++) {
+    for (uint256 i; i < tokensCount; ++i) {
       address token = tokens[i];
-      uint256 coeff = IAavePool(aavePool).getReserveNormalizedIncome(token);
+      uint256 coeff = IPool(aavePool).getReserveNormalizedIncome(token);
       if (coeff == 0) revert Errors.UnknownToken(token);
 
       $.allowedTokens[token] = true;
@@ -49,13 +50,17 @@ abstract contract AaveInteractor is Initializable {
     if (amount == 0) revert Errors.ZeroAmount();
     if (!getTokenAllowance(token)) revert Errors.NotAllowedToken(token);
 
-    TransferHelper.safeTransferFrom(token, msg.sender, address(this), amount);
+    IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
     address aavePool = getAavePool();
-    address aToken = IAavePool(aavePool).getReserveData(token).aTokenAddress;
-    if (aToken == address(0)) revert Errors.UnknownToken(token);
+    address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
 
-    scaledDepositAmount = _depositToAavePool(token, aToken, amount);
+    uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
+    IERC20(token).approve(aavePool, amount);
+    IPool(aavePool).supply(token, amount, address(this), 0);
+
+    scaledDepositAmount = IAToken(aToken).scaledBalanceOf(address(this)) - totalBalanceScaledBefore;
+    if (scaledDepositAmount == 0) revert Errors.ZeroAmount();
   }
 
   function _withdraw(address token, uint256 amount) internal {
@@ -63,32 +68,11 @@ abstract contract AaveInteractor is Initializable {
     if (!getTokenAllowance(token)) revert Errors.NotAllowedToken(token);
 
     address aavePool = getAavePool();
-    address aToken = IAavePool(aavePool).getReserveData(token).aTokenAddress;
+    address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
     if (aToken == address(0)) revert Errors.UnknownToken(token);
 
-    _withdrawFromAavePool(token, aToken, amount);
-  }
-
-  function _depositToAavePool(
-    address token,
-    address aToken,
-    uint256 amount
-  ) internal returns (uint256 scaledDepositAmount) {
     uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
-
-    address aavePool = getAavePool();
-    IERC20(token).approve(aavePool, amount);
-    IAavePool(aavePool).supply(token, amount, address(this), 0);
-
-    scaledDepositAmount = IAToken(aToken).scaledBalanceOf(address(this)) - totalBalanceScaledBefore;
-    if (scaledDepositAmount == 0) revert Errors.ZeroAmount();
-  }
-
-  function _withdrawFromAavePool(address token, address aToken, uint256 amount) internal {
-    uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
-    address aavePool = getAavePool();
-
-    uint256 withdrawAmount = IAavePool(aavePool).withdraw(token, amount, msg.sender);
+    uint256 withdrawAmount = IPool(aavePool).withdraw(token, amount, msg.sender);
     if (withdrawAmount != amount) revert Errors.InvalidAmount(amount, withdrawAmount);
 
     uint256 scaledWithdrawAmount = totalBalanceScaledBefore - IAToken(aToken).scaledBalanceOf(address(this));
@@ -96,7 +80,7 @@ abstract contract AaveInteractor is Initializable {
   }
 
   function _getBalanceFromScaled(uint256 scaledAmount, address token) internal view returns (uint256) {
-    return scaledAmount.rayMul(IAavePool(getAavePool()).getReserveNormalizedIncome(token));
+    return scaledAmount.rayMul(IPool(getAavePool()).getReserveNormalizedIncome(token));
   }
 
   function getAavePool() public view returns (address) {
@@ -109,19 +93,19 @@ abstract contract AaveInteractor is Initializable {
     $.aavePool = aavePool;
   }
 
-  function isWithdrawalsEnabled() public view returns (bool) {
+  function areWithdrawalsEnabled() public view returns (bool) {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    return $.isWithdrawalsEnabled;
+    return $.areWithdrawalsEnabled;
   }
 
   function _enableWithdrawals() internal {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    $.isWithdrawalsEnabled = true;
+    $.areWithdrawalsEnabled = true;
   }
 
   function _disableWithdrawals() internal {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    $.isWithdrawalsEnabled = false;
+    $.areWithdrawalsEnabled = false;
   }
 
   function getTokenAllowance(address token) public view returns (bool) {

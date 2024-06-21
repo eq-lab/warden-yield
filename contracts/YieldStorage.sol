@@ -31,9 +31,9 @@ abstract contract YieldStorage {
   }
 
   function _removeStake(address user, address token) internal {
-     StakingData storage $ = _getStakingDataStorage();
-     $._totalStakedAmount[token] -= $._stakedAmount[token][user];
-     $._stakedAmount[token][user] = 0;
+    StakingData storage $ = _getStakingDataStorage();
+    $._totalStakedAmount[token] -= $._stakedAmount[token][user];
+    $._stakedAmount[token][user] = 0;
 
     $._totalShares[token] -= $._shares[token][user];
     $._shares[token][user] = 0;

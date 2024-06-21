@@ -16,7 +16,6 @@ async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken, a
   const aTokenScaledBalanceBefore = await aToken.scaledBalanceOf(await aaveYield.getAddress());
 
   return async (stakedDeltaExpected: bigint) => {
-
     const stakedAmount = await aaveYield.userStakedAmount(account, token);
     const totalStakedAmount = await aaveYield.totalStakedAmount(token);
     expect(stakedAmount).to.be.eq(stakedAmountBefore + stakedDeltaExpected);
@@ -38,7 +37,7 @@ async function stake(
   signer: HardhatEthersSigner,
   aEthWETH: IAToken,
   weth9: ERC20,
-  amount: bigint,
+  amount: bigint
 ): Promise<void> {
   const aaveYieldAddress = await aaveYield.getAddress();
   const weth9Address = await weth9.getAddress();
@@ -68,7 +67,7 @@ async function withdraw(
   aaveYield: AaveYield,
   signer: HardhatEthersSigner,
   aEthWETH: IAToken,
-  weth9: ERC20,
+  weth9: ERC20
 ): Promise<void> {
   const aaveYieldAddress = await aaveYield.getAddress();
   const weth9Address = await weth9.getAddress();
@@ -83,7 +82,7 @@ async function withdraw(
   await aaveYield.connect(signer).withdraw(weth9);
   expect(await weth9.balanceOf(signer.address)).to.be.greaterThanOrEqual(availableToWithdraw);
   expect(await aEthWETH.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aEthScaledBalanceBefore - scaledBalance);
-  
+
   await assertYieldStorage(-staked);
 }
 
