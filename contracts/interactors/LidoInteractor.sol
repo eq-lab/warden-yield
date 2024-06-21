@@ -4,8 +4,8 @@ pragma solidity =0.8.26;
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
+import '../libraries/Errors.sol';
 import '../interfaces/IWETH9.sol';
-import '../interfaces/Lido/IWstETH.sol';
 import '../interfaces/Lido/IStETH.sol';
 
 abstract contract LidoInteractor is Initializable {
@@ -14,7 +14,6 @@ abstract contract LidoInteractor is Initializable {
   /// @custom:storage-location erc7201:eq-lab.storage.LidoInteractor
   struct LidoInteractorData {
     address stETH;
-    address wstETH;
     address wETH9;
   }
 
@@ -29,32 +28,28 @@ abstract contract LidoInteractor is Initializable {
   }
 
   receive() external payable {
-    require(msg.sender == _getLidoInteractorDataStorage().wETH9, 'Not WETH9');
+    if (msg.sender != _getLidoInteractorDataStorage().wETH9) revert Errors.NotWETH9(msg.sender);
   }
 
-  function __LidoInteractor_init(address stETH, address wstETH, address wETH9) internal onlyInitializing {
+  function __LidoInteractor_init(address stETH, address wETH9) internal onlyInitializing {
     LidoInteractorData storage $ = _getLidoInteractorDataStorage();
+    if (stETH == address(0) || wETH9 == address(0)) revert Errors.ZeroAddress();
     $.stETH = stETH;
-    $.wstETH = wstETH;
     $.wETH9 = wETH9;
   }
 
-  function _stake(uint256 ethAmount) internal returns (uint256 wstEthStakedAmount) {
+  function _lidoStake(uint256 ethAmount) internal returns (uint256 stEthStakedAmount) {
+    if (ethAmount == 0) revert Errors.ZeroAmount();
     LidoInteractorData memory data = _getLidoInteractorDataStorage();
 
     if (msg.value == 0) {
       IERC20(data.wETH9).safeTransferFrom(msg.sender, address(this), ethAmount);
       IWETH9(data.wETH9).withdraw(ethAmount);
     } else if (msg.value != ethAmount) {
-      revert('Wrong msg.value');
+      revert Errors.WrongMsgValue(msg.value, ethAmount);
     }
 
-    // call lido, get stEth
-    uint256 stEthStakedAmount = IStETH(data.stETH).submit{value: ethAmount}(address(0));
-
-    // wrap stEth to wsthEth
-    IERC20(data.stETH).approve(data.wstETH, stEthStakedAmount);
-    wstEthStakedAmount = IWstETH(data.wstETH).wrap(stEthStakedAmount);
+    stEthStakedAmount = IStETH(data.stETH).submit{value: ethAmount}(address(0));
   }
 
   function getWeth() public view returns (address) {

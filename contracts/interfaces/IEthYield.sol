@@ -3,6 +3,6 @@ pragma solidity =0.8.26;
 
 import './IYieldBase.sol';
 
-interface ILidoYield is IYieldBase {
+interface IEthYield is IYieldBase {
   function stake(uint256 amount) external payable returns (uint256);
 }
