@@ -20,6 +20,7 @@ import {
   IStrategy__factory,
   IDelegationManager,
   IDelegationManager__factory,
+  IPool,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
@@ -132,24 +133,20 @@ export interface AaveForkTestData {
 }
 
 export async function createAaveEthFork(): Promise<AaveForkTestData> {
-  const weth9Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
-  const aEthWETHAddress = '0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8';
-
-  const aavePoolAddress = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2';
-  const allowedTokens = [weth9Address];
+  const allowedTokens = [EthAddressData.weth];
 
   const [owner] = await ethers.getSigners();
   const aaveYield = (await upgrades.deployProxy(
     await new AaveYield__factory().connect(owner),
-    [aavePoolAddress, allowedTokens],
+    [EthAddressData.aaveEthPool, allowedTokens],
     {
       initializer: 'initialize',
     }
   )) as unknown as AaveYield;
 
-  const aavePool = IPool__factory.connect(aavePoolAddress, owner);
-  const weth9 = ERC20__factory.connect(weth9Address, owner);
-  const aEthWETH = IAToken__factory.connect(aEthWETHAddress, owner);
+  const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
+  const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
+  const aEthWETH = IAToken__factory.connect(EthAddressData.aEth, owner);
 
   return {
     weth9,
