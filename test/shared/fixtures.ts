@@ -5,10 +5,9 @@ import {
   AaveYield__factory,
   ERC20,
   ERC20__factory,
-  IAavePool,
-  IAavePool__factory,
   IAToken,
   IAToken__factory,
+  IPool__factory,
   LidoYield,
   LidoYield__factory,
   MintableERC20,
@@ -119,7 +118,7 @@ export async function createAaveEthFork(): Promise<AaveForkTestData> {
     }
   )) as unknown as AaveYield;
 
-  const aavePool = IAavePool__factory.connect(aavePoolAddress, owner);
+  const aavePool = IPool__factory.connect(aavePoolAddress, owner);
   const weth9 = ERC20__factory.connect(weth9Address, owner);
   const aEthWETH = IAToken__factory.connect(aEthWETHAddress, owner);
 
