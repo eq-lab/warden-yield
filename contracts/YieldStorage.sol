@@ -4,11 +4,11 @@ pragma solidity =0.8.26;
 abstract contract YieldStorage {
   /// @custom:storage-location erc7201:eq-lab.storage.StakingData
   struct StakingData {
-    uint256 _totalStakedAmount;
-    uint256 _totalInputAmount;
-    mapping(address => uint256) _inputAmount;
-    mapping(address => uint256) _stakedAmount;
-    mapping(address => string) _wardenAddress;
+    mapping(address /* token */ => uint256) _totalStakedAmount;
+    mapping(address /* token */ => uint256) _totalShares;
+    mapping(address /* token */ => mapping(address => uint256)) _stakedAmount;
+    mapping(address /* token */ => mapping(address => uint256)) _shares;
+    mapping(address /* evmAddress */ => string) _wardenAddress;
   }
 
   // keccak256(abi.encode(uint256(keccak256("eq-lab.storage.StakingData")) - 1)) & ~bytes32(uint256(0xff))
@@ -21,32 +21,42 @@ abstract contract YieldStorage {
     }
   }
 
-  function _addStake(address user, uint256 inputAmount, uint256 stakedAmount) internal {
+  function _addStake(address user, address token, uint256 stakeAmount, uint256 shares) internal {
     StakingData storage $ = _getStakingDataStorage();
-    $._totalInputAmount += inputAmount;
-    $._inputAmount[user] += inputAmount;
-    $._stakedAmount[user] += stakedAmount;
-    $._totalStakedAmount += stakedAmount;
+    $._stakedAmount[token][user] += stakeAmount;
+    $._totalStakedAmount[token] += stakeAmount;
+
+    $._shares[token][user] += shares;
+    $._totalShares[token] += shares;
   }
 
-  function totalInputAmount() public view returns (uint256) {
+  function _removeStake(address user, address token) internal {
     StakingData storage $ = _getStakingDataStorage();
-    return $._totalInputAmount;
+    $._totalStakedAmount[token] -= $._stakedAmount[token][user];
+    $._stakedAmount[token][user] = 0;
+
+    $._totalShares[token] -= $._shares[token][user];
+    $._shares[token][user] = 0;
   }
 
-  function totalStakedAmount() public view returns (uint256) {
+  function totalShares(address token) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
-    return $._totalStakedAmount;
+    return $._totalShares[token];
   }
 
-  function userInputAmount(address user) public view returns (uint256) {
+  function totalStakedAmount(address token) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
-    return $._inputAmount[user];
+    return $._totalStakedAmount[token];
   }
 
-  function userStakedAmount(address user) public view returns (uint256) {
+  function userShares(address user, address token) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
-    return $._stakedAmount[user];
+    return $._shares[token][user];
+  }
+
+  function userStakedAmount(address user, address token) public view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return $._stakedAmount[token][user];
   }
 
   function wardenAddress(address user) public view returns (string memory) {

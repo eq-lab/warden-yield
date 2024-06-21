@@ -8,7 +8,7 @@ import { EthAddressData, setTokenBalance } from '../shared/utils';
 
 describe('EthYield', () => {
   it('user stake, native', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield } =
+    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield, weth9 } =
       await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
@@ -20,14 +20,14 @@ describe('EthYield', () => {
     const input = parseEther('1');
     await EthYield.connect(user).stake(input, { value: input });
 
-    expect(await EthYield.totalInputAmount()).to.be.eq(input);
-    expect(await EthYield.userInputAmount(user.address)).to.be.eq(input);
+    expect(await EthYield.totalStakedAmount(weth9.target)).to.be.eq(input);
+    expect(await EthYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
 
     const userEthBalanceAfter = await user.provider.getBalance(user.address);
     expect(userEthBalanceBefore - userEthBalanceAfter).to.be.gte(input);
 
     const contractShares = await eigenLayerStrategy.shares(EthYield.target);
-    expect(contractShares).to.be.eq(await EthYield.totalStakedAmount());
+    expect(contractShares).to.be.eq(await EthYield.totalShares(weth9.target));
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
@@ -52,14 +52,14 @@ describe('EthYield', () => {
 
     await EthYield.connect(user).stake(input);
 
-    expect(await EthYield.totalInputAmount()).to.be.eq(input);
-    expect(await EthYield.userInputAmount(user.address)).to.be.eq(input);
+    expect(await EthYield.totalStakedAmount(weth9.target)).to.be.eq(input);
+    expect(await EthYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
 
     const userWethBalanceAfter = await weth9.balanceOf(user.address);
     expect(userWethBalanceBefore - userWethBalanceAfter).to.be.eq(input);
 
     const contractShares = await eigenLayerStrategy.shares(EthYield.target);
-    expect(contractShares).to.be.eq(await EthYield.totalStakedAmount());
+    expect(contractShares).to.be.eq(await EthYield.totalShares(weth9.target));
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);

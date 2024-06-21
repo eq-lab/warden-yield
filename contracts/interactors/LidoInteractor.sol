@@ -48,4 +48,9 @@ abstract contract LidoInteractor is Initializable {
 
     stEthStakedAmount = IStETH(data.stETH).submit{value: ethAmount}(address(0));
   }
+
+  function getWeth() public view returns (address) {
+    LidoInteractorData storage $ = _getLidoInteractorDataStorage();
+    return $.wETH9;
+  }
 }

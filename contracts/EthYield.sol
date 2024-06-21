@@ -36,7 +36,8 @@ contract EthYield is
   function stake(uint256 amount) external payable returns (uint256 eigenLayerShares) {
     uint256 lidoShares = _lidoStake(amount);
     eigenLayerShares = _eigenLayerRestake(lidoShares);
-    _addStake(msg.sender, amount, eigenLayerShares);
-    emit Stake(msg.sender, amount, eigenLayerShares);
+    address weth = getWeth();
+    _addStake(msg.sender, weth, amount, eigenLayerShares);
+    emit Stake(msg.sender, weth, amount, eigenLayerShares);
   }
 }
