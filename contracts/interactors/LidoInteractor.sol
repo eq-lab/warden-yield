@@ -56,4 +56,9 @@ abstract contract LidoInteractor is Initializable {
     IERC20(data.stETH).approve(data.wstETH, stEthStakedAmount);
     wstEthStakedAmount = IWstETH(data.wstETH).wrap(stEthStakedAmount);
   }
+
+  function getWeth() public view returns (address) {
+    LidoInteractorData storage $ = _getLidoInteractorDataStorage();
+    return $.wETH9;
+  }
 }
