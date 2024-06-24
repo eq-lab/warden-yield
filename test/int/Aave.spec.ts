@@ -4,7 +4,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
 import { createAaveEthFork } from '../shared/fixtures';
-import { setTokenBalance } from '../shared/utils';
+import { USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { AaveYield, ERC20, IAToken, IERC20 } from '../../typechain-types';
 
@@ -49,7 +49,7 @@ async function stake(
   // approve WETH before stake
   await weth9.connect(signer).approve(aaveYieldAddress, amount);
   // stake
-  await aaveYield.connect(signer).stake(weth9Address, amount);
+  await aaveYield.connect(signer).stake(weth9Address, amount, USER_WARDEN_ADDRESS);
 
   // check balances
   expect(await weth9.balanceOf(signer.address)).to.be.eq(0);

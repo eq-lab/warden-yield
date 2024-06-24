@@ -1,5 +1,7 @@
 import { ethers } from 'hardhat';
 
+export const USER_WARDEN_ADDRESS = 'warden1234';
+
 export enum EthAddressData {
   weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
   stEth = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',

@@ -33,11 +33,12 @@ contract EthYield is
 
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-  function stake(uint256 amount) external payable returns (uint256 eigenLayerShares) {
+  function stake(uint256 amount, string calldata userWardenAddress) external payable returns (uint256 eigenLayerShares) {
     uint256 lidoShares = _lidoStake(amount);
     eigenLayerShares = _eigenLayerRestake(lidoShares);
     address weth = getWeth();
     _addStake(msg.sender, weth, amount, eigenLayerShares);
+    _addWardenAddress(msg.sender, userWardenAddress);
     emit Stake(msg.sender, weth, amount, eigenLayerShares);
   }
 }

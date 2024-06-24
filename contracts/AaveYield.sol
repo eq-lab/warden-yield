@@ -18,9 +18,10 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
 
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-  function stake(address token, uint256 amount) external returns (uint256 shares) {
+  function stake(address token, uint256 amount, string calldata userWardenAddress) external returns (uint256 shares) {
     shares = _stake(token, amount);
     _addStake(msg.sender, token, amount, shares);
+    _addWardenAddress(msg.sender, userWardenAddress);
 
     emit Stake(msg.sender, token, amount, shares);
   }
