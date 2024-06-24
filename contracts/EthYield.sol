@@ -37,8 +37,8 @@ contract EthYield is
     uint256 amount,
     string calldata userWardenAddress
   ) external payable returns (uint256 eigenLayerShares) {
-    uint256 lidoShares = _lidoStake(amount);
-    eigenLayerShares = _eigenLayerRestake(lidoShares);
+    uint256 stEthAmount = _lidoStake(amount);
+    eigenLayerShares = _eigenLayerRestake(stEthAmount);
     address weth = getWeth();
     _addStake(msg.sender, weth, amount, eigenLayerShares);
     _addWardenAddress(msg.sender, userWardenAddress);

@@ -2,6 +2,7 @@
 pragma solidity =0.8.26;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 import '../libraries/Errors.sol';
@@ -38,7 +39,7 @@ abstract contract LidoInteractor is Initializable {
     $.wETH9 = wETH9;
   }
 
-  function _lidoStake(uint256 ethAmount) internal returns (uint256 stEthStakedAmount) {
+  function _lidoStake(uint256 ethAmount) internal returns (uint256 stEthAmount) {
     if (ethAmount == 0) revert Errors.ZeroAmount();
     LidoInteractorData memory data = _getLidoInteractorDataStorage();
 
@@ -49,7 +50,8 @@ abstract contract LidoInteractor is Initializable {
       revert Errors.WrongMsgValue(msg.value, ethAmount);
     }
 
-    stEthStakedAmount = IStETH(data.stETH).submit{value: ethAmount}(address(0));
+    uint256 lidoShares = IStETH(data.stETH).submit{value: ethAmount}(address(0));
+    stEthAmount = IStETH(data.stETH).getPooledEthByShares(lidoShares);
   }
 
   function getWeth() public view returns (address) {
