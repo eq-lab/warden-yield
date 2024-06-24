@@ -30,6 +30,8 @@ describe('EthYield', () => {
     const contractShares = await eigenLayerStrategy.shares(EthYield.target);
     expect(contractShares).to.be.eq(await EthYield.totalShares(weth9.target));
 
+    expect(await EthYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
     expect(event.args[1]).to.be.eq(EthYield.target);
@@ -61,6 +63,8 @@ describe('EthYield', () => {
 
     const contractShares = await eigenLayerStrategy.shares(EthYield.target);
     expect(contractShares).to.be.eq(await EthYield.totalShares(weth9.target));
+
+    expect(await EthYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
