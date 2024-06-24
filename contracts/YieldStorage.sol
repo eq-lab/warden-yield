@@ -21,6 +21,8 @@ abstract contract YieldStorage {
     mapping(address /* evmAddress */ => string) _wardenAddress;
   }
 
+  event WardenAddressSet(address indexed evmAddress, string indexed wardenAddress);
+
   // keccak256(abi.encode(uint256(keccak256("eq-lab.storage.StakingData")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant StakingDataStorageLocation =
     0x69b3bfac4ac6bf246ceef7427e431f481bd6bde26467dffa51aa8b49ac672600;
@@ -65,6 +67,7 @@ abstract contract YieldStorage {
 
     if (bytes(currentWardenAddress).length == 0) {
       $._wardenAddress[user] = userWardenAddress;
+      emit WardenAddressSet(user, userWardenAddress);
     } else if (!currentWardenAddress.equal(userWardenAddress)) {
       revert Errors.WrongWardenAddress(user, currentWardenAddress, userWardenAddress);
     }
