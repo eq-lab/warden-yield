@@ -76,10 +76,9 @@ describe('EthYield', () => {
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
-    await expect(EthYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })).to.be.revertedWithCustomError(
-      EthYield,
-      'WrongMsgValue'
-    );
+    await expect(
+      EthYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })
+    ).to.be.revertedWithCustomError(EthYield, 'WrongMsgValue');
   });
 });
 
