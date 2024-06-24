@@ -92,6 +92,31 @@ describe('EthYield', () => {
   });
 });
 
+describe('onlyOwner actions', () => {
+  it('authorizeUpgrade', async () => {
+    const { owner, ethYield } = await loadFixture(createEthYieldFork);
+    expect(function () {
+      ethYield.interface.getFunctionName('upgradedTest');
+    }).to.throw(TypeError);
+
+    const ethYieldV2 = await upgrades.upgradeProxy(
+      ethYield.target,
+      await new EthYieldUpgradeTest__factory().connect(owner)
+    );
+
+    expect(await ethYieldV2.upgradedTest()).to.be.true;
+  });
+
+  it('authorizeUpgrade, not owner', async () => {
+    const { owner, ethYield } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+    expect(user.address).to.be.not.eq(owner.address);
+    await expect(
+      upgrades.upgradeProxy(ethYield.target, await new EthYieldUpgradeTest__factory().connect(user))
+    ).to.be.revertedWithCustomError(ethYield, 'OwnableUnauthorizedAccount');
+  });
+});
+
 describe('EthYield init errors', () => {
   it('wrong operator', async () => {
     const [owner, notOperator] = await ethers.getSigners();

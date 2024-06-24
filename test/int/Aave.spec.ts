@@ -1,12 +1,12 @@
 import { expect } from 'chai';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
 import { createAaveEthFork } from '../shared/fixtures';
 import { USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
-import { AaveYield, ERC20, IAToken, IERC20 } from '../../typechain-types';
+import { AaveYield, AaveYieldUpgradeTest__factory, ERC20, IAToken, IERC20 } from '../../typechain-types';
 
 async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken, account: string, token: string) {
   const stakedAmountBefore = await aaveYield.userStakedAmount(account, token);
@@ -154,5 +154,30 @@ describe('AaveYield', () => {
 
     expect(await aaveYield.wardenAddress(user1.address)).to.be.eq(user1WardenAddress);
     expect(await aaveYield.wardenAddress(user2.address)).to.be.eq(user2WardenAddress);
+  });
+});
+
+describe('onlyOwner actions', () => {
+  it('authorizeUpgrade', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    expect(function () {
+      aaveYield.interface.getFunctionName('upgradedTest');
+    }).to.throw(TypeError);
+
+    const aaveYieldV2 = await upgrades.upgradeProxy(
+      aaveYield.target,
+      await new AaveYieldUpgradeTest__factory().connect(owner)
+    );
+
+    expect(await aaveYieldV2.upgradedTest()).to.be.true;
+  });
+
+  it('authorizeUpgrade, not owner', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    const [_, user] = await ethers.getSigners();
+    expect(user.address).to.be.not.eq(owner.address);
+    await expect(
+      upgrades.upgradeProxy(aaveYield.target, await new AaveYieldUpgradeTest__factory().connect(user))
+    ).to.be.revertedWithCustomError(aaveYield, 'OwnableUnauthorizedAccount');
   });
 });
