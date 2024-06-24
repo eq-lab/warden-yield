@@ -9,7 +9,7 @@ import { EthYield__factory } from '../../typechain-types';
 
 describe('EthYield', () => {
   it('user stake, native', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield, weth9 } =
+    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, EthYield, weth9, stEth } =
       await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
@@ -37,10 +37,12 @@ describe('EthYield', () => {
     expect(event.args[1]).to.be.eq(EthYield.target);
     expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
     expect(event.args[3]).to.be.eq(contractShares);
+
+    expect(await stEth.balanceOf(EthYield.target)).to.be.lessThanOrEqual(1);
   });
 
   it('user stake, weth', async () => {
-    const { eigenLayerStrategy, eigenLayerDelegationManager, eigenLayerOperator, weth9, EthYield } =
+    const { eigenLayerStrategy, eigenLayerDelegationManager, eigenLayerOperator, weth9, EthYield, stEth } =
       await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(EthYield.target)).to.be.eq(eigenLayerOperator);
@@ -71,6 +73,8 @@ describe('EthYield', () => {
     expect(event.args[1]).to.be.eq(EthYield.target);
     expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
     expect(event.args[3]).to.be.eq(contractShares);
+
+    expect(await stEth.balanceOf(EthYield.target)).to.be.lessThanOrEqual(1);
   });
 
   it('user stake, wrong msg.value', async () => {
