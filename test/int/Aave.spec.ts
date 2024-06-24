@@ -4,7 +4,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
 import { createAaveEthFork } from '../shared/fixtures';
-import { setTokenBalance } from '../shared/utils';
+import { USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { AaveYield, ERC20, IAToken, IERC20 } from '../../typechain-types';
 
@@ -37,7 +37,8 @@ async function stake(
   signer: HardhatEthersSigner,
   aEthWETH: IAToken,
   weth9: ERC20,
-  amount: bigint
+  amount: bigint,
+  userWardenAddress: string
 ): Promise<void> {
   const aaveYieldAddress = await aaveYield.getAddress();
   const weth9Address = await weth9.getAddress();
@@ -49,7 +50,7 @@ async function stake(
   // approve WETH before stake
   await weth9.connect(signer).approve(aaveYieldAddress, amount);
   // stake
-  await aaveYield.connect(signer).stake(weth9Address, amount);
+  await aaveYield.connect(signer).stake(weth9Address, amount, userWardenAddress);
 
   // check balances
   expect(await weth9.balanceOf(signer.address)).to.be.eq(0);
@@ -110,13 +111,15 @@ describe('AaveYield', () => {
     console.log(`User init balance: ${ethers.formatEther(userInput)} WETH`);
 
     console.log(`User stake`);
-    await stake(aaveYield, user, aEthWETH, weth9, userInput);
+    await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
 
     console.log(`User withdraw`);
     await withdraw(aaveYield, user, aEthWETH, weth9);
 
     expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
     expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
+
+    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
   });
 
   it('2 users: stake & unstake', async () => {
@@ -128,17 +131,18 @@ describe('AaveYield', () => {
 
     // init balances
     const user1Input = await initBalance(user1.address, weth9, '1');
+    const user1WardenAddress = USER_WARDEN_ADDRESS;
     console.log(`User1 init balance: ${ethers.formatEther(user1Input)} WETH`);
 
     const user2Input = await initBalance(user2.address, weth9, '2');
+    const user2WardenAddress = 'warden1233';
     console.log(`User2 init balance: ${ethers.formatEther(user2Input)} WETH`);
 
     console.log(`User1 stake`);
-    await stake(aaveYield, user1, aEthWETH, weth9, user1Input);
+    await stake(aaveYield, user1, aEthWETH, weth9, user1Input, user1WardenAddress);
 
     console.log(`User2 stake`);
-    await stake(aaveYield, user2, aEthWETH, weth9, user2Input);
-
+    await stake(aaveYield, user2, aEthWETH, weth9, user2Input, user2WardenAddress);
     console.log(`User1 withdraw`);
     await withdraw(aaveYield, user1, aEthWETH, weth9);
 
@@ -147,5 +151,8 @@ describe('AaveYield', () => {
 
     expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
     expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
+
+    expect(await aaveYield.wardenAddress(user1.address)).to.be.eq(user1WardenAddress);
+    expect(await aaveYield.wardenAddress(user2.address)).to.be.eq(user2WardenAddress);
   });
 });

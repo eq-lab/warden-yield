@@ -4,7 +4,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
-import { EthAddressData, setTokenBalance } from '../shared/utils';
+import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 import { EthYield__factory } from '../../typechain-types';
 
 describe('EthYield', () => {
@@ -19,7 +19,7 @@ describe('EthYield', () => {
     const filter = eigenLayerDelegationManager.filters.OperatorSharesIncreased;
 
     const input = parseEther('1');
-    await EthYield.connect(user).stake(input, { value: input });
+    await EthYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
 
     expect(await EthYield.totalStakedAmount(weth9.target)).to.be.eq(input);
     expect(await EthYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
@@ -29,6 +29,8 @@ describe('EthYield', () => {
 
     const contractShares = await eigenLayerStrategy.shares(EthYield.target);
     expect(contractShares).to.be.eq(await EthYield.totalShares(weth9.target));
+
+    expect(await EthYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
@@ -51,7 +53,7 @@ describe('EthYield', () => {
     const userWethBalanceBefore = await weth9.balanceOf(user.address);
     await weth9.connect(user).approve(EthYield.target, input);
 
-    await EthYield.connect(user).stake(input);
+    await EthYield.connect(user).stake(input, USER_WARDEN_ADDRESS);
 
     expect(await EthYield.totalStakedAmount(weth9.target)).to.be.eq(input);
     expect(await EthYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
@@ -61,6 +63,8 @@ describe('EthYield', () => {
 
     const contractShares = await eigenLayerStrategy.shares(EthYield.target);
     expect(contractShares).to.be.eq(await EthYield.totalShares(weth9.target));
+
+    expect(await EthYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
@@ -76,10 +80,9 @@ describe('EthYield', () => {
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
-    await expect(EthYield.connect(user).stake(input, { value: input - 1n })).to.be.revertedWithCustomError(
-      EthYield,
-      'WrongMsgValue'
-    );
+    await expect(
+      EthYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })
+    ).to.be.revertedWithCustomError(EthYield, 'WrongMsgValue');
   });
 });
 
