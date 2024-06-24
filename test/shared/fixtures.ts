@@ -91,13 +91,13 @@ export interface EthYieldForkTestData {
   eigenLayerStrategy: IStrategy;
   eigenLayerDelegationManager: IDelegationManager;
   eigenLayerOperator: string;
-  EthYield: EthYield;
+  ethYield: EthYield;
   owner: SignerWithAddress;
 }
 
 export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
   const [owner] = await ethers.getSigners();
-  const EthYield = await deployEthYieldContract(
+  const ethYield = await deployEthYieldContract(
     owner,
     EthAddressData.stEth,
     EthAddressData.weth,
@@ -115,7 +115,7 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
   return {
     weth9,
     stEth,
-    EthYield,
+    ethYield,
     eigenLayerStrategyManager,
     eigenLayerStrategy,
     eigenLayerDelegationManager,
