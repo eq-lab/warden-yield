@@ -136,11 +136,16 @@ export async function createAaveEthFork(): Promise<AaveForkTestData> {
   const allowedTokens = [EthAddressData.weth];
 
   const [owner] = await ethers.getSigners();
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   const aaveYield = (await upgrades.deployProxy(
     await new AaveYield__factory().connect(owner),
     [EthAddressData.aaveEthPool, allowedTokens],
     {
       initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: maxFeePerGas,
+      },
     }
   )) as unknown as AaveYield;
 
