@@ -1,0 +1,21 @@
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import snapshotGasCost from '@uniswap/snapshot-gas-cost';
+import { createAaveEthFork } from '../shared/fixtures';
+import { ethers } from 'hardhat';
+import { parseEther } from 'ethers';
+import { USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
+
+describe('AaveYield', () => {
+  it('user stake', async () => {
+    const { aaveYield, weth9 } = await loadFixture(createAaveEthFork);
+    const [_, user] = await ethers.getSigners();
+
+    const input = parseEther('1');
+    await setTokenBalance(await weth9.getAddress(), user.address, input);
+    await weth9.connect(user).approve(aaveYield.target, input);
+
+    await snapshotGasCost(
+      Number(await aaveYield.connect(user).stake.estimateGas(weth9, input, USER_WARDEN_ADDRESS))
+    );
+  });
+});
