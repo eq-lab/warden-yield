@@ -20,7 +20,8 @@ const config = {
     disambiguatePaths: false,
     runOnCompile: true,
     strict: false,
-    except: ['Mock', 'Test', 'Util', 'Address', 'ERC', 'Slot'],
+    only: ['Aave', 'Lido', 'Eigen', 'Yield'],
+    except: ['Mock', 'Test'],
   }
 };
 
