@@ -88,11 +88,6 @@ abstract contract AaveInteractor is Initializable {
     return $.aavePool;
   }
 
-  function _setAavePool(address aavePool) internal {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    $.aavePool = aavePool;
-  }
-
   function areWithdrawalsEnabled() public view returns (bool) {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     return $.areWithdrawalsEnabled;
