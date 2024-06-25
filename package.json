@@ -8,6 +8,7 @@
     "test": "hardhat test ./test/*.spec.ts",
     "test:gas": "UPDATE_SNAPSHOT=1 REPORT_GAS=true hardhat test --config hardhat-fork.config.ts ./test/gas/*.gas.spec.ts",
     "test:int": "REPORT_GAS=true hardhat test --config hardhat-fork.config.ts ./test/int/*.spec.ts",
+    "test:coverage": "UPDATE_SNAPSHOT=1 REPORT_GAS=true hardhat coverage --config hardhat-fork.config.ts --solcoverjs ./.solcover.ts --testfiles './test/**/*.spec.ts'",
     "deploy": "ts-node ./deploy/src.ts",
     "lint:write": "prettier --write ./contracts ./test ./deploy",
     "clean": "hardhat clean",
