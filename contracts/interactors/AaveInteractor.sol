@@ -69,7 +69,6 @@ abstract contract AaveInteractor is Initializable {
 
     address aavePool = getAavePool();
     address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
-    if (aToken == address(0)) revert Errors.UnknownToken(token);
 
     uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
     uint256 withdrawAmount = IPool(aavePool).withdraw(token, amount, msg.sender);
