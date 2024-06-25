@@ -1,5 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`EthYield gas [ @skip-on-coverage ] user stake, native 1`] = `459157`;
+exports[`EthYield gas user stake, native 1`] = `459157`;
 
-exports[`EthYield gas [ @skip-on-coverage ] user stake, weth 1`] = `509653`;
+exports[`EthYield gas user stake, weth 1`] = `509653`;
