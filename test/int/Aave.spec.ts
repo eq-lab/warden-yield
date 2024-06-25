@@ -101,7 +101,7 @@ async function initBalance(account: string, token: IERC20, ethers: string): Prom
   return balance;
 }
 
-describe('AaveYield', () => {
+describe('AaveYield, deposit', () => {
   before(async () => {
     await helpers.mine();
   });
@@ -151,6 +151,37 @@ describe('AaveYield', () => {
     expect(await aaveYield.wardenAddress(user1.address)).to.be.eq(user1WardenAddress);
     expect(await aaveYield.wardenAddress(user2.address)).to.be.eq(user2WardenAddress);
   });
+
+  it('user stake, zero amount', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, weth9 } = await loadFixture(createAaveEthFork);
+    await expect(aaveYield.connect(user).stake(weth9.target, 0, USER_WARDEN_ADDRESS)).to.be.revertedWithCustomError(
+      aaveYield,
+      'ZeroAmount'
+    );
+  });
+});
+
+describe('AaveYield, unstake', () => {
+  it('unstake, disabled', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
+    // init balances
+    const userInput = await initBalance(user.address, weth9, '1');
+    await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
+    await expect(aaveYield.withdraw(weth9)).to.be.revertedWithCustomError(aaveYield, 'WithdrawalsDisabled');
+  });
+
+  it('unstake, not allowed token', async () => {
+    const [, user] = await ethers.getSigners();
+    const { owner, aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
+    await aaveYield.connect(owner).enableWithdrawals();
+
+    // init balances
+    const userInput = await initBalance(user.address, weth9, '1');
+    await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
+    await expect(aaveYield.withdraw(aEthWETH)).to.be.revertedWithCustomError(aaveYield, 'NotAllowedToken');
+  });
 });
 
 describe('AaveYield onlyOwner actions', () => {
@@ -193,6 +224,14 @@ describe('AaveYield onlyOwner actions', () => {
     );
   });
 
+  it('allowToken, already allowed', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    await expect(aaveYield.connect(owner).allowTokens([EthAddressData.weth])).to.be.revertedWithCustomError(
+      aaveYield,
+      'TokenAlreadyAllowed'
+    );
+  });
+
   it('disallowToken', async () => {
     const { owner, aaveYield } = await loadFixture(createAaveEthFork);
     expect(await aaveYield.getTokenAllowance(EthAddressData.weth)).to.be.true;
@@ -206,6 +245,14 @@ describe('AaveYield onlyOwner actions', () => {
     await expect(aaveYield.connect(notOwner).disallowTokens([EthAddressData.weth])).to.be.revertedWithCustomError(
       aaveYield,
       'OwnableUnauthorizedAccount'
+    );
+  });
+
+  it('disallowToken, already disallowed', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    await expect(aaveYield.connect(owner).disallowTokens([EthAddressData.wstEth])).to.be.revertedWithCustomError(
+      aaveYield,
+      'TokenAlreadyDisallowed'
     );
   });
 

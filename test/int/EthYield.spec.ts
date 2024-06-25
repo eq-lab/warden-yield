@@ -87,6 +87,18 @@ describe('EthYield', () => {
       ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })
     ).to.be.revertedWithCustomError(ethYield, 'WrongMsgValue');
   });
+
+  it('user stake, zero amount', async () => {
+    const { eigenLayerDelegationManager, eigenLayerOperator, ethYield } = await loadFixture(createEthYieldFork);
+    // set up during EthYield contract init
+    expect(await eigenLayerDelegationManager.delegatedTo(ethYield.target)).to.be.eq(eigenLayerOperator);
+    const [_, user] = await ethers.getSigners();
+
+    await expect(ethYield.connect(user).stake(0, USER_WARDEN_ADDRESS)).to.be.revertedWithCustomError(
+      ethYield,
+      'ZeroAmount'
+    );
+  });
 });
 
 describe('EthYield onlyOwner actions', () => {
