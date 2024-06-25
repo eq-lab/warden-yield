@@ -53,6 +53,21 @@ export async function deployEthYieldContract(
   ) as unknown as EthYield;
 }
 
+export async function deployAaveYieldContract(
+  owner: SignerWithAddress,
+  aavePoolAddress: string,
+  allowedTokens: string[]
+): Promise<AaveYield> {
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  return upgrades.deployProxy(await new AaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
+    initializer: 'initialize',
+    txOverrides: {
+      maxFeePerGas: maxFeePerGas,
+    },
+  }) as unknown as AaveYield;
+}
+
 export async function deployTestYieldStorageContract(
   owner: SignerWithAddress,
   tokenAddress: string
@@ -133,21 +148,8 @@ export interface AaveForkTestData {
 }
 
 export async function createAaveEthFork(): Promise<AaveForkTestData> {
-  const allowedTokens = [EthAddressData.weth];
-
   const [owner] = await ethers.getSigners();
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-  const aaveYield = (await upgrades.deployProxy(
-    await new AaveYield__factory().connect(owner),
-    [EthAddressData.aaveEthPool, allowedTokens],
-    {
-      initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
-    }
-  )) as unknown as AaveYield;
+  const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
 
   const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
   const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);

@@ -6,7 +6,7 @@ import { ethers } from 'hardhat';
 import { parseEther } from 'ethers';
 import { USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 
-describe('EthYield', () => {
+describe('EthYield gas', () => {
   it('user stake, native', async () => {
     const { ethYield } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();

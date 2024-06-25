@@ -3,10 +3,17 @@ import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
-import { createAaveEthFork } from '../shared/fixtures';
-import { USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
+import { createAaveEthFork, deployAaveYieldContract } from '../shared/fixtures';
+import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
-import { AaveYield, AaveYieldUpgradeTest__factory, ERC20, IAToken, IERC20 } from '../../typechain-types';
+import {
+  AaveYield,
+  AaveYieldUpgradeTest__factory,
+  AaveYield__factory,
+  ERC20,
+  IAToken,
+  IERC20,
+} from '../../typechain-types';
 
 async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken, account: string, token: string) {
   const stakedAmountBefore = await aaveYield.userStakedAmount(account, token);
@@ -108,12 +115,8 @@ describe('AaveYield', () => {
 
     // init balances
     const userInput = await initBalance(user.address, weth9, '1');
-    console.log(`User init balance: ${ethers.formatEther(userInput)} WETH`);
 
-    console.log(`User stake`);
     await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
-
-    console.log(`User withdraw`);
     await withdraw(aaveYield, user, aEthWETH, weth9);
 
     expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
@@ -132,21 +135,14 @@ describe('AaveYield', () => {
     // init balances
     const user1Input = await initBalance(user1.address, weth9, '1');
     const user1WardenAddress = USER_WARDEN_ADDRESS;
-    console.log(`User1 init balance: ${ethers.formatEther(user1Input)} WETH`);
 
     const user2Input = await initBalance(user2.address, weth9, '2');
     const user2WardenAddress = 'warden1233';
-    console.log(`User2 init balance: ${ethers.formatEther(user2Input)} WETH`);
 
-    console.log(`User1 stake`);
     await stake(aaveYield, user1, aEthWETH, weth9, user1Input, user1WardenAddress);
-
-    console.log(`User2 stake`);
     await stake(aaveYield, user2, aEthWETH, weth9, user2Input, user2WardenAddress);
-    console.log(`User1 withdraw`);
-    await withdraw(aaveYield, user1, aEthWETH, weth9);
 
-    console.log(`User2 withdraw`);
+    await withdraw(aaveYield, user1, aEthWETH, weth9);
     await withdraw(aaveYield, user2, aEthWETH, weth9);
 
     expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
@@ -157,7 +153,7 @@ describe('AaveYield', () => {
   });
 });
 
-describe('onlyOwner actions', () => {
+describe('AaveYield onlyOwner actions', () => {
   it('authorizeUpgrade', async () => {
     const { owner, aaveYield } = await loadFixture(createAaveEthFork);
     expect(function () {
@@ -179,5 +175,87 @@ describe('onlyOwner actions', () => {
     await expect(
       upgrades.upgradeProxy(aaveYield.target, await new AaveYieldUpgradeTest__factory().connect(user))
     ).to.be.revertedWithCustomError(aaveYield, 'OwnableUnauthorizedAccount');
+  });
+
+  it('allowToken', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    expect(await aaveYield.getTokenAllowance(EthAddressData.wstEth)).to.be.false;
+    await aaveYield.connect(owner).allowTokens([EthAddressData.wstEth]);
+    expect(await aaveYield.getTokenAllowance(EthAddressData.wstEth)).to.be.true;
+  });
+
+  it('allowToken, notOwner', async () => {
+    const { aaveYield } = await loadFixture(createAaveEthFork);
+    const [_, notOwner] = await ethers.getSigners();
+    await expect(aaveYield.connect(notOwner).allowTokens([EthAddressData.wstEth])).to.be.revertedWithCustomError(
+      aaveYield,
+      'OwnableUnauthorizedAccount'
+    );
+  });
+
+  it('disallowToken', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    expect(await aaveYield.getTokenAllowance(EthAddressData.weth)).to.be.true;
+    await aaveYield.connect(owner).disallowTokens([EthAddressData.weth]);
+    expect(await aaveYield.getTokenAllowance(EthAddressData.weth)).to.be.false;
+  });
+
+  it('disallowToken, notOwner', async () => {
+    const { aaveYield } = await loadFixture(createAaveEthFork);
+    const [_, notOwner] = await ethers.getSigners();
+    await expect(aaveYield.connect(notOwner).disallowTokens([EthAddressData.weth])).to.be.revertedWithCustomError(
+      aaveYield,
+      'OwnableUnauthorizedAccount'
+    );
+  });
+
+  it('enableWithdraws', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    expect(await aaveYield.areWithdrawalsEnabled()).to.be.false;
+    await aaveYield.connect(owner).enableWithdrawals();
+    expect(await aaveYield.areWithdrawalsEnabled()).to.be.true;
+  });
+
+  it('enableWithdraws, notOwner', async () => {
+    const { aaveYield } = await loadFixture(createAaveEthFork);
+    const [_, notOwner] = await ethers.getSigners();
+    await expect(aaveYield.connect(notOwner).enableWithdrawals()).to.be.revertedWithCustomError(
+      aaveYield,
+      'OwnableUnauthorizedAccount'
+    );
+  });
+
+  it('disableWithdraws', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    await aaveYield.connect(owner).enableWithdrawals();
+    expect(await aaveYield.areWithdrawalsEnabled()).to.be.true;
+    await aaveYield.connect(owner).disableWithdrawals();
+    expect(await aaveYield.areWithdrawalsEnabled()).to.be.false;
+  });
+
+  it('disableWithdraws, notOwner', async () => {
+    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
+    await aaveYield.connect(owner).enableWithdrawals();
+    const [_, notOwner] = await ethers.getSigners();
+    await expect(aaveYield.connect(notOwner).disableWithdrawals()).to.be.revertedWithCustomError(
+      aaveYield,
+      'OwnableUnauthorizedAccount'
+    );
+  });
+});
+
+describe('AaveYield init errors', () => {
+  it('ZeroAddress', async () => {
+    const [owner] = await ethers.getSigners();
+    await expect(
+      deployAaveYieldContract(owner, ethers.ZeroAddress, [EthAddressData.weth])
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'ZeroAddress');
+  });
+
+  it('UnknownToken', async () => {
+    const [owner] = await ethers.getSigners();
+    await expect(
+      deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.stEth])
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'UnknownToken');
   });
 });

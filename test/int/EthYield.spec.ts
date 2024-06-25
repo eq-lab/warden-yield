@@ -1,10 +1,9 @@
 import { expect } from 'chai';
-
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
-import { EthAddressData,  USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
+import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
 import { EthYieldUpgradeTest__factory, EthYield__factory } from '../../typechain-types';
 
 describe('EthYield', () => {
@@ -21,7 +20,7 @@ describe('EthYield', () => {
     const input = parseEther('1');
     await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
 
-    expect(await ethYield.totalStakedAmount(weth9.target)).to.be.eq(input);
+    expect(await ethYield.totalStakedAmount(await ethYield.getWeth())).to.be.eq(input);
     expect(await ethYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
 
     const userEthBalanceAfter = await user.provider.getBalance(user.address);
@@ -57,7 +56,6 @@ describe('EthYield', () => {
 
     await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS);
 
-
     expect(await ethYield.totalStakedAmount(weth9.target)).to.be.eq(input);
     expect(await ethYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
 
@@ -85,14 +83,13 @@ describe('EthYield', () => {
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
-    await expect(ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })).to.be.revertedWithCustomError(
-      ethYield,
-      'WrongMsgValue'
-    );
+    await expect(
+      ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })
+    ).to.be.revertedWithCustomError(ethYield, 'WrongMsgValue');
   });
 });
 
-describe('onlyOwner actions', () => {
+describe('EthYield onlyOwner actions', () => {
   it('authorizeUpgrade', async () => {
     const { owner, ethYield } = await loadFixture(createEthYieldFork);
     expect(function () {
@@ -131,6 +128,21 @@ describe('EthYield init errors', () => {
         notOperator.address
       )
     ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongOperator');
+  });
+
+  it('wrong strategy', async () => {
+    const [owner, notStrategy] = await ethers.getSigners();
+    await expect(
+      deployEthYieldContract(
+        owner,
+        EthAddressData.stEth,
+        EthAddressData.weth,
+        notStrategy.address,
+        EthAddressData.elStrategyManager,
+        EthAddressData.elDelegationManager,
+        EthAddressData.eigenLayerOperator
+      )
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongStrategy');
   });
 
   it('wrong underlying token', async () => {
