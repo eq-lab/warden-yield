@@ -11,6 +11,7 @@ yarn compile
 ```
 
 ## Running tests
+
 Unit tests:
 ```bash
 yarn test
