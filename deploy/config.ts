@@ -79,7 +79,7 @@ async function assertDeployConfigValidity(config: Config, provider: Provider, dr
 
   const allowedKeys = ['ethConnection', 'aaveYield', 'ethYield'];
   for (const key of Object.keys(config)) {
-    if (!allowedKeys.includes(key)) {
+    if (allowedKeys.indexOf(key) === -1) {
       throw new Error(`Unknown config field: "${key}". Allowed fields: [${allowedKeys}]`);
     }
   }

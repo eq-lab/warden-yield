@@ -26,15 +26,16 @@ yarn test:int
 
 Example of deploy command:
 ```bash
-hardhat --network holesky \
-  task:deploy \
-  --deploy-dir "./data/deploy/holesky" \
-  --creator-private-key <private_key>
+CREATOR_PRIVATE_KEY=<private_key> \
+DEPLOY_DIR=<dir> \
+hardhat run tasks/deploy.ts \
+  --network holesky
 ```
+
 To dry-run deploy on a local fork, you need to create and use a hardhat config with `hardhat.forking` settings:
 ```bash
-hardhat --config holesky-fork.config.ts \
-  task:deploy \
-  --deploy-dir "./data/deploy/holesky" \
-  --creator-private-key <private_key>
+CREATOR_PRIVATE_KEY=<private_key> \
+DEPLOY_DIR=<dir> \
+hardhat run tasks/deploy.ts \
+  --config holesky-fork.config.ts
 ```

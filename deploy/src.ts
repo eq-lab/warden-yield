@@ -60,8 +60,8 @@ async function deployAaveYield(
 
   console.log(`Deploy AaveYield. AavePool: ${aaveConfig.aavePool}, allowedTokens: [${allowedTokens}]`);
 
-  const blockNumber = await signer.provider?.getBlockNumber();
-  const maxFeePerGas = (await signer.provider?.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  const blockNumber = await hre.ethers.provider.provider.getBlockNumber();
+  const maxFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
 
   const state = stateStore.getById('aaveYield-proxy');
   let aaveYieldAddress: string;
@@ -127,8 +127,8 @@ async function deployEthYield(
     return;
   }
 
-  const blockNumber = await signer.provider?.getBlockNumber();
-  const maxFeePerGas = (await signer.provider?.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  const blockNumber = await hre.ethers.provider.getBlockNumber();
+  const maxFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
 
   const ethYield = (await hre.upgrades.deployProxy(
     await new EthYield__factory().connect(signer),
