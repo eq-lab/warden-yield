@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.26;
 
+/// @title Library with all the errors used in Yield, Storage and Interactors contracts
 library Errors {
   error ZeroAddress();
   error NotAllowedToken(address);
