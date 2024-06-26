@@ -17,6 +17,14 @@ contract EthYield is
   YieldStorage,
   IEthYield
 {
+  /// @notice initialize function used during contract deployment
+  /// @param stETH address of a Lido StETH token
+  /// @param wETH9 address of a wrapped ETH
+  /// @param elStrategy address of an EigenLayer strategy (an StEth one specifically in this case)
+  /// @param elStrategyManager address of an EigenLayer strategy manager
+  /// @param elDelegationManager address of an EigenLayer delegation manager
+  /// @param elOperator address of an EigenLayer operator to whom all the restaked stEth will be delegated
+  /// @dev elOperator MUST NOT require any signature, otherwise the initialize tx will revert
   function initialize(
     address stETH,
     address wETH9,
@@ -31,8 +39,10 @@ contract EthYield is
     __LidoInteractor_init(stETH, wETH9);
   }
 
+  /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+  /// @inheritdoc IEthYield
   function stake(
     uint256 amount,
     string calldata userWardenAddress
