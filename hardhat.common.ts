@@ -15,19 +15,6 @@ export const config = {
   mocha: {
     timeout: 2_000_000,
   },
-  networks: {
-    ethereum: {
-      url: "https://rpc.ankr.com/eth"
-    },
-    holesky: {
-      url: 'https://endpoints.omniatech.io/v1/eth/holesky/public',
-    }
-  },
-  etherscan: {
-    apiKey: {
-      holesky: "<API_KEY>"
-    }
-  },
   contractSizer: {
     alphaSort: true,
     disambiguatePaths: false,

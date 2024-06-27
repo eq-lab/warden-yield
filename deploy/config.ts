@@ -1,7 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { isAddress, Provider } from 'ethers';
-import { ERC20__factory, IStrategyManager__factory } from '../typechain-types';
+import {
+  ERC20__factory,
+  IDelegationManager__factory,
+  IPool__factory,
+  IStrategy__factory,
+  IStrategyManager__factory,
+} from '../typechain-types';
 
 export interface Config {
   ethConnection: EthConnectionConfig;
@@ -44,14 +50,18 @@ export interface EthOptions {
   gasPrice: number | null | undefined;
 }
 
-export async function loadDeployConfig(deployDir: string, provider: Provider, dryRun: boolean): Promise<Config> {
-  if (!fs.existsSync(deployDir)) {
-    throw new Error(`Directory '${deployDir}' does not exists`);
+export const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
+
+export async function loadDeployConfig(network: string, provider: Provider, dryRun: boolean): Promise<Config> {
+  const configDir = path.join(__dirname, `data`, `configs`, network);
+
+  if (!fs.existsSync(configDir)) {
+    throw new Error(`Directory '${configDir}' does not exists`);
   }
-  if (!fs.statSync(deployDir).isDirectory()) {
-    throw new Error(`Specified '${deployDir}' is not a directory`);
+  if (!fs.statSync(configDir).isDirectory()) {
+    throw new Error(`Specified '${configDir}' is not a directory`);
   }
-  const configFilename = path.join(deployDir, 'config.json');
+  const configFilename = path.join(configDir, 'config.json');
   if (!fs.existsSync(configFilename)) {
     throw new Error(`Deploy config is not exist! Filename: ${configFilename}`);
   }
@@ -77,10 +87,9 @@ async function assertDeployConfigValidity(config: Config, provider: Provider, dr
     config.ethConnection.ethOptions.gasPrice = null;
   }
 
-  const allowedKeys = ['ethConnection', 'aaveYield', 'ethYield'];
   for (const key of Object.keys(config)) {
-    if (allowedKeys.indexOf(key) === -1) {
-      throw new Error(`Unknown config field: "${key}". Allowed fields: [${allowedKeys}]`);
+    if (!configAllowedKeys.has(key)) {
+      throw new Error(`Unknown config field: "${key}". Allowed fields: [${configAllowedKeys}]`);
     }
   }
 
@@ -95,8 +104,16 @@ async function assertAaveYieldDeployConfigValidity(config: Config, provider: Pro
   if (!isAddress(aave.aavePool)) {
     throw new Error(`Invalid Aave pool address! Address: "${aave.aavePool}"`);
   }
+  const pool = IPool__factory.connect(aave.aavePool, provider);
   for (const token of aave.tokens) {
     await assertTokenConfig(token, provider);
+
+    const reserveNormalizedIncome = await pool.getReserveNormalizedIncome(token.address);
+    if (reserveNormalizedIncome === BigInt(0)) {
+      throw new Error(
+        `Token reserveNormalizedIncome == 0! Address: ${token.address}, symbol: ${token.symbol}`
+      );
+    }
   }
 }
 
@@ -126,6 +143,19 @@ async function assertEthYieldDeployConfigValidity(config: Config, provider: Prov
   if (!strategyIsWhitelistedForDeposit) {
     throw new Error(`EL Strategy is not whitelisted for deposits!`);
   }
+
+  const strategy = IStrategy__factory.connect(el.strategy, provider);
+  const strategyUnderlyingToken = await strategy.underlyingToken();
+  if (strategyUnderlyingToken.toLowerCase() !== ethYield.stETH.toLowerCase()) {
+    throw new Error(`EL Strategy underlying token != stETH.` +
+      `Underlying token: ${strategyUnderlyingToken}, setETH: ${ethYield.stETH}`);
+  }
+
+  const delegationManager = IDelegationManager__factory.connect(el.delegationManager, provider);
+  const isOperator = await delegationManager.isOperator(el.operator);
+  if (!isOperator) {
+    throw new Error(`EL operator invalid!.`);
+  }
 }
 
 async function assertTokenConfig(token: TokenConfig, provider: Provider): Promise<void> {
@@ -136,13 +166,13 @@ async function assertTokenConfig(token: TokenConfig, provider: Provider): Promis
   const symbol = await tokenContract.symbol();
   if (symbol !== token.symbol) {
     throw new Error(
-      `Invalid token symbol! Address: "${token.address}", expected symbol: ${token.symbol}, actual: ${symbol}`
+      `Invalid token symbol! Address: ${token.address}, expected symbol: ${token.symbol}, actual: ${symbol}`
     );
   }
   const decimals = await tokenContract.decimals();
   if (Number(decimals) !== token.decimals) {
     throw new Error(
-      `Invalid token decimals! Address: "${token.address}", expected decimals: ${token.decimals}, actual: ${decimals}`
+      `Invalid token decimals! Address: ${token.address}, expected decimals: ${token.decimals}, actual: ${decimals}`
     );
   }
 }

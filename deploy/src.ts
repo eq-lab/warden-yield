@@ -11,14 +11,14 @@ import { createDefaultBaseDeployment, DeploymentFile, DeploymentState, Deploymen
 export async function deployWardenYield(
   signer: Signer,
   config: Config,
-  deployDir: string,
+  network: string,
   dryRun: boolean,
   hre: HardhatRuntimeEnvironment
 ): Promise<void> {
   const statesDirName = 'states';
-  const stateFileName = getStateFileName(deployDir, statesDirName);
-  const actualStateFile = path.join(deployDir, stateFileName);
-  const actualDeploymentFile = path.join(deployDir, 'deployment.json');
+  const stateFileName = getStateFileName(network, statesDirName);
+  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
+  const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
 
   const logger = new SimpleLogger((x) => console.error(x));
   const stateStore = new StateFile(
@@ -166,8 +166,8 @@ async function deployEthYield(
   });
 }
 
-function getStateFileName(deployDir: string, statesDirName: string): string {
-  const dirName = path.join(deployDir, statesDirName);
+function getStateFileName(network: string, statesDirName: string): string {
+  const dirName = path.join(__dirname, `data`, `configs`, network, statesDirName);
   if (!fs.existsSync(dirName)) {
     fs.mkdirSync(dirName);
   }
