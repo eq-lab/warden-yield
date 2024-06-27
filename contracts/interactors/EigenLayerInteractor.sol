@@ -18,16 +18,12 @@ abstract contract EigenLayerInteractor is Initializable {
   struct EigenLayerInteractorData {
     /// @dev token deposited to EigenLayer strategy
     address underlyingToken;
-
     /// @dev address of EigenLayer strategy
     address strategy;
-
     /// @dev address of EigenLayer strategy manager
     address strategyManager;
-
     /// @dev address of EigenLayer delegation manager
     address delegationManager;
-
     /// @dev address of an operator who the restaked token will be delegated to
     address operator;
   }
@@ -49,7 +45,7 @@ abstract contract EigenLayerInteractor is Initializable {
   /// @param strategy address of EigenLayer strategy. Its underlying token is compared with the passed one
   /// @param strategyManager address of EigenLayer stategy manager. Checks if the passed strategy is whitelisted
   /// @param delegationManager address of EigenLayer delegation manager
-  /// @param operator operator address who the restaked token will be delegated to. Gets verified in `delegationManager` 
+  /// @param operator operator address who the restaked token will be delegated to. Gets verified in `delegationManager`
   function __EigenLayerInteractor_init(
     address underlyingToken,
     address strategy,

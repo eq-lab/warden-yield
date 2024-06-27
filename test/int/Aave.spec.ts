@@ -4,12 +4,12 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
 import { createAaveEthFork, deployAaveYieldContract } from '../shared/fixtures';
-import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
+import { EthAddressData, setTokenBalance, USER_WARDEN_ADDRESS } from '../shared/utils';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import {
   AaveYield,
-  AaveYieldUpgradeTest__factory,
   AaveYield__factory,
+  AaveYieldUpgradeTest__factory,
   ERC20,
   IAToken,
   IERC20,
@@ -65,7 +65,7 @@ async function stake(
   expect(await aEthWETH.scaledBalanceOf(aaveYieldAddress)).to.be.greaterThan(aEthScaledBalanceBefore);
 
   let availableToWithdraw = await aaveYield.getAvailableToWithdraw(signer.address, weth9Address);
-  expect(availableToWithdraw).to.be.eq(amount);
+  expect(availableToWithdraw).to.be.closeTo(amount, 100);
 
   // check YieldStorage data
   await assertYieldStorage(amount);

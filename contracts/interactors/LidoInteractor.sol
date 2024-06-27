@@ -17,7 +17,6 @@ abstract contract LidoInteractor is Initializable {
   struct LidoInteractorData {
     /// @dev Lido staked ETH token address
     address stETH;
-
     /// @dev wrapped ETH token address
     address wETH9;
   }
