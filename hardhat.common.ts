@@ -25,7 +25,7 @@ export const config = {
   },
   etherscan: {
     apiKey: {
-      holesky: ""
+      holesky: "<API_KEY>"
     }
   },
   contractSizer: {
