@@ -6,7 +6,7 @@ All the contracts and their descriptions can be found in `contracts` directory
 
 ## Deployments
 
-TBD
+All deployed contracts addresses can be found in [deploy/data/contracts](./deploy/data/contracts)
 
 ## Development
 
@@ -53,7 +53,21 @@ yarn test:coverage
 
 ### Deploying
 
-TBD
+Example of deploy command:
+```bash
+hardhat --network holesky \
+  task:deploy \
+  --network-name <network> \
+  --creator-private-key <private_key>
+```
+
+To dry-run deploy on a local fork, you need to create and use a hardhat config with `hardhat.forking` settings:
+```bash
+hardhat --config holesky-fork.config.ts \
+  task:deploy \
+  --network-name <network> \
+  --creator-private-key <private_key>
+```
 
 # License
 

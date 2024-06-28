@@ -1,0 +1,10 @@
+{
+  "aaveYield": {
+    "address": "0x6a2b548cf4566471378f16235375959b74b1b5e4",
+    "implementation": "0xFc5A5D48a090Ec786a536a88FDbf58e24f67EeF6"
+  },
+  "ethYield": {
+    "address": "0x1812f1629229d682aEc43445EA1fc23990C3Cd68",
+    "implementation": "0xAFDeA0Dd218a7c2475BF1254CBC70574bC221158"
+  }
+}

@@ -18,10 +18,8 @@ abstract contract AaveInteractor is Initializable {
   struct AaveInteractorData {
     /// @dev address of Aave pool
     address aavePool;
-
     /// @dev flag showing if users can call a 'withdraw' method of this contract
     bool areWithdrawalsEnabled;
-
     /// @dev mapping showing if the token can be supplied to Aave pool via this contract
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
   }
@@ -127,7 +125,7 @@ abstract contract AaveInteractor is Initializable {
     $.areWithdrawalsEnabled = false;
   }
 
-   /// @notice returns if the passed token can be used in 'stake' call
+  /// @notice returns if the passed token can be used in 'stake' call
   function getTokenAllowance(address token) public view returns (bool) {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     return $.allowedTokens[token];

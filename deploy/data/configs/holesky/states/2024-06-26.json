@@ -1,0 +1,18 @@
+{
+  "contracts": {
+    "aaveYield-proxy": {
+      "txHash": "0x79fe53a0476d769548a46d7ff848a6a9579e8347672e7421e3c9d86daecaef81",
+      "address": "0x6a2b548cf4566471378f16235375959b74b1b5e4"
+    },
+    "aaveYield-impl": {
+      "address": "0xFc5A5D48a090Ec786a536a88FDbf58e24f67EeF6"
+    },
+    "ethYield-proxy": {
+      "txHash": "0xed2f2fef08199c058830003a5703848d23c1b6bc94739c1493181255fdaefcbe",
+      "address": "0x1812f1629229d682aEc43445EA1fc23990C3Cd68"
+    },
+    "ethYield-impl": {
+      "address": "0xAFDeA0Dd218a7c2475BF1254CBC70574bC221158"
+    }
+  }
+}

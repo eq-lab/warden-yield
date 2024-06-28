@@ -2,27 +2,28 @@ import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-contract-sizer';
 
+import './tasks/deploy';
+
+import * as defaultConfig from './hardhat.common';
+
 const config = {
-  solidity: {
-    version: '0.8.26',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 100000,
-      },
+  ...defaultConfig.default,
+  networks: {
+    ethereum: {
+      url: "https://rpc.ankr.com/eth"
     },
+    holesky: {
+      url: 'https://endpoints.omniatech.io/v1/eth/holesky/public',
+    },
+    holesky2: {
+      url: 'https://1rpc.io/holesky',
+    }
   },
-  mocha: {
-    timeout: 2_000_000,
+  etherscan: {
+    apiKey: {
+      holesky: ""
+    }
   },
-  contractSizer: {
-    alphaSort: true,
-    disambiguatePaths: false,
-    runOnCompile: true,
-    strict: false,
-    only: ['Aave', 'Lido', 'Eigen', 'Yield'],
-    except: ['Mock', 'Test'],
-  }
 };
 
 export default config;

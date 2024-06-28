@@ -13,13 +13,10 @@ abstract contract YieldStorage {
   struct StakingData {
     /// @dev total amount of 'token' locked by users via this contract
     mapping(address /* token */ => uint256) _totalStakedAmount;
-
     /// @dev total amount shares received by users after locking 'token'
     mapping(address /* token */ => uint256) _totalShares;
-
     /// @dev total amount of 'token' locked by the 'user' via this contract
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _stakedAmount;
-
     /// @dev total amount shares received by 'user' after locking the 'token'
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _shares;
   }
