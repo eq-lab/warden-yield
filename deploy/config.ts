@@ -110,9 +110,7 @@ async function assertAaveYieldDeployConfigValidity(config: Config, provider: Pro
 
     const reserveNormalizedIncome = await pool.getReserveNormalizedIncome(token.address);
     if (reserveNormalizedIncome === BigInt(0)) {
-      throw new Error(
-        `Token reserveNormalizedIncome == 0! Address: ${token.address}, symbol: ${token.symbol}`
-      );
+      throw new Error(`Token reserveNormalizedIncome == 0! Address: ${token.address}, symbol: ${token.symbol}`);
     }
   }
 }
@@ -147,8 +145,10 @@ async function assertEthYieldDeployConfigValidity(config: Config, provider: Prov
   const strategy = IStrategy__factory.connect(el.strategy, provider);
   const strategyUnderlyingToken = await strategy.underlyingToken();
   if (strategyUnderlyingToken.toLowerCase() !== ethYield.stETH.toLowerCase()) {
-    throw new Error(`EL Strategy underlying token != stETH.` +
-      `Underlying token: ${strategyUnderlyingToken}, setETH: ${ethYield.stETH}`);
+    throw new Error(
+      `EL Strategy underlying token != stETH.` +
+        `Underlying token: ${strategyUnderlyingToken}, setETH: ${ethYield.stETH}`
+    );
   }
 
   const delegationManager = IDelegationManager__factory.connect(el.delegationManager, provider);
