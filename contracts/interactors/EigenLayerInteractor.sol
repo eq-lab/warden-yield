@@ -14,6 +14,9 @@ import '../interfaces/Lido/IStETH.sol';
 abstract contract EigenLayerInteractor is Initializable {
   using SafeERC20 for IERC20;
 
+  event EigenLayerWithdrawStart(uint256 sharesToWithdraw);
+  event EigenLayerWithdrawComplete(uint256 withdrawnShares);
+
   /// @custom:storage-location erc7201:eq-lab.storage.EigenLayerInteractor
   struct EigenLayerInteractorData {
     /// @dev token deposited to EigenLayer strategy
@@ -109,6 +112,8 @@ abstract contract EigenLayerInteractor is Initializable {
   }
 
   function _eigenLayerWithdraw(uint256 sharesToWithdraw) internal eigenLayerReinit {
+    if (sharesToWithdraw == 0) revert Errors.ZeroAmount();
+
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
 
     IStrategy[] memory strategies = new IStrategy[](1);
@@ -117,21 +122,16 @@ abstract contract EigenLayerInteractor is Initializable {
     uint256[] memory shares = new uint256[](1);
     shares[0] = sharesToWithdraw;
 
-    IDelegationManager.QueuedWithdrawalParams[]
-      memory withdrawalParams = new IDelegationManager.QueuedWithdrawalParams[](1);
-    withdrawalParams[0] = IDelegationManager.QueuedWithdrawalParams({
+    IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
+    params[0] = IDelegationManager.QueuedWithdrawalParams({
       strategies: strategies,
       shares: shares,
       withdrawer: address(this)
     });
 
-    IDelegationManager(data.delegationManager).queueWithdrawals(withdrawalParams);
-
-    EigenLayerWithdrawQueue storage withdrawQueue = _getEigenLayerWithdrawQueueStorage();
-    uint256 queueEnd = withdrawQueue.end;
-    withdrawQueue.blockNumber[queueEnd] = uint32(block.number);
-    withdrawQueue.shares[queueEnd] = sharesToWithdraw;
-    ++withdrawQueue.end;
+    IDelegationManager(data.delegationManager).queueWithdrawals(params);
+    _queuePush(_getEigenLayerWithdrawQueueStorage(), sharesToWithdraw);
+    emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
   function _eigenLayerReinit() internal {
@@ -148,7 +148,6 @@ abstract contract EigenLayerInteractor is Initializable {
     uint256[] memory shares = new uint256[](1);
     shares[0] = withdrawQueue.shares[queueStart];
 
-    // either checks or try-catch are required here
     IDelegationManager.Withdrawal memory withdrawal = IDelegationManager.Withdrawal({
       staker: address(this),
       delegatedTo: data.operator,
@@ -163,11 +162,26 @@ abstract contract EigenLayerInteractor is Initializable {
     tokens[0] = IERC20(data.underlyingToken);
 
     try IDelegationManager(data.delegationManager).completeQueuedWithdrawal(withdrawal, tokens, 0, true) {
-      delete withdrawQueue.blockNumber[queueStart];
-      delete withdrawQueue.shares[queueStart];
-      unchecked {
-        ++withdrawQueue.start;
-      }
+      _queuePop(withdrawQueue);
+      emit EigenLayerWithdrawComplete(shares[0]);
     } catch {}
+  }
+
+  function _queuePush(EigenLayerWithdrawQueue storage queue, uint256 sharesToWithdraw) private {
+    uint256 queueEnd = queue.end;
+    queue.blockNumber[queueEnd] = uint32(block.number);
+    queue.shares[queueEnd] = sharesToWithdraw;
+    unchecked {
+      ++queue.end;
+    }
+  }
+
+  function _queuePop(EigenLayerWithdrawQueue storage queue) private {
+    uint256 queueStart = queue.start;
+    delete queue.blockNumber[queueStart];
+    delete queue.shares[queueStart];
+    unchecked {
+      ++queue.start;
+    }
   }
 }
