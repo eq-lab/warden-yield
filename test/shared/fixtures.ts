@@ -21,12 +21,18 @@ import {
   IDelegationManager,
   IDelegationManager__factory,
   IPool,
+  TestEigenLayerInteractor__factory,
+  TestEigenLayerInteractor,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
-  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT', {
+    maxFeePerGas: maxFeePerGas,
+  });
 }
 
 export async function deployEthYieldContract(
@@ -72,9 +78,37 @@ export async function deployTestYieldStorageContract(
   owner: SignerWithAddress,
   tokenAddress: string
 ): Promise<TestYieldStorage> {
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(new TestYieldStorage__factory().connect(owner), [tokenAddress], {
     initializer: 'initialize',
+    txOverrides: {
+      maxFeePerGas: maxFeePerGas,
+    },
   }) as unknown as Promise<TestYieldStorage>;
+}
+
+export async function deployTestEigenLayerInteractor(
+  owner: SignerWithAddress,
+  weth: string,
+  stEth: string,
+  elStrategy: string,
+  elStrategyManager: string,
+  elDelegationManager: string,
+  eigenLayerOperator: string
+): Promise<TestEigenLayerInteractor> {
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  return upgrades.deployProxy(
+    new TestEigenLayerInteractor__factory().connect(owner),
+    [weth, stEth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
+    {
+      initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: maxFeePerGas,
+      },
+    }
+  ) as unknown as Promise<TestEigenLayerInteractor>;
 }
 
 export async function testYieldStorageFixture(): Promise<{
@@ -96,6 +130,38 @@ export async function testYieldStorageFixture(): Promise<{
     owner,
     testYieldStorage,
     weth9,
+  };
+}
+
+export async function testEigenLayerInteractorFixture(): Promise<{
+  owner: SignerWithAddress;
+  testEigenLayerInteractor: TestEigenLayerInteractor;
+  delegationManager: IDelegationManager;
+  strategy: IStrategy;
+  stEth: ERC20;
+}> {
+  const [owner] = await ethers.getSigners();
+
+  const testEigenLayerInteractor = await deployTestEigenLayerInteractor(
+    owner,
+    EthAddressData.weth,
+    EthAddressData.stEth,
+    EthAddressData.elStrategy,
+    EthAddressData.elStrategyManager,
+    EthAddressData.elDelegationManager,
+    EthAddressData.eigenLayerOperator
+  );
+
+  const delegationManager = IDelegationManager__factory.connect(EthAddressData.elDelegationManager, owner);
+  const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
+  const strategy = IStrategy__factory.connect(EthAddressData.elStrategy, owner);
+
+  return {
+    owner,
+    testEigenLayerInteractor,
+    delegationManager,
+    strategy,
+    stEth,
   };
 }
 
