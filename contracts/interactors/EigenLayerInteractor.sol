@@ -75,7 +75,7 @@ abstract contract EigenLayerInteractor is Initializable {
   function _eigenLayerRestake(uint256 underlyingTokenAmount) internal returns (uint256 shares) {
     if (underlyingTokenAmount == 0) revert Errors.ZeroAmount();
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
-    IERC20(data.underlyingToken).approve(data.strategyManager, underlyingTokenAmount);
+    IERC20(data.underlyingToken).forceApprove(data.strategyManager, underlyingTokenAmount);
     shares = IStrategyManager(data.strategyManager).depositIntoStrategy(
       IStrategy(data.strategy),
       IERC20(data.underlyingToken),
