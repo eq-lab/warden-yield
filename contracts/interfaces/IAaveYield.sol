@@ -14,11 +14,6 @@ interface IAaveYield is IYieldBase {
   ///      then the same address must be passed as during the first call
   function stake(address token, uint256 amount, string calldata userWardenAddress) external returns (uint256);
 
-  /// @notice method to withdraw token from Aave pool
-  /// @dev in the first version withdraws are disabled by default
-  /// @param token address of a token to be withdrawn
-  function withdraw(address token) external returns (uint256 withdrawAmount);
-
   /// @notice returns current user balance in Aave pool
   function getAvailableToWithdraw(address user, address token) external view returns (uint256 availableToWithdraw);
 }

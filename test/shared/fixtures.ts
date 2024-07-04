@@ -1,8 +1,6 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { ethers, upgrades } from 'hardhat';
 import {
-  AaveYield,
-  AaveYield__factory,
   ERC20,
   ERC20__factory,
   EthYield,
@@ -19,6 +17,8 @@ import {
   IStrategyManager__factory,
   MintableERC20,
   MintableERC20__factory,
+  TestAaveYield,
+  TestAaveYield__factory,
   TestYieldStorage,
   TestYieldStorage__factory,
 } from '../../typechain-types';
@@ -57,15 +57,15 @@ export async function deployAaveYieldContract(
   owner: SignerWithAddress,
   aavePoolAddress: string,
   allowedTokens: string[]
-): Promise<AaveYield> {
+): Promise<TestAaveYield> {
   const blockNumber = await owner.provider.getBlockNumber();
   const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-  return upgrades.deployProxy(await new AaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
+  return upgrades.deployProxy(await new TestAaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
     initializer: 'initialize',
     txOverrides: {
       maxFeePerGas: maxFeePerGas,
     },
-  }) as unknown as AaveYield;
+  }) as unknown as TestAaveYield;
 }
 
 export async function deployTestYieldStorageContract(
@@ -146,7 +146,7 @@ export interface AaveForkTestData {
   aEthUsdt: IAToken;
   usdc: ERC20;
   aEthUsdc: IAToken;
-  aaveYield: AaveYield;
+  aaveYield: TestAaveYield;
   aavePool: IPool;
   owner: SignerWithAddress;
 }
