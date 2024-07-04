@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
-import { parseEther } from 'ethers';
+import { parseEther, parseUnits } from 'ethers';
 import { createAaveEthFork, deployAaveYieldContract } from '../shared/fixtures';
 import { EthAddressData, setTokenBalance, USER_WARDEN_ADDRESS } from '../shared/utils';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
@@ -94,8 +94,15 @@ async function withdraw(
   await assertYieldStorage(-staked);
 }
 
-async function initBalance(account: string, token: IERC20, ethers: string): Promise<bigint> {
+async function initWethBalance(account: string, token: IERC20, ethers: string): Promise<bigint> {
   const balance = parseEther(ethers);
+  await setTokenBalance(await token.getAddress(), account, balance);
+  expect(await token.balanceOf(account)).to.be.eq(balance);
+  return balance;
+}
+
+async function initStablecoinBalance(account: string, token: IERC20, balanceStr: string): Promise<bigint> {
+  const balance = parseUnits(balanceStr, 6);
   await setTokenBalance(await token.getAddress(), account, balance);
   expect(await token.balanceOf(account)).to.be.eq(balance);
   return balance;
@@ -114,13 +121,51 @@ describe('AaveYield, deposit', () => {
     const weth9Address = await weth9.getAddress();
 
     // init balances
-    const userInput = await initBalance(user.address, weth9, '1');
+    const userInput = await initWethBalance(user.address, weth9, '1');
 
     await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
     await withdraw(aaveYield, user, aEthWETH, weth9);
 
     expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
     expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
+
+    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+  });
+
+  it('1 users: stake & unstake USDT', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, usdt, aEthUsdt } = await loadFixture(createAaveEthFork);
+
+    await aaveYield.enableWithdrawals();
+    const usdtAddress = await usdt.getAddress();
+
+    // init balances
+    const userInput = await initStablecoinBalance(user.address, usdt, '1000');
+
+    await stake(aaveYield, user, aEthUsdt, usdt, userInput, USER_WARDEN_ADDRESS);
+    await withdraw(aaveYield, user, aEthUsdt, usdt);
+
+    expect(await aaveYield.totalStakedAmount(usdtAddress)).to.be.eq(0);
+    expect(await aaveYield.totalShares(usdtAddress)).to.be.eq(0);
+
+    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+  });
+
+  it('1 users: stake & unstake USDC', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, usdc, aEthUsdc } = await loadFixture(createAaveEthFork);
+
+    await aaveYield.enableWithdrawals();
+    const usdcAddress = await usdc.getAddress();
+
+    // init balances
+    const userInput = await initStablecoinBalance(user.address, usdc, '1000');
+
+    await stake(aaveYield, user, aEthUsdc, usdc, userInput, USER_WARDEN_ADDRESS);
+    await withdraw(aaveYield, user, aEthUsdc, usdc);
+
+    expect(await aaveYield.totalStakedAmount(usdcAddress)).to.be.eq(0);
+    expect(await aaveYield.totalShares(usdcAddress)).to.be.eq(0);
 
     expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
   });
@@ -133,10 +178,10 @@ describe('AaveYield, deposit', () => {
     const weth9Address = await weth9.getAddress();
 
     // init balances
-    const user1Input = await initBalance(user1.address, weth9, '1');
+    const user1Input = await initWethBalance(user1.address, weth9, '1');
     const user1WardenAddress = USER_WARDEN_ADDRESS;
 
-    const user2Input = await initBalance(user2.address, weth9, '2');
+    const user2Input = await initWethBalance(user2.address, weth9, '2');
     const user2WardenAddress = 'warden1233';
 
     await stake(aaveYield, user1, aEthWETH, weth9, user1Input, user1WardenAddress);
@@ -167,7 +212,7 @@ describe('AaveYield, unstake', () => {
     const [, user] = await ethers.getSigners();
     const { aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
     // init balances
-    const userInput = await initBalance(user.address, weth9, '1');
+    const userInput = await initWethBalance(user.address, weth9, '1');
     await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
     await expect(aaveYield.withdraw(weth9)).to.be.revertedWithCustomError(aaveYield, 'WithdrawalsDisabled');
   });
@@ -178,7 +223,7 @@ describe('AaveYield, unstake', () => {
     await aaveYield.connect(owner).enableWithdrawals();
 
     // init balances
-    const userInput = await initBalance(user.address, weth9, '1');
+    const userInput = await initWethBalance(user.address, weth9, '1');
     await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
     await expect(aaveYield.withdraw(aEthWETH)).to.be.revertedWithCustomError(aaveYield, 'NotAllowedToken');
   });

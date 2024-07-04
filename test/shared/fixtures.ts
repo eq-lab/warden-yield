@@ -3,24 +3,24 @@ import { ethers, upgrades } from 'hardhat';
 import {
   AaveYield,
   AaveYield__factory,
-  EthYield,
-  EthYield__factory,
   ERC20,
   ERC20__factory,
+  EthYield,
+  EthYield__factory,
   IAToken,
   IAToken__factory,
+  IDelegationManager,
+  IDelegationManager__factory,
+  IPool,
   IPool__factory,
+  IStrategy,
+  IStrategy__factory,
+  IStrategyManager,
+  IStrategyManager__factory,
   MintableERC20,
   MintableERC20__factory,
   TestYieldStorage,
   TestYieldStorage__factory,
-  IStrategyManager,
-  IStrategy,
-  IStrategyManager__factory,
-  IStrategy__factory,
-  IDelegationManager,
-  IDelegationManager__factory,
-  IPool,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
@@ -142,6 +142,10 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
 export interface AaveForkTestData {
   weth9: ERC20;
   aEthWETH: IAToken;
+  usdt: ERC20;
+  aEthUsdt: IAToken;
+  usdc: ERC20;
+  aEthUsdc: IAToken;
   aaveYield: AaveYield;
   aavePool: IPool;
   owner: SignerWithAddress;
@@ -149,15 +153,27 @@ export interface AaveForkTestData {
 
 export async function createAaveEthFork(): Promise<AaveForkTestData> {
   const [owner] = await ethers.getSigners();
-  const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
+  const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [
+    EthAddressData.weth,
+    EthAddressData.usdt,
+    EthAddressData.usdc,
+  ]);
 
   const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
   const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
   const aEthWETH = IAToken__factory.connect(EthAddressData.aEth, owner);
+  const usdt = ERC20__factory.connect(EthAddressData.usdt, owner);
+  const aEthUsdt = IAToken__factory.connect(EthAddressData.aEthUsdt, owner);
+  const usdc = ERC20__factory.connect(EthAddressData.usdc, owner);
+  const aEthUsdc = IAToken__factory.connect(EthAddressData.aEthUsdc, owner);
 
   return {
     weth9,
     aEthWETH,
+    usdt,
+    aEthUsdt,
+    usdc,
+    aEthUsdc,
     aaveYield,
     aavePool,
     owner,
