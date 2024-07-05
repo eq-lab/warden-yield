@@ -6,11 +6,15 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 
 import '../libraries/Errors.sol';
 import '../interfaces/IWETH9.sol';
+import '../interfaces/Lido/ILidoWithdrawalQueue.sol';
 import '../interfaces/Lido/IStETH.sol';
 
 /// @title abstract contract implementing the staking interaction with Lido Protocol
 abstract contract LidoInteractor is Initializable {
   using SafeERC20 for IERC20;
+
+  event LidoWithdrawStart(uint256 stEthToWithdraw);
+  event LidoWithdrawComplete(uint256 ethReceived);
 
   /// @custom:storage-location erc7201:eq-lab.storage.LidoInteractor
   struct LidoInteractorData {
@@ -18,12 +22,26 @@ abstract contract LidoInteractor is Initializable {
     address stETH;
     /// @dev wrapped ETH token address
     address wETH9;
+    address lidoWithdrawalQueue;
+  }
+
+  /// @custom:storage-location erc7201:eq-lab.storage.LidoWithdrawQueue
+  struct LidoWithdrawQueue {
+    uint256 start;
+    uint256 end;
+    mapping(uint256 index => uint256) requestId;
+    mapping(uint256 index => uint256) requested;
   }
 
   /// @dev 'LidoInteractorData' storage slot address
   /// @dev keccak256(abi.encode(uint256(keccak256("eq-lab.storage.LidoInteractor")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant LidoInteractorDataStorageLocation =
     0x2d1b51a432844d5aca7b5c31b49cc3ff9975ed24b0c347b35bc5ccd56c659300;
+
+  /// @dev 'LidoWithdrawQueue' storage slot address
+  /// @dev keccak256(abi.encode(uint256(keccak256("eq-lab.storage.LidoWithdrawQueue")) - 1)) & ~bytes32(uint256(0xff))
+  bytes32 private constant LidoWithdrawQueueStorageLocation =
+    0x75882ac8a5f1f57df5a632f1fc80cb00a88b7895490864cad38c857f66cad700;
 
   /// @dev returns storage slot of 'LidoInteractorData' struct
   function _getLidoInteractorDataStorage() internal pure returns (LidoInteractorData storage $) {
@@ -32,9 +50,16 @@ abstract contract LidoInteractor is Initializable {
     }
   }
 
+  function _getLidoWithdrawQueueStorage() internal pure returns (LidoWithdrawQueue storage $) {
+    assembly {
+      $.slot := LidoWithdrawQueueStorageLocation
+    }
+  }
+
   /// @notice fallback function for plain native ETH transfers. Allows the one occuring in 'wETH.withdraw()' call only
   receive() external payable {
-    if (msg.sender != _getLidoInteractorDataStorage().wETH9) revert Errors.NotWETH9(msg.sender);
+    LidoInteractorData storage $ = _getLidoInteractorDataStorage();
+    if (msg.sender != $.wETH9 && msg.sender != $.lidoWithdrawalQueue) revert Errors.ReceiveValueFail(msg.sender);
   }
 
   /// @dev initialize method
@@ -45,6 +70,12 @@ abstract contract LidoInteractor is Initializable {
     if (stETH == address(0) || wETH9 == address(0)) revert Errors.ZeroAddress();
     $.stETH = stETH;
     $.wETH9 = wETH9;
+  }
+
+  function __LidoInteractor_initV2(address lidoWithdrawalQueue) internal onlyInitializing {
+    LidoInteractorData storage $ = _getLidoInteractorDataStorage();
+    if (lidoWithdrawalQueue == address(0)) revert Errors.ZeroAddress();
+    $.lidoWithdrawalQueue = lidoWithdrawalQueue;
   }
 
   /// @dev Lido staking method
@@ -63,6 +94,70 @@ abstract contract LidoInteractor is Initializable {
 
     uint256 lidoShares = IStETH(data.stETH).submit{value: ethAmount}(address(0));
     stEthAmount = IStETH(data.stETH).getPooledEthByShares(lidoShares);
+  }
+
+  function _lidoWithdraw(uint256 stEthAmount) internal {
+    LidoInteractorData storage data = _getLidoInteractorDataStorage();
+    ILidoWithdrawalQueue withdrawalQueue = ILidoWithdrawalQueue(data.lidoWithdrawalQueue);
+
+    if (stEthAmount < withdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()) revert Errors.LowWithdrawalAmount(stEthAmount);
+
+    IERC20(data.stETH).forceApprove(address(withdrawalQueue), stEthAmount);
+
+    uint256 maxLidoWithdrawal = withdrawalQueue.MAX_STETH_WITHDRAWAL_AMOUNT();
+    uint256 withdrawalsNumber = 1 + stEthAmount / maxLidoWithdrawal;
+    uint256[] memory amounts = new uint256[](withdrawalsNumber);
+    unchecked {
+      for (uint256 i; i < withdrawalsNumber - 1; ++i) {
+        amounts[i] = maxLidoWithdrawal;
+      }
+    }
+    amounts[withdrawalsNumber - 1] = stEthAmount;
+
+    uint256[] memory requestIds = withdrawalQueue.requestWithdrawals(amounts, address(0));
+    _queuePush(_getLidoWithdrawQueueStorage(), requestIds, amounts);
+    emit LidoWithdrawStart(stEthAmount);
+  }
+
+  function _lidoReinit() internal returns(uint256 ethReceived) {
+    LidoWithdrawQueue storage withdrawQueue = _getLidoWithdrawQueueStorage();
+    uint256 queueStart = withdrawQueue.start;
+    if (queueStart == withdrawQueue.end) return 0;
+
+    try
+      ILidoWithdrawalQueue(_getLidoInteractorDataStorage().lidoWithdrawalQueue).claimWithdrawal(
+        withdrawQueue.requestId[queueStart]
+      )
+    {
+      ethReceived = withdrawQueue.requested[queueStart];
+      _queuePop(withdrawQueue);
+      emit LidoWithdrawComplete(ethReceived);
+    } catch {}
+
+    return ethReceived;
+  }
+
+  function _queuePush(LidoWithdrawQueue storage queue, uint256[] memory requestIds, uint256[] memory amounts) private {
+    uint256 queueEnd = queue.end;
+    uint256 length = requestIds.length;
+
+    unchecked {
+      for (uint256 i; i < length; ++i) {
+        uint256 index = queueEnd + i;
+        queue.requestId[index] = requestIds[i];
+        queue.requested[index] = amounts[i];
+      }
+      queue.end += length;
+    }
+  }
+
+  function _queuePop(LidoWithdrawQueue storage queue) private {
+    uint256 queueStart = queue.start;
+    delete queue.requestId[queueStart];
+    delete queue.requested[queueStart];
+    unchecked {
+      ++queue.start;
+    }
   }
 
   /// @notice returns wrapped ETH token address

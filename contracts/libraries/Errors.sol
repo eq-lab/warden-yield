@@ -14,6 +14,7 @@ library Errors {
   error WrongMsgValue(uint256 msgValue, uint256 input);
   error WrongStrategy(address);
   error WrongOperator(address);
-  error NotWETH9(address);
+  error ReceiveValueFail(address);
   error WrongWardenAddress(address user, string currentWardenAddress, string passedWardenAddress);
+  error LowWithdrawalAmount(uint256);
 }

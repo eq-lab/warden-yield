@@ -23,6 +23,10 @@ import {
   TestYieldStorage__factory,
   TestEigenLayerInteractor__factory,
   TestEigenLayerInteractor,
+  TestLidoInteractor,
+  TestLidoInteractor__factory,
+  ILidoWithdrawalQueueExtended,
+  ILidoWithdrawalQueueExtended__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
@@ -88,6 +92,26 @@ export async function deployTestYieldStorageContract(
   }) as unknown as Promise<TestYieldStorage>;
 }
 
+export async function deployTestLidoInteractor(
+  owner: SignerWithAddress,
+  weth: string,
+  stEth: string,
+  lidoWithdrawalQueue: string,
+): Promise<TestLidoInteractor> {
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  return upgrades.deployProxy(
+    new TestLidoInteractor__factory().connect(owner),
+    [weth, stEth, lidoWithdrawalQueue],
+    {
+      initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: maxFeePerGas,
+      },
+    }
+  ) as unknown as Promise<TestLidoInteractor>;
+}
+
 export async function deployTestEigenLayerInteractor(
   owner: SignerWithAddress,
   weth: string,
@@ -130,6 +154,32 @@ export async function testYieldStorageFixture(): Promise<{
     owner,
     testYieldStorage,
     weth9,
+  };
+}
+
+export async function testLidoInteractorFixture(): Promise<{
+  owner: SignerWithAddress;
+  testLidoInteractor: TestLidoInteractor;
+  lidoWithdrawalQueue: ILidoWithdrawalQueueExtended;
+  stEth: ERC20;
+}> {
+  const [owner] = await ethers.getSigners();
+
+  const testLidoInteractor = await deployTestLidoInteractor(
+    owner,
+    EthAddressData.weth,
+    EthAddressData.stEth,
+    EthAddressData.lidoWithdrawalQueue,
+  );
+
+  const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
+  const lidoWithdrawalQueue = ILidoWithdrawalQueueExtended__factory.connect(EthAddressData.lidoWithdrawalQueue, owner);
+
+  return {
+    owner,
+    testLidoInteractor,
+    lidoWithdrawalQueue,
+    stEth,
   };
 }
 
