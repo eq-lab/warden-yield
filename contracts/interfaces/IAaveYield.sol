@@ -15,5 +15,8 @@ interface IAaveYield is IYieldBase {
   function stake(address token, uint256 amount, string calldata userWardenAddress) external returns (uint256);
 
   /// @notice returns current user balance in Aave pool
-  function getAvailableToWithdraw(address user, address token) external view returns (uint256 availableToWithdraw);
+  function getUserUnderlyingAmount(
+    address user,
+    address underlyingToken
+  ) external view returns (uint256 availableToWithdraw);
 }

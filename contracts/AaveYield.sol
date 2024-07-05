@@ -32,8 +32,11 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
   }
 
   /// @inheritdoc IAaveYield
-  function getAvailableToWithdraw(address user, address token) public view returns (uint256 availableToWithdraw) {
-    uint256 scaledDeposit = userShares(user, token);
-    availableToWithdraw = _getBalanceFromScaled(scaledDeposit, token);
+  function getUserUnderlyingAmount(
+    address user,
+    address underlyingToken
+  ) public view returns (uint256 availableToWithdraw) {
+    uint256 scaledDeposit = userShares(user, underlyingToken);
+    availableToWithdraw = _getBalanceFromScaled(scaledDeposit, underlyingToken);
   }
 }

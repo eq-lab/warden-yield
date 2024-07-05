@@ -10,7 +10,7 @@ contract TestAaveYield is AaveYield {
   function withdraw(address token) external returns (uint256 withdrawAmount) {
     if (!areWithdrawalsEnabled()) revert Errors.WithdrawalsDisabled();
 
-    withdrawAmount = getAvailableToWithdraw(msg.sender, token);
+    withdrawAmount = getUserUnderlyingAmount(msg.sender, token);
 
     _aaveWithdraw(token, withdrawAmount);
     _removeStake(msg.sender, token);

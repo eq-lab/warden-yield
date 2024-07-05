@@ -57,7 +57,7 @@ async function stake(
   expect(await weth9.balanceOf(aaveYieldAddress)).to.be.eq(0);
   expect(await aEthWETH.scaledBalanceOf(aaveYieldAddress)).to.be.greaterThan(aEthScaledBalanceBefore);
 
-  let availableToWithdraw = await aaveYield.getAvailableToWithdraw(signer.address, weth9Address);
+  let availableToWithdraw = await aaveYield.getUserUnderlyingAmount(signer.address, weth9Address);
   expect(availableToWithdraw).to.be.closeTo(amount, 100);
 
   // check YieldStorage data
@@ -76,7 +76,7 @@ async function withdraw(
   // state before withdraw
   const aEthScaledBalanceBefore = await aEthWETH.scaledBalanceOf(aaveYieldAddress);
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aEthWETH, signer.address, weth9Address);
-  const availableToWithdraw = await aaveYield.getAvailableToWithdraw(signer.address, weth9Address);
+  const availableToWithdraw = await aaveYield.getUserUnderlyingAmount(signer.address, weth9Address);
   const staked = await aaveYield.userStakedAmount(signer.address, weth9Address);
   const scaledBalance = await aaveYield.userShares(signer.address, weth9Address);
 
