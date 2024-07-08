@@ -12,7 +12,7 @@
     "deploy": "ts-node ./deploy/src.ts",
     "lint:write": "prettier --write ./contracts ./test ./deploy ./tasks",
     "clean": "hardhat clean",
-    "clean:full": "hardhat clean && rm -rf node_modules"
+    "clean:full": "hardhat clean && rm -rf node_modules && cargo clean --manifest-path cosmwasm/Cargo.toml"
   },
   "devDependencies": {
     "@aave/core-v3": "1.19.3",
