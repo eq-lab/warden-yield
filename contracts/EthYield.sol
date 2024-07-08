@@ -47,11 +47,34 @@ contract EthYield is
     uint256 amount,
     string calldata userWardenAddress
   ) external payable returns (uint256 eigenLayerShares) {
+    _reinit();
     uint256 stEthAmount = _lidoStake(amount);
     eigenLayerShares = _eigenLayerRestake(stEthAmount);
     address weth = getWeth();
     _addStake(msg.sender, weth, amount, eigenLayerShares);
     _addWardenAddress(msg.sender, userWardenAddress);
     emit Stake(msg.sender, weth, amount, eigenLayerShares);
+  }
+
+  function unstake(uint256 eigenLayerSharesAmount) external {
+    _reinit();
+    _eigenLayerWithdraw(eigenLayerSharesAmount);
+    // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
+  }
+
+  function reinit() external {
+    _reinit();
+  }
+
+  function _reinit() private {
+    uint256 stEthWithdrawn = _eigenLayerReinit();
+    if (stEthWithdrawn != 0) {
+      _lidoWithdraw(stEthWithdrawn);
+    }
+    uint256 ethReceived = _lidoReinit();
+    
+    // TODO: need to send `ethReceived` to axelar rather than `msg.sender`
+    (bool success, ) = msg.sender.call{value: ethReceived}("");
+    require(success, "Payment failed.");
   }
 }

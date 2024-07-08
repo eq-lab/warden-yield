@@ -8,11 +8,7 @@ contract TestLidoInteractor is LidoInteractor {
     uint256 requestId;
   }
 
-  function initialize(
-    address weth9,
-    address stEth,
-    address lidoWithdrawalQueue
-  ) external initializer {
+  function initialize(address weth9, address stEth, address lidoWithdrawalQueue) external initializer {
     __LidoInteractor_init(stEth, weth9);
     __LidoInteractor_initV2(lidoWithdrawalQueue);
   }

@@ -119,7 +119,7 @@ abstract contract LidoInteractor is Initializable {
     emit LidoWithdrawStart(stEthAmount);
   }
 
-  function _lidoReinit() internal returns(uint256 ethReceived) {
+  function _lidoReinit() internal returns (uint256 ethReceived) {
     LidoWithdrawQueue storage withdrawQueue = _getLidoWithdrawQueueStorage();
     uint256 queueStart = withdrawQueue.start;
     if (queueStart == withdrawQueue.end) return 0;
@@ -133,8 +133,6 @@ abstract contract LidoInteractor is Initializable {
       _queuePop(withdrawQueue);
       emit LidoWithdrawComplete(ethReceived);
     } catch {}
-
-    return ethReceived;
   }
 
   function _queuePush(LidoWithdrawQueue storage queue, uint256[] memory requestIds, uint256[] memory amounts) private {

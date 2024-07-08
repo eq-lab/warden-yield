@@ -27,15 +27,12 @@ export const TokenBalanceStorage: Map<string, string> = new Map([
   [EthAddressData.usdc, '0000000000000000000000000000000000000000000000000000000000000009'],
 ]);
 
-export async function finalizeLidoWithdraw(
-  lidoWithdrawalQueue: ILidoWithdrawalQueueExtended,
-  requestId: bigint,
-) {
+export async function finalizeLidoWithdraw(lidoWithdrawalQueue: ILidoWithdrawalQueueExtended, requestId: bigint) {
   const finalizeRole = await lidoWithdrawalQueue.FINALIZE_ROLE();
   const finalizerAddress = await lidoWithdrawalQueue.getRoleMember(finalizeRole, 0);
   const impersonatedSigner = await ethers.getImpersonatedSigner(finalizerAddress);
   const maxShares = 10n ** 50n; // passing some unrealistic value for 1e27 precision
-  await lidoWithdrawalQueue.connect(impersonatedSigner).finalize(requestId, maxShares, {value: parseEther('100')});
+  await lidoWithdrawalQueue.connect(impersonatedSigner).finalize(requestId, maxShares, { value: parseEther('100') });
 }
 
 function getAccountBalanceStorageSlot(account: string, tokenMappingSlot: string): string {

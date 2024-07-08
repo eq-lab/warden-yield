@@ -96,20 +96,16 @@ export async function deployTestLidoInteractor(
   owner: SignerWithAddress,
   weth: string,
   stEth: string,
-  lidoWithdrawalQueue: string,
+  lidoWithdrawalQueue: string
 ): Promise<TestLidoInteractor> {
   const blockNumber = await owner.provider.getBlockNumber();
   const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-  return upgrades.deployProxy(
-    new TestLidoInteractor__factory().connect(owner),
-    [weth, stEth, lidoWithdrawalQueue],
-    {
-      initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
-    }
-  ) as unknown as Promise<TestLidoInteractor>;
+  return upgrades.deployProxy(new TestLidoInteractor__factory().connect(owner), [weth, stEth, lidoWithdrawalQueue], {
+    initializer: 'initialize',
+    txOverrides: {
+      maxFeePerGas: maxFeePerGas,
+    },
+  }) as unknown as Promise<TestLidoInteractor>;
 }
 
 export async function deployTestEigenLayerInteractor(
@@ -169,7 +165,7 @@ export async function testLidoInteractorFixture(): Promise<{
     owner,
     EthAddressData.weth,
     EthAddressData.stEth,
-    EthAddressData.lidoWithdrawalQueue,
+    EthAddressData.lidoWithdrawalQueue
   );
 
   const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
