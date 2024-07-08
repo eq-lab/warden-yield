@@ -1,7 +1,7 @@
 use crate::state::{ContractConfigState, TokenStats};
 use crate::types::{StakeStatus, TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint256};
 use serde::{Deserialize, Serialize};
 
 #[cw_serde]
@@ -29,15 +29,15 @@ pub enum ExecuteMsg {
     HandleStakeResponse {
         account: Addr,
         token_evm: String,
-        token_amount: Uint128,
-        shares_amount: Uint128,
+        token_amount: Uint256,
+        shares_amount: Uint256,
         status: StakeStatus,
     },
     HandleUnstakeResponse {
         account: Addr,
         token_evm: String,
-        token_amount: Uint128,
-        shares_amount: Uint128,
+        token_amount: Uint256,
+        shares_amount: Uint256,
         status: StakeStatus,
     },
 }

@@ -6,7 +6,7 @@ use crate::state::{
     TokenStats, CONTRACT_CONFIG_STATE, TOKENS_CONFIGS_STATE, TOKENS_STATS_STATE, USERS_STATS_STATE,
 };
 use crate::types::TokenDenom;
-use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint128};
+use cosmwasm_std::{Addr, Deps, Order, StdError, StdResult};
 
 pub fn query_contract_config(deps: Deps) -> StdResult<GetContractConfigResponse> {
     let config = CONTRACT_CONFIG_STATE.load(deps.storage)?;
@@ -42,16 +42,10 @@ pub fn query_user_stats(
     let _ = TOKENS_CONFIGS_STATE.load(deps.storage, token_denom.clone())?;
 
     let stats = USERS_STATS_STATE.load(deps.storage, (account, token_denom));
-    if stats.is_ok() {
-        return Ok(GetUserStatsResponse {
-            stats: stats.unwrap(),
-        });
+
+    match stats {
+        Ok(token_stats) => Ok(GetUserStatsResponse { stats: token_stats }),
+        Err(StdError::NotFound{ kind: _kind, backtrace: _backtrace }) => Ok(GetUserStatsResponse { stats:  TokenStats::default()}),
+        Err(other_error) => Err(other_error), // if possible
     }
-    Ok(GetUserStatsResponse {
-        stats: TokenStats {
-            pending_stake: Uint128::zero(),
-            staked_shares_amount: Uint128::zero(),
-            pending_shares_unstake: Uint128::zero(),
-        },
-    })
 }

@@ -27,8 +27,8 @@ pub enum ContractError {
     #[error("Nothing to unstake")]
     NothingToUnstake,
 
-    #[error("Unrecognised reply id: {0}")]
-    UnrecognisedReply(u64),
+    #[error("Unrecognized reply id: {0}")]
+    UnrecognizedReply(u64),
 
     #[error("Failure response from submsg: {0}")]
     SubMsgFailure(String),

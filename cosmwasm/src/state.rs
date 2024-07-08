@@ -1,5 +1,5 @@
 use crate::types::{TokenConfig, TokenDenom};
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -18,9 +18,9 @@ pub const TOKENS_CONFIGS_STATE: Map<TokenDenom, TokenConfig> = Map::new("tokens_
 pub const TOKENS_STATS_STATE: Map<TokenDenom, TokenStats> = Map::new("tokens_stats_state");
 pub const USERS_STATS_STATE: Map<(Addr, TokenDenom), TokenStats> = Map::new("users_stats_state");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, Default)]
 pub struct TokenStats {
-    pub pending_stake: Uint128,
-    pub staked_shares_amount: Uint128,
-    pub pending_shares_unstake: Uint128,
+    pub pending_stake: Uint256,
+    pub staked_shares_amount: Uint256,
+    pub pending_shares_unstake: Uint256,
 }

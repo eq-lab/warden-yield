@@ -17,3 +17,16 @@ pub enum StakeStatus {
     Successful,
     Fail,
 }
+
+pub enum ReplyType {
+    LpMint = 1
+}
+
+impl ReplyType {
+    pub(crate) fn from_u64(v: &u64) -> Option<Self> {
+        match v {
+            1 => Some(ReplyType::LpMint),
+            _ => None
+        }
+    }
+}

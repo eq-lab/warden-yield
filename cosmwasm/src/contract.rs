@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, Uint128,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, Uint256,
 };
 use cw2::set_contract_version;
 
@@ -19,11 +19,11 @@ use crate::state::{
     ContractConfigState, TokenStats, CONTRACT_CONFIG_STATE, TOKENS_CONFIGS_STATE,
     TOKENS_STATS_STATE,
 };
+use crate::types::ReplyType;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "warden-yield";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const LP_MINT_REPLY_ID: u64 = 1u64;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -47,9 +47,9 @@ pub fn instantiate(
             deps.storage,
             token_denom.clone(),
             &TokenStats {
-                pending_stake: Uint128::default(),
-                staked_shares_amount: Uint128::default(),
-                pending_shares_unstake: Uint128::default(),
+                pending_stake: Uint256::default(),
+                staked_shares_amount: Uint256::default(),
+                pending_shares_unstake: Uint256::default(),
             },
         )?;
     }
@@ -127,9 +127,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        LP_MINT_REPLY_ID => handle_lp_token_mint_reply(deps, env, msg),
-        _ => Err(ContractError::UnrecognisedReply(msg.id)),
+    match ReplyType::from_u64(&msg.id) {
+        Some(ReplyType::LpMint) => handle_lp_token_mint_reply(deps, env, msg),
+        _ => Err(ContractError::UnrecognizedReply(msg.id)),
     }
 }
 

@@ -10,8 +10,9 @@ mod tests {
     use cosmwasm_std::testing::{
         message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
     };
-    use cosmwasm_std::{from_json, Addr, Coin, Deps, Env, OwnedDeps, Uint128};
+    use cosmwasm_std::{from_json, Addr, Coin, Deps, Env, OwnedDeps, Uint256, Uint128};
     use std::collections::HashMap;
+    use std::str::FromStr;
 
     struct TestContext {
         pub deps: OwnedDeps<MockStorage, MockApi, MockQuerier>,
@@ -60,9 +61,9 @@ mod tests {
                     .map(|(token_denom, _)| (
                         token_denom.clone(),
                         TokenStats {
-                            pending_stake: Uint128::zero(),
-                            staked_shares_amount: Uint128::zero(),
-                            pending_shares_unstake: Uint128::zero()
+                            pending_stake: Uint256::zero(),
+                            staked_shares_amount: Uint256::zero(),
+                            pending_shares_unstake: Uint256::zero()
                         }
                     ))
                     .collect()
@@ -73,7 +74,7 @@ mod tests {
     #[test]
     fn test_init_stake_one_coin() {
         let mut ctx = instantiate_contract();
-        let stake_amount = Uint128::from(1000_u32);
+        let stake_amount = Uint256::from(1000_u32);
         let (token_denom, _) = ctx.tokens.first().clone().unwrap();
 
         // init stake
@@ -84,7 +85,7 @@ mod tests {
                 &ctx.user.clone(),
                 &vec![Coin {
                     denom: token_denom.clone(),
-                    amount: stake_amount,
+                    amount: convert_u256_to_u128(stake_amount),
                 }],
             ),
             ExecuteMsg::Stake,
@@ -95,8 +96,8 @@ mod tests {
         let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
 
         assert_eq!(token_stats.pending_stake, stake_amount);
-        assert_eq!(token_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(token_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
         let user_stats = get_user_token_stats(
             ctx.deps.as_ref(),
@@ -105,8 +106,8 @@ mod tests {
             token_denom.clone(),
         );
         assert_eq!(user_stats.pending_stake, stake_amount);
-        assert_eq!(user_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(user_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
     }
 
     #[test]
@@ -145,13 +146,13 @@ mod tests {
             let token_stats = &tokens_stats[token_denom];
             let user_stats = &user_tokens_stats[token_denom];
 
-            assert_eq!(token_stats.pending_stake, coin.amount);
-            assert_eq!(token_stats.staked_shares_amount, Uint128::zero());
-            assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+            assert_eq!(token_stats.pending_stake, Uint256::from(coin.amount));
+            assert_eq!(token_stats.staked_shares_amount, Uint256::zero());
+            assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
-            assert_eq!(user_stats.pending_stake, coin.amount);
-            assert_eq!(user_stats.staked_shares_amount, Uint128::zero());
-            assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+            assert_eq!(user_stats.pending_stake, Uint256::from(coin.amount));
+            assert_eq!(user_stats.staked_shares_amount, Uint256::zero());
+            assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
         }
     }
 
@@ -160,8 +161,8 @@ mod tests {
         let mut ctx = instantiate_contract();
 
         let (token_denom, _) = ctx.tokens.first().clone().unwrap();
-        let stake_amount_1 = Uint128::from(1000_u32);
-        let stake_amount_2 = Uint128::from(2000_u32);
+        let stake_amount_1 = Uint256::from(1000_u32);
+        let stake_amount_2 = Uint256::from(2000_u32);
         let staked_total = stake_amount_1 + stake_amount_2;
 
         // init first stake
@@ -172,7 +173,7 @@ mod tests {
                 &ctx.user.clone(),
                 &vec![Coin {
                     denom: token_denom.clone(),
-                    amount: stake_amount_1,
+                    amount: convert_u256_to_u128(stake_amount_1),
                 }],
             ),
             ExecuteMsg::Stake,
@@ -187,7 +188,7 @@ mod tests {
                 &ctx.user.clone(),
                 &vec![Coin {
                     denom: token_denom.clone(),
-                    amount: stake_amount_2,
+                    amount: convert_u256_to_u128(stake_amount_2),
                 }],
             ),
             ExecuteMsg::Stake,
@@ -198,8 +199,8 @@ mod tests {
         let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
 
         assert_eq!(token_stats.pending_stake, staked_total);
-        assert_eq!(token_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(token_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
         let user_stats = get_user_token_stats(
             ctx.deps.as_ref(),
@@ -209,16 +210,16 @@ mod tests {
         );
 
         assert_eq!(user_stats.pending_stake, staked_total);
-        assert_eq!(user_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(user_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
     }
 
     #[test]
     fn test_stake_response_successful() {
         let mut ctx = instantiate_contract();
         let (token_denom, token_config) = ctx.tokens.first().clone().unwrap();
-        let stake_amount = Uint128::from(1000_u32);
-        let shares_amount = stake_amount + Uint128::one();
+        let stake_amount = Uint256::from(1000_u32);
+        let shares_amount = stake_amount + Uint256::one();
 
         // init stake
         execute(
@@ -227,7 +228,7 @@ mod tests {
             message_info(
                 &ctx.user.clone(),
                 &vec![Coin {
-                    amount: stake_amount,
+                    amount: convert_u256_to_u128(stake_amount),
                     denom: token_denom.clone(),
                 }],
             ),
@@ -254,9 +255,9 @@ mod tests {
         let tokens_stats = get_tokens_stats(ctx.deps.as_ref(), ctx.env.clone());
         let token_stats = &tokens_stats[token_denom];
 
-        assert_eq!(token_stats.pending_stake, Uint128::zero());
+        assert_eq!(token_stats.pending_stake, Uint256::zero());
         assert_eq!(token_stats.staked_shares_amount, shares_amount);
-        assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
         let user_tokens_stats = get_user_tokens_stats(
             ctx.deps.as_ref(),
@@ -266,9 +267,9 @@ mod tests {
         );
 
         let user_stats = &user_tokens_stats[token_denom];
-        assert_eq!(user_stats.pending_stake, Uint128::zero());
+        assert_eq!(user_stats.pending_stake, Uint256::zero());
         assert_eq!(user_stats.staked_shares_amount, shares_amount);
-        assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
 
         // todo: check LP tokens are minted
     }
@@ -276,11 +277,11 @@ mod tests {
     #[test]
     fn test_stake_response_fail() {
         let mut ctx = instantiate_contract();
-        let stake_amount = Uint128::from(1000_u32);
-        let shares_amount = stake_amount + Uint128::one();
+        let stake_amount = Uint256::from(1000_u32);
+        let shares_amount = stake_amount + Uint256::one();
         let (token_denom, token_config) = ctx.tokens.first().clone().unwrap();
         let stake_funds = vec![Coin {
-            amount: stake_amount,
+            amount: convert_u256_to_u128(stake_amount),
             denom: token_denom.clone(),
         }];
 
@@ -312,9 +313,9 @@ mod tests {
         let tokens_stats = get_tokens_stats(ctx.deps.as_ref(), ctx.env.clone());
         let token_stats = &tokens_stats[token_denom];
 
-        assert_eq!(token_stats.pending_stake, Uint128::zero());
-        assert_eq!(token_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(token_stats.pending_stake, Uint256::zero());
+        assert_eq!(token_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
         let user_tokens_stats = get_user_tokens_stats(
             ctx.deps.as_ref(),
@@ -324,9 +325,9 @@ mod tests {
         );
 
         let user_stats = &user_tokens_stats[token_denom];
-        assert_eq!(user_stats.pending_stake, Uint128::zero());
-        assert_eq!(user_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(user_stats.pending_stake, Uint256::zero());
+        assert_eq!(user_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
 
         // todo: check LP tokens are not minted
         // todo: check deposited tokens are returned to user
@@ -336,9 +337,9 @@ mod tests {
     fn test_unstake_response_successful() {
         let mut ctx = instantiate_contract();
         let (token_denom, token_config) = ctx.tokens.first().clone().unwrap();
-        let stake_amount = Uint128::from(1000_u32);
-        let shares_amount = stake_amount + Uint128::one();
-        let return_amount = shares_amount + Uint128::one();
+        let stake_amount = Uint256::from(1000_u32);
+        let shares_amount = stake_amount + Uint256::one();
+        let return_amount = shares_amount + Uint256::one();
 
         // init stake
         execute(
@@ -347,7 +348,7 @@ mod tests {
             message_info(
                 &ctx.user.clone(),
                 &vec![Coin {
-                    amount: stake_amount,
+                    amount: convert_u256_to_u128(stake_amount),
                     denom: token_denom.clone(),
                 }],
             ),
@@ -389,7 +390,7 @@ mod tests {
                 &ctx.axelar.clone(),
                 &vec![Coin {
                     denom: token_denom.clone(),
-                    amount: return_amount,
+                    amount: convert_u256_to_u128(return_amount),
                 }],
             ),
             ExecuteMsg::HandleUnstakeResponse {
@@ -406,9 +407,9 @@ mod tests {
         let tokens_stats = get_tokens_stats(ctx.deps.as_ref(), ctx.env.clone());
         let token_stats = &tokens_stats[token_denom];
 
-        assert_eq!(token_stats.pending_stake, Uint128::zero());
-        assert_eq!(token_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(token_stats.pending_stake, Uint256::zero());
+        assert_eq!(token_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
         let user_tokens_stats = get_user_tokens_stats(
             ctx.deps.as_ref(),
@@ -418,9 +419,9 @@ mod tests {
         );
 
         let user_stats = &user_tokens_stats[token_denom];
-        assert_eq!(user_stats.pending_stake, Uint128::zero());
-        assert_eq!(user_stats.staked_shares_amount, Uint128::zero());
-        assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(user_stats.pending_stake, Uint256::zero());
+        assert_eq!(user_stats.staked_shares_amount, Uint256::zero());
+        assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
 
         // todo: check LP tokens are burned
     }
@@ -429,9 +430,9 @@ mod tests {
     fn test_unstake_response_fail() {
         let mut ctx = instantiate_contract();
         let (token_denom, token_config) = ctx.tokens.first().clone().unwrap();
-        let stake_amount = Uint128::from(1000_u32);
-        let shares_amount = stake_amount + Uint128::one();
-        let return_amount = shares_amount + Uint128::one();
+        let stake_amount = Uint256::from(1000_u32);
+        let shares_amount = stake_amount + Uint256::one();
+        let return_amount = shares_amount + Uint256::one();
 
         // init stake
         execute(
@@ -440,7 +441,7 @@ mod tests {
             message_info(
                 &ctx.user.clone(),
                 &vec![Coin {
-                    amount: stake_amount,
+                    amount: convert_u256_to_u128(stake_amount),
                     denom: token_denom.clone(),
                 }],
             ),
@@ -493,9 +494,9 @@ mod tests {
         let tokens_stats = get_tokens_stats(ctx.deps.as_ref(), ctx.env.clone());
         let token_stats = &tokens_stats[token_denom];
 
-        assert_eq!(token_stats.pending_stake, Uint128::zero());
+        assert_eq!(token_stats.pending_stake, Uint256::zero());
         assert_eq!(token_stats.staked_shares_amount, shares_amount);
-        assert_eq!(token_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(token_stats.pending_shares_unstake, Uint256::zero());
 
         let user_tokens_stats = get_user_tokens_stats(
             ctx.deps.as_ref(),
@@ -505,9 +506,9 @@ mod tests {
         );
 
         let user_stats = &user_tokens_stats[token_denom];
-        assert_eq!(user_stats.pending_stake, Uint128::zero());
+        assert_eq!(user_stats.pending_stake, Uint256::zero());
         assert_eq!(user_stats.staked_shares_amount, shares_amount);
-        assert_eq!(user_stats.pending_shares_unstake, Uint128::zero());
+        assert_eq!(user_stats.pending_shares_unstake, Uint256::zero());
 
         // todo: check LP tokens are burned
     }
@@ -629,5 +630,9 @@ mod tests {
         .unwrap();
 
         token_stats.stats
+    }
+
+    fn convert_u256_to_u128(v: Uint256) -> Uint128 {
+        Uint128::from_str(&v.to_string()).unwrap()
     }
 }
