@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, Uint256,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
 };
 use cw2::set_contract_version;
 
@@ -43,15 +43,7 @@ pub fn instantiate(
 
     for (token_denom, config) in &msg.tokens {
         TOKENS_CONFIGS_STATE.save(deps.storage, token_denom.clone(), config)?;
-        TOKENS_STATS_STATE.save(
-            deps.storage,
-            token_denom.clone(),
-            &TokenStats {
-                pending_stake: Uint256::default(),
-                staked_shares_amount: Uint256::default(),
-                pending_shares_unstake: Uint256::default(),
-            },
-        )?;
+        TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &TokenStats::default())?;
     }
 
     Ok(Response::new()
@@ -127,8 +119,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match ReplyType::from_u64(&msg.id) {
-        Some(ReplyType::LpMint) => handle_lp_token_mint_reply(deps, env, msg),
+    match ReplyType::try_from(&msg.id) {
+        Ok(ReplyType::LpMint) => handle_lp_token_mint_reply(deps, env, msg),
         _ => Err(ContractError::UnrecognizedReply(msg.id)),
     }
 }

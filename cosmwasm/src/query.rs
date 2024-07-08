@@ -45,7 +45,12 @@ pub fn query_user_stats(
 
     match stats {
         Ok(token_stats) => Ok(GetUserStatsResponse { stats: token_stats }),
-        Err(StdError::NotFound{ kind: _kind, backtrace: _backtrace }) => Ok(GetUserStatsResponse { stats:  TokenStats::default()}),
+        Err(StdError::NotFound {
+            kind: _kind,
+            backtrace: _backtrace,
+        }) => Ok(GetUserStatsResponse {
+            stats: TokenStats::default(),
+        }),
         Err(other_error) => Err(other_error), // if possible
     }
 }

@@ -19,14 +19,16 @@ pub enum StakeStatus {
 }
 
 pub enum ReplyType {
-    LpMint = 1
+    LpMint = 1,
 }
 
-impl ReplyType {
-    pub(crate) fn from_u64(v: &u64) -> Option<Self> {
-        match v {
-            1 => Some(ReplyType::LpMint),
-            _ => None
+impl TryFrom<&u64> for ReplyType {
+    type Error = ();
+
+    fn try_from(value: &u64) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(ReplyType::LpMint),
+            _ => Err(()),
         }
     }
 }

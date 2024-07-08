@@ -3,7 +3,9 @@ use crate::state::{
 };
 use crate::types::{StakeStatus, TokenConfig, TokenDenom};
 use crate::ContractError;
-use cosmwasm_std::{Addr, BankMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult, Uint256};
+use cosmwasm_std::{
+    Addr, BankMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult, Uint256,
+};
 
 pub fn try_stake(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     for coin in &info.funds {
@@ -21,11 +23,7 @@ pub fn try_stake(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response
         // update user stats
         let mut user_stats = USERS_STATS_STATE
             .may_load(deps.storage, (info.sender.clone(), coin.denom.clone()))?
-            .unwrap_or(TokenStats {
-                pending_stake: Uint256::zero(),
-                staked_shares_amount: Uint256::zero(),
-                pending_shares_unstake: Uint256::zero(),
-            });
+            .unwrap_or(TokenStats::default());
 
         user_stats.pending_stake += Uint256::from(coin.amount);
         USERS_STATS_STATE.save(
@@ -216,9 +214,9 @@ pub fn try_handle_unstake_response(
     }
 
     if status == StakeStatus::Successful {
-        if info.funds.len() > 1 {
+        if info.funds.len() != 1 {
             return Err(ContractError::CustomError(
-                "Successful unstake response has too much coins in message".to_string(),
+                "Successful unstake response: info.funds.len() != 1".to_string(),
             ));
         }
 
@@ -271,7 +269,6 @@ pub fn try_handle_unstake_response(
     Ok(Response::default())
 }
 
-
 pub fn try_add_token(
     deps: DepsMut,
     _env: Env,
@@ -287,15 +284,7 @@ pub fn try_add_token(
 
     TOKENS_CONFIGS_STATE.save(deps.storage, token_denom.clone(), &config)?;
 
-    TOKENS_STATS_STATE.save(
-        deps.storage,
-        token_denom.clone(),
-        &TokenStats {
-            pending_stake: Uint256::default(),
-            staked_shares_amount: Uint256::default(),
-            pending_shares_unstake: Uint256::default(),
-        },
-    )?;
+    TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &TokenStats::default())?;
 
     Ok(Response::default())
 }

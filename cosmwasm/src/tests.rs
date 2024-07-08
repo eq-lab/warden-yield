@@ -10,7 +10,7 @@ mod tests {
     use cosmwasm_std::testing::{
         message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
     };
-    use cosmwasm_std::{from_json, Addr, Coin, Deps, Env, OwnedDeps, Uint256, Uint128};
+    use cosmwasm_std::{from_json, Addr, Coin, Deps, Env, OwnedDeps, Uint128, Uint256};
     use std::collections::HashMap;
     use std::str::FromStr;
 
@@ -58,14 +58,7 @@ mod tests {
                 stats: ctx
                     .tokens
                     .iter()
-                    .map(|(token_denom, _)| (
-                        token_denom.clone(),
-                        TokenStats {
-                            pending_stake: Uint256::zero(),
-                            staked_shares_amount: Uint256::zero(),
-                            pending_shares_unstake: Uint256::zero()
-                        }
-                    ))
+                    .map(|(token_denom, _)| (token_denom.clone(), TokenStats::default()))
                     .collect()
             }
         );
