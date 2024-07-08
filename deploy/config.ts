@@ -147,7 +147,7 @@ async function assertEthYieldDeployConfigValidity(config: Config, provider: Prov
   if (strategyUnderlyingToken.toLowerCase() !== ethYield.stETH.toLowerCase()) {
     throw new Error(
       `EL Strategy underlying token != stETH.` +
-        `Underlying token: ${strategyUnderlyingToken}, setETH: ${ethYield.stETH}`
+        `Underlying token: ${strategyUnderlyingToken}, stETH: ${ethYield.stETH}`
     );
   }
 

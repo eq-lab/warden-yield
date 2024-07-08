@@ -10,7 +10,7 @@ import '../interfaces/EigenLayer/IStrategyManager.sol';
 import '../interfaces/EigenLayer/IStrategy.sol';
 import '../interfaces/Lido/IStETH.sol';
 
-/// @title abstract contract implementing the resstaking interaction with EigenLayer Protocol
+/// @title abstract contract implementing the restaking interaction with EigenLayer Protocol
 abstract contract EigenLayerInteractor is Initializable {
   using SafeERC20 for IERC20;
 
@@ -71,7 +71,7 @@ abstract contract EigenLayerInteractor is Initializable {
   /// @dev initialize method
   /// @param underlyingToken address of token deposited to EigenLayer strategy
   /// @param strategy address of EigenLayer strategy. Its underlying token is compared with the passed one
-  /// @param strategyManager address of EigenLayer stategy manager. Checks if the passed strategy is whitelisted
+  /// @param strategyManager address of EigenLayer strategy manager. Checks if the passed strategy is whitelisted
   /// @param delegationManager address of EigenLayer delegation manager
   /// @param operator operator address who the restaked token will be delegated to. Gets verified in `delegationManager`
   function __EigenLayerInteractor_init(
@@ -111,6 +111,8 @@ abstract contract EigenLayerInteractor is Initializable {
     );
   }
 
+  /// @dev Withdraws underlying token from EigenLayer protocol
+  /// @param sharesToWithdraw amount to withdraw represented in EigenLayer shares
   function _eigenLayerWithdraw(uint256 sharesToWithdraw) internal eigenLayerReinit {
     if (sharesToWithdraw == 0) revert Errors.ZeroAmount();
 
@@ -134,6 +136,7 @@ abstract contract EigenLayerInteractor is Initializable {
     emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
+  /// @dev This method is called 
   function _eigenLayerReinit() internal {
     EigenLayerWithdrawQueue storage withdrawQueue = _getEigenLayerWithdrawQueueStorage();
     uint256 queueStart = withdrawQueue.start;
@@ -167,6 +170,7 @@ abstract contract EigenLayerInteractor is Initializable {
     } catch {}
   }
 
+  /// @dev adds new withdraw request to the end of the EigenLayerWithdrawQueue
   function _queuePush(EigenLayerWithdrawQueue storage queue, uint256 sharesToWithdraw) private {
     uint256 queueEnd = queue.end;
     queue.blockNumber[queueEnd] = uint32(block.number);
@@ -176,6 +180,7 @@ abstract contract EigenLayerInteractor is Initializable {
     }
   }
 
+  /// @dev pops the first request from the EigenLayerWithdrawQueue after it's fulfilled
   function _queuePop(EigenLayerWithdrawQueue storage queue) private {
     uint256 queueStart = queue.start;
     delete queue.blockNumber[queueStart];
