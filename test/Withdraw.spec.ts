@@ -28,9 +28,7 @@ describe('EigenLayer withdraw', () => {
   });
 
   it('reinit withdraw completion', async () => {
-    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(
-      testEigenLayerInteractorFixture
-    );
+    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(testEigenLayerInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
     const amount = parseEther('1');
@@ -83,9 +81,7 @@ describe('EigenLayer withdraw', () => {
   });
 
   it('stake + reinit', async () => {
-    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(
-      testEigenLayerInteractorFixture
-    );
+    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(testEigenLayerInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
     const amount = parseEther('1');
@@ -112,9 +108,7 @@ describe('EigenLayer withdraw', () => {
   });
 
   it('withdraw + reinit', async () => {
-    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(
-      testEigenLayerInteractorFixture
-    );
+    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(testEigenLayerInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
     const amount = parseEther('1');
@@ -142,9 +136,7 @@ describe('EigenLayer withdraw', () => {
   });
 
   it('reinit 2+ withdraws in queue', async () => {
-    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(
-      testEigenLayerInteractorFixture
-    );
+    const { testEigenLayerInteractor, delegationManager, stEth } = await loadFixture(testEigenLayerInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
     const amount = parseEther('1');

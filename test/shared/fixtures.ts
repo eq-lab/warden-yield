@@ -214,6 +214,7 @@ export async function testEigenLayerInteractorFixture(): Promise<{
 export interface EthYieldForkTestData {
   weth9: ERC20;
   stEth: ERC20;
+  lidoWithdrawalQueue: ILidoWithdrawalQueueExtended;
   eigenLayerStrategyManager: IStrategyManager;
   eigenLayerStrategy: IStrategy;
   eigenLayerDelegationManager: IDelegationManager;
@@ -233,15 +234,22 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
     EthAddressData.elDelegationManager,
     EthAddressData.eigenLayerOperator
   );
+
+  await upgrades.upgradeProxy(ethYield, await new EthYield__factory().connect(owner), {
+    call: { fn: 'initializeV2', args: [EthAddressData.lidoWithdrawalQueue] },
+  });
+
   const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
   const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
   const eigenLayerStrategyManager = IStrategyManager__factory.connect(EthAddressData.elStrategyManager, owner);
   const eigenLayerStrategy = IStrategy__factory.connect(EthAddressData.elStrategy, owner);
   const eigenLayerDelegationManager = IDelegationManager__factory.connect(EthAddressData.elDelegationManager, owner);
+  const lidoWithdrawalQueue = ILidoWithdrawalQueueExtended__factory.connect(EthAddressData.lidoWithdrawalQueue, owner);
 
   return {
     weth9,
     stEth,
+    lidoWithdrawalQueue,
     ethYield,
     eigenLayerStrategyManager,
     eigenLayerStrategy,

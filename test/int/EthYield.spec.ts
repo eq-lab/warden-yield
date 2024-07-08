@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, mine } from '@nomicfoundation/hardhat-network-helpers';
 import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
-import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
+import { EthAddressData, USER_WARDEN_ADDRESS, finalizeLidoWithdraw, setTokenBalance } from '../shared/utils';
 import { EthYieldUpgradeTest__factory, EthYield__factory } from '../../typechain-types';
 
-describe('EthYield', () => {
+describe('EthYield stake', () => {
   it('user stake, native', async () => {
     const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, ethYield, weth9, stEth } =
       await loadFixture(createEthYieldFork);
@@ -98,6 +98,39 @@ describe('EthYield', () => {
       ethYield,
       'ZeroAmount'
     );
+  });
+});
+
+describe('EthYield withdraw', () => {
+  it('user withdraw', async () => {
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, eigenLayerStrategy } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
+
+    const userShares = await ethYield.userShares(user.address, await ethYield.getWeth());
+    const txReceipt = await (await ethYield.connect(user).unstake(userShares)).wait();
+
+    const elElement = await ethYield.getEigenLayerWithdrawalQueueElement(0);
+    expect(elElement.shares).to.be.gt(0);
+    expect(elElement.underlyingAmount).to.be.eq(await eigenLayerStrategy.sharesToUnderlyingView(elElement.shares));
+    expect(elElement.blockNumber).to.be.eq(txReceipt!.blockNumber)
+
+    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
+    await mine(blocksToAwait);
+    await ethYield.connect(user).reinit();
+
+    const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
+    expect(lidoElement.requestId).to.be.gt(0);
+    expect(lidoElement.requested).to.be.gt(0);
+
+    const balanceBefore = await user.provider.getBalance(ethYield.target);
+    await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
+    await ethYield.reinit();
+
+    const balanceAfter = await user.provider.getBalance(ethYield.target);
+    expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
   });
 });
 

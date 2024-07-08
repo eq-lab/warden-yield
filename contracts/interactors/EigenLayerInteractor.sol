@@ -40,6 +40,12 @@ abstract contract EigenLayerInteractor is Initializable {
     mapping(uint256 index => uint32) blockNumber;
   }
 
+  struct EigenLayerWithdrawQueueElement {
+    uint256 shares;
+    uint256 underlyingAmount;
+    uint256 blockNumber;
+  }
+
   /// @dev 'EigenLayerInteractorData' storage slot address
   /// @dev keccak256(abi.encode(uint256(keccak256("eq-lab.storage.EigenLayerInteractor")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant EigenLayerInteractorDataStorageLocation =
@@ -131,11 +137,7 @@ abstract contract EigenLayerInteractor is Initializable {
     uint256 underlyingAmount = strategy.sharesToUnderlyingView(sharesToWithdraw);
 
     IDelegationManager(data.delegationManager).queueWithdrawals(params);
-    _queuePush(
-      _getEigenLayerWithdrawQueueStorage(),
-      sharesToWithdraw,
-      underlyingAmount
-    );
+    _queuePush(_getEigenLayerWithdrawQueueStorage(), sharesToWithdraw, underlyingAmount);
     emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
@@ -168,7 +170,8 @@ abstract contract EigenLayerInteractor is Initializable {
     tokens[0] = IERC20(data.underlyingToken);
 
     try IDelegationManager(data.delegationManager).completeQueuedWithdrawal(withdrawal, tokens, 0, true) {
-      emit EigenLayerWithdrawComplete(withdrawQueue.underlyingAmount[queueStart]);
+      withdrawnAmount = withdrawQueue.underlyingAmount[queueStart];
+      emit EigenLayerWithdrawComplete(withdrawnAmount);
       _queuePop(withdrawQueue);
     } catch {}
   }
@@ -197,5 +200,20 @@ abstract contract EigenLayerInteractor is Initializable {
     unchecked {
       ++queue.start;
     }
+  }
+
+  function _getEigenLayerWithdrawalQueueElement(
+    uint256 index
+  ) internal view returns (EigenLayerWithdrawQueueElement memory) {
+    EigenLayerWithdrawQueue storage queue = _getEigenLayerWithdrawQueueStorage();
+    uint256 memoryIndex = queue.start + index;
+    if (memoryIndex >= queue.end) revert Errors.NoElementWithIndex(index);
+
+    return
+      EigenLayerWithdrawQueueElement({
+        blockNumber: queue.blockNumber[memoryIndex],
+        shares: queue.shares[memoryIndex],
+        underlyingAmount: queue.underlyingAmount[memoryIndex]
+      });
   }
 }

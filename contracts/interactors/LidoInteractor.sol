@@ -33,6 +33,11 @@ abstract contract LidoInteractor is Initializable {
     mapping(uint256 index => uint256) requested;
   }
 
+  struct LidoWithdrawQueueElement {
+    uint256 requestId;
+    uint256 requested;
+  }
+
   /// @dev 'LidoInteractorData' storage slot address
   /// @dev keccak256(abi.encode(uint256(keccak256("eq-lab.storage.LidoInteractor")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant LidoInteractorDataStorageLocation =
@@ -156,6 +161,14 @@ abstract contract LidoInteractor is Initializable {
     unchecked {
       ++queue.start;
     }
+  }
+
+  function _getLidoWithdrawalQueueElement(uint256 index) internal view returns (LidoWithdrawQueueElement memory) {
+    LidoWithdrawQueue storage queue = _getLidoWithdrawQueueStorage();
+    uint256 memoryIndex = queue.start + index;
+    if (memoryIndex >= queue.end) revert Errors.NoElementWithIndex(index);
+
+    return LidoWithdrawQueueElement({requestId: queue.requestId[memoryIndex], requested: queue.requested[memoryIndex]});
   }
 
   /// @notice returns wrapped ETH token address

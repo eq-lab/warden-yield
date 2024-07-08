@@ -39,6 +39,10 @@ contract EthYield is
     __LidoInteractor_init(stETH, wETH9);
   }
 
+  function initializeV2(address lidoWithdrawQueue) external reinitializer(2) {
+    __LidoInteractor_initV2(lidoWithdrawQueue);
+  }
+
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
@@ -72,9 +76,19 @@ contract EthYield is
       _lidoWithdraw(stEthWithdrawn);
     }
     uint256 ethReceived = _lidoReinit();
-    
-    // TODO: need to send `ethReceived` to axelar rather than `msg.sender`
-    (bool success, ) = msg.sender.call{value: ethReceived}("");
-    require(success, "Payment failed.");
+
+    // TODO: need to send `ethReceived` via axelar (probably WETH wrap it first)
+  }
+
+  function getEigenLayerWithdrawalQueueElement(
+    uint256 index
+  ) external view returns (EigenLayerInteractor.EigenLayerWithdrawQueueElement memory) {
+    return _getEigenLayerWithdrawalQueueElement(index);
+  }
+
+  function getLidoWithdrawalQueueElement(
+    uint256 index
+  ) external view returns (LidoInteractor.LidoWithdrawQueueElement memory) {
+    return _getLidoWithdrawalQueueElement(index);
   }
 }
