@@ -1,6 +1,6 @@
 import '@nomicfoundation/hardhat-toolbox';
 // import 'solidity-docgen';
-import * as defaultConfig from './hardhat.config';
+import * as defaultConfig from './hardhat.common';
 
 const config = {
   ...defaultConfig.default,

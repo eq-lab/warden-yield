@@ -17,7 +17,7 @@ task('task:deploy', 'Deploy Yield proxies and implementations')
 
     const network = taskArgs.networkName.toLowerCase();
     if (!dryRun && hre.network.name.toLowerCase() !== network) {
-      throw new Error(`The network from the config and from CLI "--network" must be same!`)
+      throw new Error(`The network from the config and from CLI "--network" must be same!`);
     }
 
     if (dryRun) {
