@@ -102,28 +102,32 @@ describe('EthYield stake', () => {
 });
 
 describe('EthYield withdraw', () => {
-  it('user withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, eigenLayerStrategy } = await loadFixture(createEthYieldFork);
+  it('user full withdraw', async () => {
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
     const stakeAmount = parseEther('1');
     await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
 
-    const userShares = await ethYield.userShares(user.address, await ethYield.getWeth());
-    const txReceipt = await (await ethYield.connect(user).unstake(userShares)).wait();
+    const elWithdrawFilter = ethYield.filters.EigenLayerWithdrawStart;
+    const lidoWithdrawFilter = ethYield.filters.LidoWithdrawStart;
 
+    const userShares = await ethYield.userShares(user.address, await ethYield.getWeth());
+    await ethYield.connect(user).unstake(userShares);
+
+    const [elWithdrawStartEvent] = await ethYield.queryFilter(elWithdrawFilter, -1);
     const elElement = await ethYield.getEigenLayerWithdrawalQueueElement(0);
-    expect(elElement.shares).to.be.gt(0);
-    // expect(elElement.underlyingAmount).to.be.eq(await eigenLayerStrategy.sharesToUnderlyingView(elElement.shares));
-    expect(elElement.blockNumber).to.be.eq(txReceipt!.blockNumber)
+    expect(elElement.shares).to.be.eq(elWithdrawStartEvent.args[0]);
+    expect(elElement.blockNumber).to.be.eq(elWithdrawStartEvent.blockNumber);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
     await ethYield.connect(user).reinit();
 
+    const [lidoWithdrawStartEvent] = await ethYield.queryFilter(lidoWithdrawFilter, -1);
     const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
-    expect(lidoElement.requestId).to.be.gt(0);
-    expect(lidoElement.requested).to.be.gt(0);
+    expect(lidoElement.requestId).to.be.eq(await lidoWithdrawalQueue.getLastRequestId());
+    expect(lidoElement.requested).to.be.eq(lidoWithdrawStartEvent.args[0]);
 
     const balanceBefore = await user.provider.getBalance(ethYield.target);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
