@@ -137,7 +137,7 @@ describe('EthYield withdraw', () => {
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
   });
 
-  it('user too low withdraw', async () => {
+  it('too low withdraw', async () => {
     const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
@@ -151,6 +151,31 @@ describe('EthYield withdraw', () => {
       ethYield,
       'LowWithdrawalAmount'
     );
+  });
+
+  it('lowest allowed unstake passes', async () => {
+    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy, eigenLayerDelegationManager } =
+      await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
+
+    const minAllowedShares =
+      (await eigenLayerStrategy.underlyingToSharesView(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT())) + 1n;
+    await ethYield.connect(user).unstake(minAllowedShares);
+
+    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
+    await mine(blocksToAwait);
+    await ethYield.connect(user).reinit();
+
+    const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
+    const balanceBefore = await user.provider.getBalance(ethYield.target);
+    await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
+    await ethYield.reinit();
+
+    const balanceAfter = await user.provider.getBalance(ethYield.target);
+    expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
   });
 });
 
