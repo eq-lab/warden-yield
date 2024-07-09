@@ -1,29 +1,29 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`EthYield gas reinit, complete eigenLayer withdraw 1`] = `497077`;
+exports[`EthYield gas reinit, complete eigenLayer withdraw 1`] = `497229`;
 
 exports[`EthYield gas reinit, complete lido withdraw 1`] = `140846`;
 
-exports[`EthYield gas stake native, complete eigenLayer withdraw 1`] = `793944`;
+exports[`EthYield gas stake native, complete eigenLayer withdraw 1`] = `794097`;
 
 exports[`EthYield gas stake native, complete lido withdraw 1`] = `519810`;
 
-exports[`EthYield gas stake native, complete one eigenLayer and one lido withdraws 1`] = `819050`;
+exports[`EthYield gas stake native, complete one eigenLayer and one lido withdraws 1`] = `819210`;
 
-exports[`EthYield gas stake weth, complete eigenLayer withdraw 1`] = `844367`;
+exports[`EthYield gas stake weth, complete eigenLayer withdraw 1`] = `844525`;
 
 exports[`EthYield gas stake weth, complete lido withdraw 1`] = `570806`;
 
-exports[`EthYield gas stake weth, complete one eigenLayer and one lido withdraws 1`] = `870116`;
+exports[`EthYield gas stake weth, complete one eigenLayer and one lido withdraws 1`] = `870280`;
 
-exports[`EthYield gas unstake, complete eigenLayer withdraw 1`] = `620165`;
+exports[`EthYield gas unstake, complete eigenLayer withdraw 1`] = `631381`;
 
-exports[`EthYield gas unstake, complete lido withdraw 1`] = `293154`;
+exports[`EthYield gas unstake, complete lido withdraw 1`] = `347460`;
 
-exports[`EthYield gas unstake, complete one eigenLayer and one lido withdraws 1`] = `647874`;
+exports[`EthYield gas unstake, complete one eigenLayer and one lido withdraws 1`] = `658766`;
 
 exports[`EthYield gas user stake, native 1`] = `470637`;
 
 exports[`EthYield gas user stake, weth 1`] = `520995`;
 
-exports[`EthYield gas user unstake 1`] = `221853`;
+exports[`EthYield gas user unstake 1`] = `285475`;

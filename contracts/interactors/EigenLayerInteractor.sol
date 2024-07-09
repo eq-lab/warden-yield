@@ -114,7 +114,7 @@ abstract contract EigenLayerInteractor is Initializable {
   /// @dev Withdraws underlying token from EigenLayer protocol
   /// @param sharesToWithdraw amount to withdraw represented in EigenLayer shares
   function _eigenLayerWithdraw(uint256 sharesToWithdraw) internal {
-    if (sharesToWithdraw == 0) revert Errors.ZeroAmount();
+    if (sharesToWithdraw <= _getEigenLayerMinSharesToWithdraw()) revert Errors.LowWithdrawalAmount(sharesToWithdraw);
 
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
 
@@ -205,4 +205,6 @@ abstract contract EigenLayerInteractor is Initializable {
     return
       EigenLayerWithdrawQueueElement({blockNumber: queue.blockNumber[memoryIndex], shares: queue.shares[memoryIndex]});
   }
+
+  function _getEigenLayerMinSharesToWithdraw() internal view virtual returns (uint256);
 }

@@ -105,7 +105,7 @@ abstract contract LidoInteractor is Initializable {
     LidoInteractorData storage data = _getLidoInteractorDataStorage();
     ILidoWithdrawalQueue withdrawalQueue = ILidoWithdrawalQueue(data.lidoWithdrawalQueue);
 
-    if (stEthAmount < withdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()) revert Errors.LowWithdrawalAmount(stEthAmount);
+    if (stEthAmount < _getLidoMinWithdrawal()) revert Errors.LowWithdrawalAmount(stEthAmount);
 
     IERC20(data.stETH).forceApprove(address(withdrawalQueue), stEthAmount);
 
@@ -169,6 +169,10 @@ abstract contract LidoInteractor is Initializable {
     if (memoryIndex >= queue.end) revert Errors.NoElementWithIndex(index);
 
     return LidoWithdrawQueueElement({requestId: queue.requestId[memoryIndex], requested: queue.requested[memoryIndex]});
+  }
+
+  function _getLidoMinWithdrawal() internal view virtual returns (uint256) {
+    return ILidoWithdrawalQueue(_getLidoInteractorDataStorage().lidoWithdrawalQueue).MIN_STETH_WITHDRAWAL_AMOUNT();
   }
 
   /// @notice returns wrapped ETH token address

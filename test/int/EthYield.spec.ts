@@ -136,6 +136,20 @@ describe('EthYield withdraw', () => {
     const balanceAfter = await user.provider.getBalance(ethYield.target);
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
   });
+
+  it('user too low withdraw', async () => {
+    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
+
+    const userShares = await ethYield.userShares(user.address, await ethYield.getWeth());
+
+    const minShares = await eigenLayerStrategy.underlyingToSharesView(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT());
+
+    await expect(ethYield.connect(user).unstake(minShares)).to.be.revertedWithCustomError(ethYield, 'LowWithdrawalAmount');
+  });
 });
 
 describe('EthYield onlyOwner actions', () => {
