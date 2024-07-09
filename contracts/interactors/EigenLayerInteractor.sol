@@ -33,9 +33,13 @@ abstract contract EigenLayerInteractor is Initializable {
 
   /// @custom:storage-location erc7201:eq-lab.storage.EigenLayerWithdrawQueue
   struct EigenLayerWithdrawQueue {
+    /// @dev queue inner starting index. Increased after popping the first element
     uint256 start;
+    /// @dev queue inner ending index. Increased after pushing the new element
     uint256 end;
+    /// @dev shares requested in withdrawal with given inner index
     mapping(uint256 index => uint256) shares;
+    /// @dev block number of withdrawal with given inner index. Required for request completion
     mapping(uint256 index => uint32) blockNumber;
   }
 
