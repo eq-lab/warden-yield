@@ -60,16 +60,20 @@ contract EthYield is
     emit Stake(msg.sender, weth, amount, eigenLayerShares);
   }
 
+  /// @inheritdoc IEthYield
   function unstake(uint256 eigenLayerSharesAmount) external {
     _reinit();
     _eigenLayerWithdraw(eigenLayerSharesAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
   }
 
+  /// @inheritdoc IEthYield
   function reinit() external {
     _reinit();
   }
 
+  /// @dev completes if possible the oldest non-fulfilled withdrawal requests from both EigenLayer and Lido queues
+  /// @dev if EigenLayer withdraw was fulfilled, initiates a Lido withdraw for released stEth
   function _reinit() private {
     uint256 stEthWithdrawn = _eigenLayerReinit();
     if (stEthWithdrawn != 0) {
@@ -80,16 +84,19 @@ contract EthYield is
     // TODO: need to send `ethReceived` via axelar (probably WETH wrap it first)
   }
 
-  function _getEigenLayerMinSharesToWithdraw() internal view override returns(uint256) {
+  /// @dev overloads EigenLayer min withdraw amount taking Lido limit into account
+  function _getEigenLayerMinSharesToWithdraw() internal view override returns (uint256) {
     return IStrategy(_getEigenLayerInteractorDataStorage().strategy).underlyingToSharesView(_getLidoMinWithdrawal());
   }
 
+  /// @notice returns EigenLayerWithdrawQueueElement element by index
   function getEigenLayerWithdrawalQueueElement(
     uint256 index
   ) external view returns (EigenLayerInteractor.EigenLayerWithdrawQueueElement memory) {
     return _getEigenLayerWithdrawalQueueElement(index);
   }
 
+  /// @notice returns LidoWithdrawQueue element by index
   function getLidoWithdrawalQueueElement(
     uint256 index
   ) external view returns (LidoInteractor.LidoWithdrawQueueElement memory) {

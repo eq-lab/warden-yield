@@ -144,8 +144,13 @@ describe('EthYield withdraw', () => {
     const stakeAmount = parseEther('1');
     await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
 
-    const minShares = await eigenLayerStrategy.underlyingToSharesView(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT());
-    await expect(ethYield.connect(user).unstake(minShares)).to.be.revertedWithCustomError(ethYield, 'LowWithdrawalAmount');
+    const minShares = await eigenLayerStrategy.underlyingToSharesView(
+      await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()
+    );
+    await expect(ethYield.connect(user).unstake(minShares)).to.be.revertedWithCustomError(
+      ethYield,
+      'LowWithdrawalAmount'
+    );
   });
 });
 

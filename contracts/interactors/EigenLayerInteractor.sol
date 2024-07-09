@@ -39,6 +39,7 @@ abstract contract EigenLayerInteractor is Initializable {
     mapping(uint256 index => uint32) blockNumber;
   }
 
+  /// @dev struct used in view method to get withdrawal queue element by index
   struct EigenLayerWithdrawQueueElement {
     uint256 shares;
     uint256 blockNumber;
@@ -136,6 +137,8 @@ abstract contract EigenLayerInteractor is Initializable {
     emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
+  /// @dev completes if possible the oldest non-fulfilled withdrawal request
+  /// @return withdrawnAmount amount of underlyingToken received. Returns 0 if no request was completed
   function _eigenLayerReinit() internal returns (uint256 withdrawnAmount) {
     EigenLayerWithdrawQueue storage withdrawQueue = _getEigenLayerWithdrawQueueStorage();
     uint256 queueStart = withdrawQueue.start;
@@ -195,6 +198,7 @@ abstract contract EigenLayerInteractor is Initializable {
     }
   }
 
+  /// @dev returns EigenLayerWithdrawQueueElement element by index
   function _getEigenLayerWithdrawalQueueElement(
     uint256 index
   ) internal view returns (EigenLayerWithdrawQueueElement memory) {
@@ -206,6 +210,8 @@ abstract contract EigenLayerInteractor is Initializable {
       EigenLayerWithdrawQueueElement({blockNumber: queue.blockNumber[memoryIndex], shares: queue.shares[memoryIndex]});
   }
 
+  /// @dev returns min amount allowed to be withdrawn from EigenLayer
+  /// @dev returns 0, but can be overridden for usage in more complex cases
   function _getEigenLayerMinSharesToWithdraw() internal view virtual returns (uint256) {
     return 0;
   }
