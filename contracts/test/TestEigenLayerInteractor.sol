@@ -60,8 +60,4 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
     EigenLayerWithdrawQueue storage $ = _getEigenLayerWithdrawQueueStorage();
     return $.end - $.start;
   }
-
-  function _getEigenLayerMinSharesToWithdraw() internal pure override returns(uint256) {
-    return 0;
-  }
 }

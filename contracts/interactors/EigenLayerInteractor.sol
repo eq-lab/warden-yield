@@ -206,5 +206,7 @@ abstract contract EigenLayerInteractor is Initializable {
       EigenLayerWithdrawQueueElement({blockNumber: queue.blockNumber[memoryIndex], shares: queue.shares[memoryIndex]});
   }
 
-  function _getEigenLayerMinSharesToWithdraw() internal view virtual returns (uint256);
+  function _getEigenLayerMinSharesToWithdraw() internal view virtual returns (uint256) {
+    return 0;
+  }
 }
