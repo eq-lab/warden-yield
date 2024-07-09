@@ -114,7 +114,7 @@ describe('EthYield withdraw', () => {
 
     const elElement = await ethYield.getEigenLayerWithdrawalQueueElement(0);
     expect(elElement.shares).to.be.gt(0);
-    expect(elElement.underlyingAmount).to.be.eq(await eigenLayerStrategy.sharesToUnderlyingView(elElement.shares));
+    // expect(elElement.underlyingAmount).to.be.eq(await eigenLayerStrategy.sharesToUnderlyingView(elElement.shares));
     expect(elElement.blockNumber).to.be.eq(txReceipt!.blockNumber)
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();

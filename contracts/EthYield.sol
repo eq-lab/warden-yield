@@ -75,7 +75,7 @@ contract EthYield is
     if (stEthWithdrawn != 0) {
       _lidoWithdraw(stEthWithdrawn);
     }
-    uint256 ethReceived = _lidoReinit();
+    /*uint256 ethReceived =*/ _lidoReinit();
 
     // TODO: need to send `ethReceived` via axelar (probably WETH wrap it first)
   }

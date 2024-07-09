@@ -8,7 +8,6 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
   using SafeERC20 for IERC20;
 
   struct QueueElement {
-    uint256 underlyingAmount;
     uint256 shares;
     uint32 blockNumber;
   }
@@ -43,7 +42,6 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
     EigenLayerWithdrawQueue storage $ = _getEigenLayerWithdrawQueueStorage();
     index += $.start;
     element = QueueElement({
-      underlyingAmount: $.underlyingAmount[index],
       shares: $.shares[index],
       blockNumber: $.blockNumber[index]
     });

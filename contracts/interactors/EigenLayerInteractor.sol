@@ -36,13 +36,11 @@ abstract contract EigenLayerInteractor is Initializable {
     uint256 start;
     uint256 end;
     mapping(uint256 index => uint256) shares;
-    mapping(uint256 index => uint256) underlyingAmount;
     mapping(uint256 index => uint32) blockNumber;
   }
 
   struct EigenLayerWithdrawQueueElement {
     uint256 shares;
-    uint256 underlyingAmount;
     uint256 blockNumber;
   }
 
@@ -121,8 +119,7 @@ abstract contract EigenLayerInteractor is Initializable {
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
 
     IStrategy[] memory strategies = new IStrategy[](1);
-    IStrategy strategy = IStrategy(data.strategy);
-    strategies[0] = strategy;
+    strategies[0] = IStrategy(data.strategy);
 
     uint256[] memory shares = new uint256[](1);
     shares[0] = sharesToWithdraw;
@@ -134,10 +131,8 @@ abstract contract EigenLayerInteractor is Initializable {
       withdrawer: address(this)
     });
 
-    uint256 underlyingAmount = strategy.sharesToUnderlyingView(sharesToWithdraw);
-
     IDelegationManager(data.delegationManager).queueWithdrawals(params);
-    _queuePush(_getEigenLayerWithdrawQueueStorage(), sharesToWithdraw, underlyingAmount);
+    _queuePush(_getEigenLayerWithdrawQueueStorage(), sharesToWithdraw);
     emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
@@ -151,10 +146,12 @@ abstract contract EigenLayerInteractor is Initializable {
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
 
     IStrategy[] memory strategies = new IStrategy[](1);
-    strategies[0] = IStrategy(data.strategy);
+    IStrategy strategy = IStrategy(data.strategy);
+    strategies[0] = strategy;
 
+    uint256 sharesToWithdraw = withdrawQueue.shares[queueStart];
     uint256[] memory shares = new uint256[](1);
-    shares[0] = withdrawQueue.shares[queueStart];
+    shares[0] = sharesToWithdraw;
 
     IDelegationManager.Withdrawal memory withdrawal = IDelegationManager.Withdrawal({
       staker: address(this),
@@ -169,8 +166,11 @@ abstract contract EigenLayerInteractor is Initializable {
     IERC20[] memory tokens = new IERC20[](1);
     tokens[0] = IERC20(data.underlyingToken);
 
+    uint256 underlyingAmount = strategy.sharesToUnderlyingView(sharesToWithdraw);
+
     try IDelegationManager(data.delegationManager).completeQueuedWithdrawal(withdrawal, tokens, 0, true) {
-      withdrawnAmount = withdrawQueue.underlyingAmount[queueStart];
+      // TODO check this out -- seems like the eigenLayer + lido calculations combination can lose precision in both directions
+      withdrawnAmount = underlyingAmount;
       emit EigenLayerWithdrawComplete(withdrawnAmount);
       _queuePop(withdrawQueue);
     } catch {}
@@ -179,13 +179,11 @@ abstract contract EigenLayerInteractor is Initializable {
   /// @dev adds new withdraw request to the end of the EigenLayerWithdrawQueue
   function _queuePush(
     EigenLayerWithdrawQueue storage queue,
-    uint256 sharesToWithdraw,
-    uint256 underlyingAmount
+    uint256 sharesToWithdraw
   ) private {
     uint256 queueEnd = queue.end;
     queue.blockNumber[queueEnd] = uint32(block.number);
     queue.shares[queueEnd] = sharesToWithdraw;
-    queue.underlyingAmount[queueEnd] = underlyingAmount;
     unchecked {
       ++queue.end;
     }
@@ -196,7 +194,6 @@ abstract contract EigenLayerInteractor is Initializable {
     uint256 queueStart = queue.start;
     delete queue.blockNumber[queueStart];
     delete queue.shares[queueStart];
-    delete queue.underlyingAmount[queueStart];
     unchecked {
       ++queue.start;
     }
@@ -212,8 +209,7 @@ abstract contract EigenLayerInteractor is Initializable {
     return
       EigenLayerWithdrawQueueElement({
         blockNumber: queue.blockNumber[memoryIndex],
-        shares: queue.shares[memoryIndex],
-        underlyingAmount: queue.underlyingAmount[memoryIndex]
+        shares: queue.shares[memoryIndex]
       });
   }
 }
