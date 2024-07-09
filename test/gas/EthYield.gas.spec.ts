@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { loadFixture, mine } from '@nomicfoundation/hardhat-network-helpers';
 import snapshotGasCost from '@uniswap/snapshot-gas-cost';
 import { createEthYieldFork } from '../shared/fixtures';
@@ -29,7 +28,7 @@ describe('EthYield gas', () => {
   });
 
   it('user unstake', async () => {
-    const { weth9, ethYield } = await loadFixture(createEthYieldFork);
+    const { ethYield } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
@@ -41,7 +40,7 @@ describe('EthYield gas', () => {
   });
 
   it('reinit, complete eigenLayer withdraw', async () => {
-    const { weth9, ethYield, eigenLayerDelegationManager } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
@@ -57,7 +56,7 @@ describe('EthYield gas', () => {
   });
 
   it('reinit, complete lido withdraw', async () => {
-    const { weth9, ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
     const input = parseEther('1');
@@ -87,7 +86,9 @@ describe('EthYield gas', () => {
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
 
-    await snapshotGasCost(Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input })));
+    await snapshotGasCost(
+      Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
+    );
   });
 
   it('stake native, complete lido withdraw', async () => {
@@ -105,7 +106,9 @@ describe('EthYield gas', () => {
     await ethYield.connect(user).reinit();
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    await snapshotGasCost(Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input })));
+    await snapshotGasCost(
+      Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
+    );
   });
 
   it('stake native, complete one eigenLayer and one lido withdraws', async () => {
@@ -127,7 +130,9 @@ describe('EthYield gas', () => {
     await ethYield.connect(user1).reinit();
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    await snapshotGasCost(Number(await ethYield.connect(user3).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input })));
+    await snapshotGasCost(
+      Number(await ethYield.connect(user3).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
+    );
   });
 
   it('stake weth, complete eigenLayer withdraw', async () => {
@@ -236,7 +241,7 @@ describe('EthYield gas', () => {
   });
 
   it('unstake, complete one eigenLayer and one lido withdraws', async () => {
-    const { weth9, ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
     const [_, user1, user2, user3] = await ethers.getSigners();
 
     const input = parseEther('1');
