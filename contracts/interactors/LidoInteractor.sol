@@ -117,7 +117,7 @@ abstract contract LidoInteractor is Initializable {
         amounts[i] = maxLidoWithdrawal;
       }
     }
-    amounts[withdrawalsNumber - 1] = stEthAmount;
+    amounts[withdrawalsNumber - 1] = stEthAmount % maxLidoWithdrawal;
 
     uint256[] memory requestIds = withdrawalQueue.requestWithdrawals(amounts, address(0));
     _queuePush(_getLidoWithdrawQueueStorage(), requestIds, amounts);
