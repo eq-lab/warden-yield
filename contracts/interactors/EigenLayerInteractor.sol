@@ -136,7 +136,6 @@ abstract contract EigenLayerInteractor is Initializable {
     emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
-  /// @dev This method is called 
   function _eigenLayerReinit() internal returns (uint256 withdrawnAmount) {
     EigenLayerWithdrawQueue storage withdrawQueue = _getEigenLayerWithdrawQueueStorage();
     uint256 queueStart = withdrawQueue.start;
@@ -177,10 +176,7 @@ abstract contract EigenLayerInteractor is Initializable {
   }
 
   /// @dev adds new withdraw request to the end of the EigenLayerWithdrawQueue
-  function _queuePush(
-    EigenLayerWithdrawQueue storage queue,
-    uint256 sharesToWithdraw
-  ) private {
+  function _queuePush(EigenLayerWithdrawQueue storage queue, uint256 sharesToWithdraw) private {
     uint256 queueEnd = queue.end;
     queue.blockNumber[queueEnd] = uint32(block.number);
     queue.shares[queueEnd] = sharesToWithdraw;
@@ -207,9 +203,6 @@ abstract contract EigenLayerInteractor is Initializable {
     if (memoryIndex >= queue.end) revert Errors.NoElementWithIndex(index);
 
     return
-      EigenLayerWithdrawQueueElement({
-        blockNumber: queue.blockNumber[memoryIndex],
-        shares: queue.shares[memoryIndex]
-      });
+      EigenLayerWithdrawQueueElement({blockNumber: queue.blockNumber[memoryIndex], shares: queue.shares[memoryIndex]});
   }
 }

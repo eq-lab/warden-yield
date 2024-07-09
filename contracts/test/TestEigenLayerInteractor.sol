@@ -41,10 +41,7 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
   function getQueueElement(uint256 index) external view returns (QueueElement memory element) {
     EigenLayerWithdrawQueue storage $ = _getEigenLayerWithdrawQueueStorage();
     index += $.start;
-    element = QueueElement({
-      shares: $.shares[index],
-      blockNumber: $.blockNumber[index]
-    });
+    element = QueueElement({shares: $.shares[index], blockNumber: $.blockNumber[index]});
   }
 
   function reinit() external {

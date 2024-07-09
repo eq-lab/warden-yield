@@ -24,7 +24,6 @@ describe('EigenLayer withdraw', () => {
     const queueElement = await testEigenLayerInteractor.getQueueElement(0);
     expect(queueElement.shares).to.be.eq(sharesToWithdraw);
     expect(queueElement.blockNumber).to.be.eq(txReceipt!.blockNumber + 1);
-    // expect(queueElement.underlyingAmount).to.be.eq(await strategy.sharesToUnderlyingView(sharesToWithdraw));
   });
 
   it('reinit withdraw completion', async () => {
@@ -45,7 +44,7 @@ describe('EigenLayer withdraw', () => {
     await mine(blocksToAwait);
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
     await testEigenLayerInteractor.reinit();
-    
+
     const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint256)'];
     const [withdrawEvent] = await testEigenLayerInteractor.queryFilter(withdrawFilter, -1);
     const stEthWithdrawnAmount = withdrawEvent.args[0];
@@ -80,7 +79,6 @@ describe('EigenLayer withdraw', () => {
 
     const firstElement = await testEigenLayerInteractor.getQueueElement(0);
     expect(firstElement.shares).to.be.eq(userEvent.args[0]);
-  //   expect(firstElement.underlyingAmount).to.be.eq(await strategy.sharesToUnderlyingView(userEvent.args[0]));
   });
 
   it('stake + reinit', async () => {
@@ -164,7 +162,7 @@ describe('EigenLayer withdraw', () => {
 
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
     await testEigenLayerInteractor.reinit();
-    
+
     const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint256)'];
     const [withdrawEvent] = await testEigenLayerInteractor.queryFilter(withdrawFilter, -1);
     const stEthWithdrawnAmount = withdrawEvent.args[0];
@@ -186,7 +184,7 @@ describe('Lido withdraw', () => {
     const [_, user] = await ethers.getSigners();
 
     const amount = parseEther('1');
-    const txReceipt = await (await testLidoInteractor.connect(user).stake(amount, { value: amount })).wait();
+    await testLidoInteractor.connect(user).stake(amount, { value: amount });
 
     const sharesToWithdraw = amount;
     await testLidoInteractor.connect(user).withdraw(sharesToWithdraw);

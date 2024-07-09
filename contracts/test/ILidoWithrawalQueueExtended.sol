@@ -9,4 +9,6 @@ interface ILidoWithdrawalQueueExtended is ILidoWithdrawalQueue {
   function FINALIZE_ROLE() external view returns (bytes32);
 
   function getRoleMember(bytes32 role, uint256 index) external view returns (address);
+
+  function getLastRequestId() external view returns (uint256);
 }
