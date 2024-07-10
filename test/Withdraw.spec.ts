@@ -306,4 +306,31 @@ describe('Lido withdraw', () => {
     const firstElement = await testLidoInteractor.getQueueElement(0);
     expect(firstElement.requestId).to.be.eq(secondWithdrawId);
   });
+
+  it('big lido unstake split', async () => {
+    const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('2010');
+    const maxLidoWithdraw = await lidoWithdrawalQueue.MAX_STETH_WITHDRAWAL_AMOUNT();
+    expect(stakeAmount).to.be.gt(maxLidoWithdraw);
+
+    await testLidoInteractor.connect(user).stake(stakeAmount, { value: stakeAmount });
+    await testLidoInteractor.connect(user).withdraw(stakeAmount);
+
+    const withdrawsRequests = stakeAmount / maxLidoWithdraw;
+    expect(withdrawsRequests).to.be.gte(1);
+    for (let i = 0; i < withdrawsRequests; ++i) {
+      const lidoElement = await testLidoInteractor.getQueueElement(i);
+      expect(lidoElement.requested).to.be.eq(maxLidoWithdraw);
+    }
+    const lastLidoElement = await testLidoInteractor.getQueueElement(withdrawsRequests);
+
+    const balanceBefore = await user.provider.getBalance(testLidoInteractor.target);
+    await finalizeLidoWithdraw(lidoWithdrawalQueue, lastLidoElement.requestId);
+    await testLidoInteractor.reinit();
+
+    const balanceAfter = await user.provider.getBalance(testLidoInteractor.target);
+    expect(balanceAfter).to.be.eq(balanceBefore + maxLidoWithdraw);
+  });
 });
