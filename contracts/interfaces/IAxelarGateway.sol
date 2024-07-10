@@ -32,4 +32,6 @@ interface IAxelarGateway {
     string calldata symbol,
     uint256 amount
   ) external returns (bool);
+
+  function tokenAddresses(string memory symbol) external view returns (address);
 }
