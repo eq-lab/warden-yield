@@ -69,7 +69,7 @@ abstract contract AaveInteractor is Initializable {
     address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
 
     uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
-    IERC20(token).approve(aavePool, amount);
+    IERC20(token).forceApprove(aavePool, amount);
     IPool(aavePool).supply(token, amount, address(this), 0);
 
     scaledDepositAmount = IAToken(aToken).scaledBalanceOf(address(this)) - totalBalanceScaledBefore;

@@ -1,32 +1,38 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { ethers, upgrades } from 'hardhat';
 import {
-  AaveYield,
-  AaveYield__factory,
-  EthYield,
-  EthYield__factory,
   ERC20,
   ERC20__factory,
+  EthYield,
+  EthYield__factory,
   IAToken,
   IAToken__factory,
-  IPool__factory,
-  MintableERC20,
-  MintableERC20__factory,
-  TestYieldStorage,
-  TestYieldStorage__factory,
-  IStrategyManager,
-  IStrategy,
-  IStrategyManager__factory,
-  IStrategy__factory,
   IDelegationManager,
   IDelegationManager__factory,
   IPool,
+  IPool__factory,
+  IStrategy,
+  IStrategy__factory,
+  IStrategyManager,
+  IStrategyManager__factory,
+  MintableERC20,
+  MintableERC20__factory,
+  TestAaveYield,
+  TestAaveYield__factory,
+  TestYieldStorage,
+  TestYieldStorage__factory,
+  TestEigenLayerInteractor__factory,
+  TestEigenLayerInteractor,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
-  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT', {
+    maxFeePerGas: maxFeePerGas,
+  });
 }
 
 export async function deployEthYieldContract(
@@ -57,24 +63,52 @@ export async function deployAaveYieldContract(
   owner: SignerWithAddress,
   aavePoolAddress: string,
   allowedTokens: string[]
-): Promise<AaveYield> {
+): Promise<TestAaveYield> {
   const blockNumber = await owner.provider.getBlockNumber();
   const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-  return upgrades.deployProxy(await new AaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
+  return upgrades.deployProxy(await new TestAaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
     initializer: 'initialize',
     txOverrides: {
       maxFeePerGas: maxFeePerGas,
     },
-  }) as unknown as AaveYield;
+  }) as unknown as TestAaveYield;
 }
 
 export async function deployTestYieldStorageContract(
   owner: SignerWithAddress,
   tokenAddress: string
 ): Promise<TestYieldStorage> {
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(new TestYieldStorage__factory().connect(owner), [tokenAddress], {
     initializer: 'initialize',
+    txOverrides: {
+      maxFeePerGas: maxFeePerGas,
+    },
   }) as unknown as Promise<TestYieldStorage>;
+}
+
+export async function deployTestEigenLayerInteractor(
+  owner: SignerWithAddress,
+  weth: string,
+  stEth: string,
+  elStrategy: string,
+  elStrategyManager: string,
+  elDelegationManager: string,
+  eigenLayerOperator: string
+): Promise<TestEigenLayerInteractor> {
+  const blockNumber = await owner.provider.getBlockNumber();
+  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  return upgrades.deployProxy(
+    new TestEigenLayerInteractor__factory().connect(owner),
+    [weth, stEth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
+    {
+      initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: maxFeePerGas,
+      },
+    }
+  ) as unknown as Promise<TestEigenLayerInteractor>;
 }
 
 export async function testYieldStorageFixture(): Promise<{
@@ -96,6 +130,38 @@ export async function testYieldStorageFixture(): Promise<{
     owner,
     testYieldStorage,
     weth9,
+  };
+}
+
+export async function testEigenLayerInteractorFixture(): Promise<{
+  owner: SignerWithAddress;
+  testEigenLayerInteractor: TestEigenLayerInteractor;
+  delegationManager: IDelegationManager;
+  strategy: IStrategy;
+  stEth: ERC20;
+}> {
+  const [owner] = await ethers.getSigners();
+
+  const testEigenLayerInteractor = await deployTestEigenLayerInteractor(
+    owner,
+    EthAddressData.weth,
+    EthAddressData.stEth,
+    EthAddressData.elStrategy,
+    EthAddressData.elStrategyManager,
+    EthAddressData.elDelegationManager,
+    EthAddressData.eigenLayerOperator
+  );
+
+  const delegationManager = IDelegationManager__factory.connect(EthAddressData.elDelegationManager, owner);
+  const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
+  const strategy = IStrategy__factory.connect(EthAddressData.elStrategy, owner);
+
+  return {
+    owner,
+    testEigenLayerInteractor,
+    delegationManager,
+    strategy,
+    stEth,
   };
 }
 
@@ -142,22 +208,38 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
 export interface AaveForkTestData {
   weth9: ERC20;
   aEthWETH: IAToken;
-  aaveYield: AaveYield;
+  usdt: ERC20;
+  aEthUsdt: IAToken;
+  usdc: ERC20;
+  aEthUsdc: IAToken;
+  aaveYield: TestAaveYield;
   aavePool: IPool;
   owner: SignerWithAddress;
 }
 
 export async function createAaveEthFork(): Promise<AaveForkTestData> {
   const [owner] = await ethers.getSigners();
-  const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
+  const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [
+    EthAddressData.weth,
+    EthAddressData.usdt,
+    EthAddressData.usdc,
+  ]);
 
   const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
   const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
   const aEthWETH = IAToken__factory.connect(EthAddressData.aEth, owner);
+  const usdt = ERC20__factory.connect(EthAddressData.usdt, owner);
+  const aEthUsdt = IAToken__factory.connect(EthAddressData.aEthUsdt, owner);
+  const usdc = ERC20__factory.connect(EthAddressData.usdc, owner);
+  const aEthUsdc = IAToken__factory.connect(EthAddressData.aEthUsdc, owner);
 
   return {
     weth9,
     aEthWETH,
+    usdt,
+    aEthUsdt,
+    usdc,
+    aEthUsdc,
     aaveYield,
     aavePool,
     owner,

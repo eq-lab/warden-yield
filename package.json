@@ -5,14 +5,14 @@
   "license": "GPL-3.0",
   "scripts": {
     "compile": "hardhat compile --config hardhat.common.ts",
-    "test": "hardhat test ./test/*.spec.ts --config hardhat.common.ts",
+    "test": "hardhat test ./test/*.spec.ts --config hardhat-fork.config.ts",
     "test:gas": "UPDATE_SNAPSHOT=1 REPORT_GAS=true hardhat test --config hardhat-fork.config.ts ./test/gas/*.gas.spec.ts",
     "test:int": "REPORT_GAS=true hardhat test --config hardhat-fork.config.ts ./test/int/*.spec.ts",
     "test:coverage": "UPDATE_SNAPSHOT=1 REPORT_GAS=true hardhat coverage --config hardhat-fork.config.ts --solcoverjs ./.solcover.ts --testfiles './test/**/*.spec.ts'",
     "deploy": "ts-node ./deploy/src.ts",
     "lint:write": "prettier --write ./contracts ./test ./deploy ./tasks",
     "clean": "hardhat clean",
-    "clean:full": "hardhat clean && rm -rf node_modules"
+    "clean:full": "hardhat clean && rm -rf node_modules && cargo clean --manifest-path cosmwasm/Cargo.toml"
   },
   "devDependencies": {
     "@aave/core-v3": "1.19.3",
