@@ -34,8 +34,8 @@ export async function finalizeLidoWithdraw(lidoWithdrawalQueue: ILidoWithdrawalQ
   const impersonatedSigner = await ethers.getImpersonatedSigner(finalizerAddress);
   const maxShares = 10n ** 50n; // passing some unrealistic value for 1e27 precision
   const ethersToFinalize = await lidoWithdrawalQueue.unfinalizedStETH();
-  if (ethersToFinalize * 11n / 10n > await impersonatedSigner.provider.getBalance(finalizerAddress)) {
-    await helpers.setBalance(finalizerAddress, ethersToFinalize * 11n / 10n);
+  if ((ethersToFinalize * 11n) / 10n > (await impersonatedSigner.provider.getBalance(finalizerAddress))) {
+    await helpers.setBalance(finalizerAddress, (ethersToFinalize * 11n) / 10n);
   }
   await lidoWithdrawalQueue.connect(impersonatedSigner).finalize(requestId, maxShares, { value: ethersToFinalize });
 }
