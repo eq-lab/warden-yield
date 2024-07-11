@@ -32,11 +32,7 @@ import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT', {
-    maxFeePerGas: maxFeePerGas,
-  });
+  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
 }
 
 export async function deployEthYieldContract(
@@ -48,17 +44,11 @@ export async function deployEthYieldContract(
   elDelegationManager: string,
   eigenLayerOperator: string
 ): Promise<EthYield> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-
   return upgrades.deployProxy(
     await new EthYield__factory().connect(owner),
     [stEth, weth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
     }
   ) as unknown as EthYield;
 }
@@ -68,13 +58,8 @@ export async function deployAaveYieldContract(
   aavePoolAddress: string,
   allowedTokens: string[]
 ): Promise<TestAaveYield> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(await new TestAaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
     initializer: 'initialize',
-    txOverrides: {
-      maxFeePerGas: maxFeePerGas,
-    },
   }) as unknown as TestAaveYield;
 }
 
@@ -82,13 +67,8 @@ export async function deployTestYieldStorageContract(
   owner: SignerWithAddress,
   tokenAddress: string
 ): Promise<TestYieldStorage> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(new TestYieldStorage__factory().connect(owner), [tokenAddress], {
     initializer: 'initialize',
-    txOverrides: {
-      maxFeePerGas: maxFeePerGas,
-    },
   }) as unknown as Promise<TestYieldStorage>;
 }
 
@@ -98,13 +78,8 @@ export async function deployTestLidoInteractor(
   stEth: string,
   lidoWithdrawalQueue: string
 ): Promise<TestLidoInteractor> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(new TestLidoInteractor__factory().connect(owner), [weth, stEth, lidoWithdrawalQueue], {
     initializer: 'initialize',
-    txOverrides: {
-      maxFeePerGas: maxFeePerGas,
-    },
   }) as unknown as Promise<TestLidoInteractor>;
 }
 
@@ -117,16 +92,11 @@ export async function deployTestEigenLayerInteractor(
   elDelegationManager: string,
   eigenLayerOperator: string
 ): Promise<TestEigenLayerInteractor> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(
     new TestEigenLayerInteractor__factory().connect(owner),
     [weth, stEth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
     }
   ) as unknown as Promise<TestEigenLayerInteractor>;
 }

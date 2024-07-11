@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 import { ILidoWithdrawalQueueExtended } from '../../typechain-types';
 import { parseEther } from 'ethers';
+import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 
 export const USER_WARDEN_ADDRESS = 'warden1234';
 
@@ -32,7 +33,11 @@ export async function finalizeLidoWithdraw(lidoWithdrawalQueue: ILidoWithdrawalQ
   const finalizerAddress = await lidoWithdrawalQueue.getRoleMember(finalizeRole, 0);
   const impersonatedSigner = await ethers.getImpersonatedSigner(finalizerAddress);
   const maxShares = 10n ** 50n; // passing some unrealistic value for 1e27 precision
-  await lidoWithdrawalQueue.connect(impersonatedSigner).finalize(requestId, maxShares, { value: parseEther('100') });
+  const ethersToFinalize = await lidoWithdrawalQueue.unfinalizedStETH();
+  if (ethersToFinalize * 11n / 10n > await impersonatedSigner.provider.getBalance(finalizerAddress)) {
+    await helpers.setBalance(finalizerAddress, ethersToFinalize * 11n / 10n);
+  }
+  await lidoWithdrawalQueue.connect(impersonatedSigner).finalize(requestId, maxShares, { value: ethersToFinalize });
 }
 
 function getAccountBalanceStorageSlot(account: string, tokenMappingSlot: string): string {
