@@ -15,7 +15,7 @@ abstract contract EigenLayerInteractor is Initializable {
   using SafeERC20 for IERC20;
 
   event EigenLayerWithdrawStart(uint256 sharesToWithdraw);
-  event EigenLayerWithdrawComplete(uint256 withdrawnShares);
+  event EigenLayerWithdrawComplete(uint256 withdrawnUnderlyingTokenAmount);
 
   /// @custom:storage-location erc7201:eq-lab.storage.EigenLayerInteractor
   struct EigenLayerInteractorData {
@@ -33,10 +33,20 @@ abstract contract EigenLayerInteractor is Initializable {
 
   /// @custom:storage-location erc7201:eq-lab.storage.EigenLayerWithdrawQueue
   struct EigenLayerWithdrawQueue {
+    /// @dev queue inner starting index. Increased after popping the first element
     uint256 start;
+    /// @dev queue inner ending index. Increased after pushing the new element
     uint256 end;
+    /// @dev shares requested in withdrawal with given inner index
     mapping(uint256 index => uint256) shares;
+    /// @dev block number of withdrawal with given inner index. Required for request completion
     mapping(uint256 index => uint32) blockNumber;
+  }
+
+  /// @dev struct used in view method to get withdrawal queue element by index
+  struct EigenLayerWithdrawQueueElement {
+    uint256 shares;
+    uint256 blockNumber;
   }
 
   /// @dev 'EigenLayerInteractorData' storage slot address
@@ -48,11 +58,6 @@ abstract contract EigenLayerInteractor is Initializable {
   /// @dev keccak256(abi.encode(uint256(keccak256("eq-lab.storage.EigenLayerWithdrawQueue")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant EigenLayerWithdrawQueueStorageLocation =
     0x1ba446ce52667ee7efce266eb169f926c69ecd6f0d83ba53ae7bafe34f77a000;
-
-  modifier eigenLayerReinit() {
-    _eigenLayerReinit();
-    _;
-  }
 
   /// @dev returns storage slot of 'EigenLayerInteractorData' struct
   function _getEigenLayerInteractorDataStorage() internal pure returns (EigenLayerInteractorData storage $) {
@@ -100,7 +105,7 @@ abstract contract EigenLayerInteractor is Initializable {
   /// @dev EigenLayer restaking method
   /// @param underlyingTokenAmount amount of underlying tokens to be restaked
   /// @return shares amount of EigenLayer shares received in restaking process
-  function _eigenLayerRestake(uint256 underlyingTokenAmount) internal eigenLayerReinit returns (uint256 shares) {
+  function _eigenLayerRestake(uint256 underlyingTokenAmount) internal returns (uint256 shares) {
     if (underlyingTokenAmount == 0) revert Errors.ZeroAmount();
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
     IERC20(data.underlyingToken).forceApprove(data.strategyManager, underlyingTokenAmount);
@@ -113,8 +118,8 @@ abstract contract EigenLayerInteractor is Initializable {
 
   /// @dev Withdraws underlying token from EigenLayer protocol
   /// @param sharesToWithdraw amount to withdraw represented in EigenLayer shares
-  function _eigenLayerWithdraw(uint256 sharesToWithdraw) internal eigenLayerReinit {
-    if (sharesToWithdraw == 0) revert Errors.ZeroAmount();
+  function _eigenLayerWithdraw(uint256 sharesToWithdraw) internal {
+    if (sharesToWithdraw <= _getEigenLayerMinSharesToWithdraw()) revert Errors.LowWithdrawalAmount(sharesToWithdraw);
 
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
 
@@ -136,20 +141,23 @@ abstract contract EigenLayerInteractor is Initializable {
     emit EigenLayerWithdrawStart(sharesToWithdraw);
   }
 
-  /// @dev This method is called 
-  function _eigenLayerReinit() internal {
+  /// @dev completes if possible the oldest non-fulfilled withdrawal request
+  /// @return withdrawnAmount amount of underlyingToken received. Returns 0 if no request was completed
+  function _eigenLayerReinit() internal returns (uint256 withdrawnAmount) {
     EigenLayerWithdrawQueue storage withdrawQueue = _getEigenLayerWithdrawQueueStorage();
     uint256 queueStart = withdrawQueue.start;
     uint256 queueEnd = withdrawQueue.end;
-    if (queueStart == queueEnd) return;
+    if (queueStart == queueEnd) return 0;
 
     EigenLayerInteractorData memory data = _getEigenLayerInteractorDataStorage();
 
     IStrategy[] memory strategies = new IStrategy[](1);
-    strategies[0] = IStrategy(data.strategy);
+    IStrategy strategy = IStrategy(data.strategy);
+    strategies[0] = strategy;
 
+    uint256 sharesToWithdraw = withdrawQueue.shares[queueStart];
     uint256[] memory shares = new uint256[](1);
-    shares[0] = withdrawQueue.shares[queueStart];
+    shares[0] = sharesToWithdraw;
 
     IDelegationManager.Withdrawal memory withdrawal = IDelegationManager.Withdrawal({
       staker: address(this),
@@ -164,9 +172,13 @@ abstract contract EigenLayerInteractor is Initializable {
     IERC20[] memory tokens = new IERC20[](1);
     tokens[0] = IERC20(data.underlyingToken);
 
+    uint256 underlyingAmount = strategy.sharesToUnderlyingView(sharesToWithdraw);
+
     try IDelegationManager(data.delegationManager).completeQueuedWithdrawal(withdrawal, tokens, 0, true) {
+      // TODO check this out -- seems like the eigenLayer + lido calculations combination can lose precision in both directions
+      withdrawnAmount = underlyingAmount;
+      emit EigenLayerWithdrawComplete(withdrawnAmount);
       _queuePop(withdrawQueue);
-      emit EigenLayerWithdrawComplete(shares[0]);
     } catch {}
   }
 
@@ -188,5 +200,23 @@ abstract contract EigenLayerInteractor is Initializable {
     unchecked {
       ++queue.start;
     }
+  }
+
+  /// @dev returns EigenLayerWithdrawQueueElement element by index
+  function _getEigenLayerWithdrawalQueueElement(
+    uint256 index
+  ) internal view returns (EigenLayerWithdrawQueueElement memory) {
+    EigenLayerWithdrawQueue storage queue = _getEigenLayerWithdrawQueueStorage();
+    uint256 memoryIndex = queue.start + index;
+    if (memoryIndex >= queue.end) revert Errors.NoElementWithIndex(index);
+
+    return
+      EigenLayerWithdrawQueueElement({blockNumber: queue.blockNumber[memoryIndex], shares: queue.shares[memoryIndex]});
+  }
+
+  /// @dev returns min amount allowed to be withdrawn from EigenLayer
+  /// @dev returns 0, but can be overridden for usage in more complex cases
+  function _getEigenLayerMinSharesToWithdraw() internal view virtual returns (uint256) {
+    return 0;
   }
 }

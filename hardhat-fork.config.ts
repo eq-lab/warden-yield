@@ -11,6 +11,7 @@ const config = {
         url: 'https://rpc.ankr.com/eth',
         blockNumber: 20090225,
       },
+      initialBaseFeePerGas: 0,
     },
   },
 };
