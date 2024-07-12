@@ -27,12 +27,14 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
   }
 
   function stake(uint256 amount) external payable {
+    _eigenLayerReinit();
     uint256 stEthAmount = _lidoStake(amount);
     uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
     emit Stake(eigenLayerShares);
   }
 
   function withdraw(uint256 amount) external {
+    _eigenLayerReinit();
     _eigenLayerWithdraw(amount);
   }
 
@@ -42,7 +44,9 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
     element = QueueElement({shares: $.shares[index], blockNumber: $.blockNumber[index]});
   }
 
-  function reinit() external eigenLayerReinit {}
+  function reinit() external {
+    _eigenLayerReinit();
+  }
 
   function getQueueStart() external view returns (uint256) {
     return _getEigenLayerWithdrawQueueStorage().start;

@@ -1,4 +1,7 @@
 import { ethers } from 'hardhat';
+import { ILidoWithdrawalQueueExtended } from '../../typechain-types';
+import { parseEther } from 'ethers';
+import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 
 export const USER_WARDEN_ADDRESS = 'warden1234';
 
@@ -6,6 +9,7 @@ export enum EthAddressData {
   weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
   stEth = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
   wstEth = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+  lidoWithdrawalQueue = '0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1',
   aEth = '0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8',
   usdt = '0xdAC17F958D2ee523a2206206994597C13D831ec7',
   aEthUsdt = '0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a',
@@ -23,6 +27,18 @@ export const TokenBalanceStorage: Map<string, string> = new Map([
   [EthAddressData.usdt, '0000000000000000000000000000000000000000000000000000000000000002'],
   [EthAddressData.usdc, '0000000000000000000000000000000000000000000000000000000000000009'],
 ]);
+
+export async function finalizeLidoWithdraw(lidoWithdrawalQueue: ILidoWithdrawalQueueExtended, requestId: bigint) {
+  const finalizeRole = await lidoWithdrawalQueue.FINALIZE_ROLE();
+  const finalizerAddress = await lidoWithdrawalQueue.getRoleMember(finalizeRole, 0);
+  const impersonatedSigner = await ethers.getImpersonatedSigner(finalizerAddress);
+  const maxShares = 10n ** 50n; // passing some unrealistic value for 1e27 precision
+  const ethersToFinalize = await lidoWithdrawalQueue.unfinalizedStETH();
+  if ((ethersToFinalize * 11n) / 10n > (await impersonatedSigner.provider.getBalance(finalizerAddress))) {
+    await helpers.setBalance(finalizerAddress, (ethersToFinalize * 11n) / 10n);
+  }
+  await lidoWithdrawalQueue.connect(impersonatedSigner).finalize(requestId, maxShares, { value: ethersToFinalize });
+}
 
 function getAccountBalanceStorageSlot(account: string, tokenMappingSlot: string): string {
   if (!ethers.isAddress(account)) {

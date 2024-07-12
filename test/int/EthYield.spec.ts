@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, mine } from '@nomicfoundation/hardhat-network-helpers';
 import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
-import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
+import { EthAddressData, USER_WARDEN_ADDRESS, finalizeLidoWithdraw, setTokenBalance } from '../shared/utils';
 import { EthYieldUpgradeTest__factory, EthYield__factory } from '../../typechain-types';
 
-describe('EthYield', () => {
+describe('EthYield stake', () => {
   it('user stake, native', async () => {
     const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, ethYield, weth9, stEth } =
       await loadFixture(createEthYieldFork);
@@ -98,6 +98,84 @@ describe('EthYield', () => {
       ethYield,
       'ZeroAmount'
     );
+  });
+});
+
+describe('EthYield withdraw', () => {
+  it('user full withdraw', async () => {
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
+
+    const elWithdrawFilter = ethYield.filters.EigenLayerWithdrawStart;
+    const lidoWithdrawFilter = ethYield.filters.LidoWithdrawStart;
+
+    const userShares = await ethYield.userShares(user.address, await ethYield.getWeth());
+    await ethYield.connect(user).unstake(userShares);
+
+    const [elWithdrawStartEvent] = await ethYield.queryFilter(elWithdrawFilter, -1);
+    const elElement = await ethYield.getEigenLayerWithdrawalQueueElement(0);
+    expect(elElement.shares).to.be.eq(elWithdrawStartEvent.args[0]);
+    expect(elElement.blockNumber).to.be.eq(elWithdrawStartEvent.blockNumber);
+
+    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
+    await mine(blocksToAwait);
+    await ethYield.connect(user).reinit();
+
+    const [lidoWithdrawStartEvent] = await ethYield.queryFilter(lidoWithdrawFilter, -1);
+    const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
+    expect(lidoElement.requestId).to.be.eq(await lidoWithdrawalQueue.getLastRequestId());
+    expect(lidoElement.requested).to.be.eq(lidoWithdrawStartEvent.args[0]);
+
+    const balanceBefore = await user.provider.getBalance(ethYield.target);
+    await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
+    await ethYield.reinit();
+
+    const balanceAfter = await user.provider.getBalance(ethYield.target);
+    expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
+  });
+
+  it('too low withdraw', async () => {
+    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
+
+    const minShares = await eigenLayerStrategy.underlyingToSharesView(
+      await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()
+    );
+    await expect(ethYield.connect(user).unstake(minShares)).to.be.revertedWithCustomError(
+      ethYield,
+      'LowWithdrawalAmount'
+    );
+  });
+
+  it('lowest allowed unstake passes', async () => {
+    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy, eigenLayerDelegationManager } =
+      await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await ethYield.connect(user).stake(stakeAmount, USER_WARDEN_ADDRESS, { value: stakeAmount });
+
+    const minAllowedShares =
+      (await eigenLayerStrategy.underlyingToSharesView(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT())) + 1n;
+    await ethYield.connect(user).unstake(minAllowedShares);
+
+    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
+    await mine(blocksToAwait);
+    await ethYield.connect(user).reinit();
+
+    const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
+    const balanceBefore = await user.provider.getBalance(ethYield.target);
+    await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
+    await ethYield.reinit();
+
+    const balanceAfter = await user.provider.getBalance(ethYield.target);
+    expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
   });
 });
 

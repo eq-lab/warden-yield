@@ -23,16 +23,16 @@ import {
   TestYieldStorage__factory,
   TestEigenLayerInteractor__factory,
   TestEigenLayerInteractor,
+  TestLidoInteractor,
+  TestLidoInteractor__factory,
+  ILidoWithdrawalQueueExtended,
+  ILidoWithdrawalQueueExtended__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT', {
-    maxFeePerGas: maxFeePerGas,
-  });
+  return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
 }
 
 export async function deployEthYieldContract(
@@ -44,17 +44,11 @@ export async function deployEthYieldContract(
   elDelegationManager: string,
   eigenLayerOperator: string
 ): Promise<EthYield> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
-
   return upgrades.deployProxy(
     await new EthYield__factory().connect(owner),
     [stEth, weth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
     }
   ) as unknown as EthYield;
 }
@@ -64,13 +58,8 @@ export async function deployAaveYieldContract(
   aavePoolAddress: string,
   allowedTokens: string[]
 ): Promise<TestAaveYield> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(await new TestAaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
     initializer: 'initialize',
-    txOverrides: {
-      maxFeePerGas: maxFeePerGas,
-    },
   }) as unknown as TestAaveYield;
 }
 
@@ -78,14 +67,20 @@ export async function deployTestYieldStorageContract(
   owner: SignerWithAddress,
   tokenAddress: string
 ): Promise<TestYieldStorage> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(new TestYieldStorage__factory().connect(owner), [tokenAddress], {
     initializer: 'initialize',
-    txOverrides: {
-      maxFeePerGas: maxFeePerGas,
-    },
   }) as unknown as Promise<TestYieldStorage>;
+}
+
+export async function deployTestLidoInteractor(
+  owner: SignerWithAddress,
+  weth: string,
+  stEth: string,
+  lidoWithdrawalQueue: string
+): Promise<TestLidoInteractor> {
+  return upgrades.deployProxy(new TestLidoInteractor__factory().connect(owner), [weth, stEth, lidoWithdrawalQueue], {
+    initializer: 'initialize',
+  }) as unknown as Promise<TestLidoInteractor>;
 }
 
 export async function deployTestEigenLayerInteractor(
@@ -97,16 +92,11 @@ export async function deployTestEigenLayerInteractor(
   elDelegationManager: string,
   eigenLayerOperator: string
 ): Promise<TestEigenLayerInteractor> {
-  const blockNumber = await owner.provider.getBlockNumber();
-  const maxFeePerGas = (await owner.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
   return upgrades.deployProxy(
     new TestEigenLayerInteractor__factory().connect(owner),
     [weth, stEth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-      },
     }
   ) as unknown as Promise<TestEigenLayerInteractor>;
 }
@@ -130,6 +120,32 @@ export async function testYieldStorageFixture(): Promise<{
     owner,
     testYieldStorage,
     weth9,
+  };
+}
+
+export async function testLidoInteractorFixture(): Promise<{
+  owner: SignerWithAddress;
+  testLidoInteractor: TestLidoInteractor;
+  lidoWithdrawalQueue: ILidoWithdrawalQueueExtended;
+  stEth: ERC20;
+}> {
+  const [owner] = await ethers.getSigners();
+
+  const testLidoInteractor = await deployTestLidoInteractor(
+    owner,
+    EthAddressData.weth,
+    EthAddressData.stEth,
+    EthAddressData.lidoWithdrawalQueue
+  );
+
+  const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
+  const lidoWithdrawalQueue = ILidoWithdrawalQueueExtended__factory.connect(EthAddressData.lidoWithdrawalQueue, owner);
+
+  return {
+    owner,
+    testLidoInteractor,
+    lidoWithdrawalQueue,
+    stEth,
   };
 }
 
@@ -168,6 +184,7 @@ export async function testEigenLayerInteractorFixture(): Promise<{
 export interface EthYieldForkTestData {
   weth9: ERC20;
   stEth: ERC20;
+  lidoWithdrawalQueue: ILidoWithdrawalQueueExtended;
   eigenLayerStrategyManager: IStrategyManager;
   eigenLayerStrategy: IStrategy;
   eigenLayerDelegationManager: IDelegationManager;
@@ -187,15 +204,22 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
     EthAddressData.elDelegationManager,
     EthAddressData.eigenLayerOperator
   );
+
+  await upgrades.upgradeProxy(ethYield, await new EthYield__factory().connect(owner), {
+    call: { fn: 'initializeV2', args: [EthAddressData.lidoWithdrawalQueue] },
+  });
+
   const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
   const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
   const eigenLayerStrategyManager = IStrategyManager__factory.connect(EthAddressData.elStrategyManager, owner);
   const eigenLayerStrategy = IStrategy__factory.connect(EthAddressData.elStrategy, owner);
   const eigenLayerDelegationManager = IDelegationManager__factory.connect(EthAddressData.elDelegationManager, owner);
+  const lidoWithdrawalQueue = ILidoWithdrawalQueueExtended__factory.connect(EthAddressData.lidoWithdrawalQueue, owner);
 
   return {
     weth9,
     stEth,
+    lidoWithdrawalQueue,
     ethYield,
     eigenLayerStrategyManager,
     eigenLayerStrategy,

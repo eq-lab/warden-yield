@@ -12,4 +12,11 @@ interface IEthYield is IYieldBase {
   /// @dev if user calls the stake method for the second or more time
   ///      then the same address must be passed as during the first call
   function stake(uint256 amount, string calldata userWardenAddress) external payable returns (uint256);
+
+  /// @notice method to start EigenLayer + Lido unstaking process
+  /// @param sharesAmount EigenLayer shares to withdraw and received stEth to convert to Eth
+  function unstake(uint256 sharesAmount) external;
+
+  /// @notice completes if possible the oldest non-fulfilled withdrawal requests from both EigenLayer and Lido queues
+  function reinit() external;
 }
