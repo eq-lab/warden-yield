@@ -79,19 +79,17 @@ abstract contract AaveInteractor is Initializable {
   /// @dev method implementing 'withdraw' interaction with Aave pool
   /// @param token address of a token to be withdrawn to Aave pool
   /// @param amount amount of the withdrawn token
-  function _aaveWithdraw(address token, uint256 amount) internal {
+  function _aaveWithdraw(address token, uint256 amount) internal returns (uint256 withdrawn) {
+    if (amount == 0) revert Errors.ZeroAmount();
     if (token == address(0)) revert Errors.ZeroAddress();
     if (!getTokenAllowance(token)) revert Errors.NotAllowedToken(token);
 
     address aavePool = getAavePool();
-    address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
 
-    uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
-    uint256 withdrawAmount = IPool(aavePool).withdraw(token, amount, msg.sender);
-    if (withdrawAmount != amount) revert Errors.InvalidAmount(amount, withdrawAmount);
-
-    uint256 scaledWithdrawAmount = totalBalanceScaledBefore - IAToken(aToken).scaledBalanceOf(address(this));
-    if (scaledWithdrawAmount == 0) revert Errors.ZeroAmount();
+    try IPool(aavePool).withdraw(token, amount, msg.sender) returns (uint256 withdrawnAmount) {
+      if (withdrawnAmount < amount) revert Errors.InvalidAmount(amount, withdrawnAmount);
+      withdrawn = withdrawnAmount;
+    } catch  {}
   }
 
   /// @dev returns current balance of token supplied to Aave pool by this contract
@@ -101,28 +99,14 @@ abstract contract AaveInteractor is Initializable {
     return scaledAmount.rayMul(IPool(getAavePool()).getReserveNormalizedIncome(token));
   }
 
+  function _getScaledFromBalance(uint256 balanceAmount, address token) internal view returns (uint256) {
+    return balanceAmount.rayDiv(IPool(getAavePool()).getReserveNormalizedIncome(token));
+  }
+
   /// @notice returns address of Aave pool this contract interacts with
   function getAavePool() public view returns (address) {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     return $.aavePool;
-  }
-
-  /// @notice returns if users can call `withdraw` method
-  function areWithdrawalsEnabled() public view returns (bool) {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    return $.areWithdrawalsEnabled;
-  }
-
-  /// @dev enables withdraws from Aave pool
-  function _enableWithdrawals() internal {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    $.areWithdrawalsEnabled = true;
-  }
-
-  /// @dev disables withdraws from Aave pool
-  function _disableWithdrawals() internal {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    $.areWithdrawalsEnabled = false;
   }
 
   /// @notice returns if the passed token can be used in 'stake' call
@@ -132,7 +116,7 @@ abstract contract AaveInteractor is Initializable {
   }
 
   /// @dev changes token allowance status
-  /// @param token addres of a token which status will be changed
+  /// @param token address of a token which status will be changed
   /// @param enabled new status
   function _setTokenAllowance(address token, bool enabled) internal {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();

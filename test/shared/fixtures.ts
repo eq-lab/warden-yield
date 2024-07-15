@@ -1,6 +1,8 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { ethers, upgrades } from 'hardhat';
 import {
+  AaveYield__factory,
+  AaveYield,
   ERC20,
   ERC20__factory,
   EthYield,
@@ -17,8 +19,6 @@ import {
   IStrategyManager__factory,
   MintableERC20,
   MintableERC20__factory,
-  TestAaveYield,
-  TestAaveYield__factory,
   TestYieldStorage,
   TestYieldStorage__factory,
   TestEigenLayerInteractor__factory,
@@ -57,10 +57,10 @@ export async function deployAaveYieldContract(
   owner: SignerWithAddress,
   aavePoolAddress: string,
   allowedTokens: string[]
-): Promise<TestAaveYield> {
-  return upgrades.deployProxy(await new TestAaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
+): Promise<AaveYield> {
+  return upgrades.deployProxy(await new AaveYield__factory().connect(owner), [aavePoolAddress, allowedTokens], {
     initializer: 'initialize',
-  }) as unknown as TestAaveYield;
+  }) as unknown as AaveYield;
 }
 
 export async function deployTestYieldStorageContract(
@@ -236,7 +236,7 @@ export interface AaveForkTestData {
   aEthUsdt: IAToken;
   usdc: ERC20;
   aEthUsdc: IAToken;
-  aaveYield: TestAaveYield;
+  aaveYield: AaveYield;
   aavePool: IPool;
   owner: SignerWithAddress;
 }
