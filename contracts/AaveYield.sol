@@ -45,6 +45,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
     availableToWithdraw = _getBalanceFromScaled(scaledDeposit, underlyingToken);
   }
 
+  /// @notice converts amount of passed token to the shares
   function underlyingToShares(
     uint256 amount,
     address underlyingToken
@@ -52,6 +53,7 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
     return _getScaledFromBalance(amount, underlyingToken);
   }
 
+  /// @notice converts shares of passed token to its amount
   function sharesToUnderlying(
     uint256 shares,
     address underlyingToken
