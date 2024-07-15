@@ -27,9 +27,15 @@ task('task:deploy', 'Deploy Yield proxies and implementations')
     }
 
     const signer = new hre.ethers.Wallet(taskArgs.creatorPrivateKey, hre.ethers.provider);
+    const balanceBefore = await signer.provider.getBalance(signer.address);
+    console.log(`Balance before: ${hre.ethers.formatEther(balanceBefore)} Eth`);
     const config = await loadDeployConfig(network, signer.provider, dryRun);
 
     await deployWardenYield(signer, config, network, dryRun, hre);
 
+    const balanceAfter = await signer.provider.getBalance(signer.address);
+    console.log(`Balance after: ${hre.ethers.formatEther(balanceAfter)} Eth`);
+
+    console.log(`Spent: ${hre.ethers.formatEther(balanceBefore - balanceAfter)} Eth`);
     console.log(`Done!`);
   });
