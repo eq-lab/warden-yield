@@ -69,7 +69,7 @@ async function withdraw(
   signer: HardhatEthersSigner,
   aToken: IAToken,
   tokenToWithdraw: ERC20,
-  amount: bigint,
+  amount: bigint
 ): Promise<void> {
   const aaveYieldAddress = await aaveYield.getAddress();
   const tokenAddress = await tokenToWithdraw.getAddress();
@@ -80,7 +80,7 @@ async function withdraw(
 
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken, signer.address, tokenAddress);
   const staked = await aaveYield.userStakedAmount(signer.address, tokenAddress);
-  
+
   await aaveYield.connect(signer).unstake(tokenAddress, amount);
   const scaledBalance = await aaveYield.underlyingToShares(amount, tokenAddress);
 
@@ -295,4 +295,4 @@ describe('Aave Yield tokens', () => {
 
     expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
   });
-})
+});

@@ -89,7 +89,7 @@ abstract contract AaveInteractor is Initializable {
     try IPool(aavePool).withdraw(token, amount, msg.sender) returns (uint256 withdrawnAmount) {
       if (withdrawnAmount < amount) revert Errors.InvalidAmount(amount, withdrawnAmount);
       withdrawn = withdrawnAmount;
-    } catch  {}
+    } catch {}
   }
 
   /// @dev returns current balance of token supplied to Aave pool by this contract

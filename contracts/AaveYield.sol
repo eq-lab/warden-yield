@@ -46,18 +46,12 @@ contract AaveYield is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor, 
   }
 
   /// @notice converts amount of passed token to the shares
-  function underlyingToShares(
-    uint256 amount,
-    address underlyingToken
-  ) external view returns (uint256) {
+  function underlyingToShares(uint256 amount, address underlyingToken) external view returns (uint256) {
     return _getScaledFromBalance(amount, underlyingToken);
   }
 
   /// @notice converts shares of passed token to its amount
-  function sharesToUnderlying(
-    uint256 shares,
-    address underlyingToken
-  ) external view returns (uint256) {
+  function sharesToUnderlying(uint256 shares, address underlyingToken) external view returns (uint256) {
     return _getBalanceFromScaled(shares, underlyingToken);
   }
 
