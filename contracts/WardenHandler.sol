@@ -295,7 +295,7 @@ abstract contract WardenHandler is Initializable {
     string memory wardenContractAddress = $.wardenContractAddress;
 
     IAxelarGasService($.axelarGasService).payNativeGasForContractCallWithToken{value: msg.value}(
-      msg.sender,
+      address(this),
       wardenChain,
       wardenContractAddress,
       response,
