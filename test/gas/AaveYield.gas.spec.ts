@@ -16,4 +16,16 @@ describe('AaveYield gas', () => {
 
     await snapshotGasCost(Number(await aaveYield.connect(user).stake.estimateGas(weth9, input, USER_WARDEN_ADDRESS)));
   });
+
+  it('user unstake', async () => {
+    const { aaveYield, weth9 } = await loadFixture(createAaveEthFork);
+    const [_, user] = await ethers.getSigners();
+
+    const input = parseEther('1');
+    await setTokenBalance(await weth9.getAddress(), user.address, input);
+    await weth9.connect(user).approve(aaveYield.target, input);
+    await aaveYield.connect(user).stake(weth9, input, USER_WARDEN_ADDRESS);
+
+    await snapshotGasCost(Number(await aaveYield.connect(user).unstake.estimateGas(weth9, input)));
+  });
 });

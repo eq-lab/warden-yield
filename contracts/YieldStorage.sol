@@ -95,7 +95,7 @@ abstract contract YieldStorage {
     }
   }
 
-  /// @notice returns total shares recieved in all stake calls
+  /// @notice returns total shares received in all stake calls
   function totalShares(address token) external view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._totalShares[token];
@@ -107,14 +107,14 @@ abstract contract YieldStorage {
     return $._totalStakedAmount[token];
   }
 
-  /// @notice returns total shares recieved in all stake calls by user
+  /// @notice returns total shares received in all stake calls by user
   /// @param user user address whose shares are returned
   function userShares(address user, address token) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._shares[token][user];
   }
 
-  /// @notice returns total amount of tokens transfered to staking protocols in stake calls by user
+  /// @notice returns total amount of tokens transferred to staking protocols in stake calls by user
   /// @param user user address whose staked tokens are returned
   function userStakedAmount(address user, address token) external view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();

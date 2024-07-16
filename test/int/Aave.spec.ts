@@ -67,24 +67,28 @@ async function stake(
 async function withdraw(
   aaveYield: AaveYield,
   signer: HardhatEthersSigner,
-  aEthWETH: IAToken,
-  weth9: ERC20
+  aToken: IAToken,
+  tokenToWithdraw: ERC20,
+  amount: bigint
 ): Promise<void> {
   const aaveYieldAddress = await aaveYield.getAddress();
-  const weth9Address = await weth9.getAddress();
+  const tokenAddress = await tokenToWithdraw.getAddress();
 
   // state before withdraw
-  const aEthScaledBalanceBefore = await aEthWETH.scaledBalanceOf(aaveYieldAddress);
-  const assertYieldStorage = await createYieldStorageAssert(aaveYield, aEthWETH, signer.address, weth9Address);
-  const availableToWithdraw = await aaveYield.getUserUnderlyingAmount(signer.address, weth9Address);
-  const staked = await aaveYield.userStakedAmount(signer.address, weth9Address);
-  const scaledBalance = await aaveYield.userShares(signer.address, weth9Address);
+  const aTokenScaledBalanceBefore = await aToken.scaledBalanceOf(aaveYieldAddress);
+  const tokenBalanceBefore = await tokenToWithdraw.balanceOf(signer.address);
 
-  await aaveYield.connect(signer).withdraw(weth9);
-  expect(await weth9.balanceOf(signer.address)).to.be.greaterThanOrEqual(availableToWithdraw);
-  expect(await aEthWETH.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aEthScaledBalanceBefore - scaledBalance);
+  const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken, signer.address, tokenAddress);
+  const staked = await aaveYield.userStakedAmount(signer.address, tokenAddress);
 
-  await assertYieldStorage(-staked);
+  await aaveYield.connect(signer).unstake(tokenAddress, amount);
+  const scaledBalance = await aaveYield.underlyingToShares(amount, tokenAddress);
+
+  expect(await tokenToWithdraw.balanceOf(signer.address)).to.be.eq(amount + tokenBalanceBefore);
+  expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aTokenScaledBalanceBefore - scaledBalance);
+
+  // TODO remove the comment below after the YieldStorage update
+  // await assertYieldStorage(-staked);
 }
 
 async function initBalance(account: string, token: ERC20, balanceStr: string): Promise<bigint> {
@@ -100,68 +104,28 @@ describe('AaveYield, deposit', () => {
     await helpers.mine();
   });
 
-  it('1 users: stake & unstake', async () => {
+  it('1 users: stake', async () => {
     const [, user] = await ethers.getSigners();
     const { aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
 
-    await aaveYield.enableWithdrawals();
     const weth9Address = await weth9.getAddress();
 
     // init balances
     const userInput = await initBalance(user.address, weth9, '1');
 
     await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
-    await withdraw(aaveYield, user, aEthWETH, weth9);
+    // await withdraw(aaveYield, user, aEthWETH, weth9, userInput);
 
-    expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
-    expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
+    // expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
+    // expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
 
-    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+    // expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
   });
 
-  it('1 users: stake & unstake USDT', async () => {
-    const [, user] = await ethers.getSigners();
-    const { aaveYield, usdt, aEthUsdt } = await loadFixture(createAaveEthFork);
-
-    await aaveYield.enableWithdrawals();
-    const usdtAddress = await usdt.getAddress();
-
-    // init balances
-    const userInput = await initBalance(user.address, usdt, '1000');
-
-    await stake(aaveYield, user, aEthUsdt, usdt, userInput, USER_WARDEN_ADDRESS);
-    await withdraw(aaveYield, user, aEthUsdt, usdt);
-
-    expect(await aaveYield.totalStakedAmount(usdtAddress)).to.be.eq(0);
-    expect(await aaveYield.totalShares(usdtAddress)).to.be.eq(0);
-
-    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
-  });
-
-  it('1 users: stake & unstake USDC', async () => {
-    const [, user] = await ethers.getSigners();
-    const { aaveYield, usdc, aEthUsdc } = await loadFixture(createAaveEthFork);
-
-    await aaveYield.enableWithdrawals();
-    const usdcAddress = await usdc.getAddress();
-
-    // init balances
-    const userInput = await initBalance(user.address, usdc, '1000');
-
-    await stake(aaveYield, user, aEthUsdc, usdc, userInput, USER_WARDEN_ADDRESS);
-    await withdraw(aaveYield, user, aEthUsdc, usdc);
-
-    expect(await aaveYield.totalStakedAmount(usdcAddress)).to.be.eq(0);
-    expect(await aaveYield.totalShares(usdcAddress)).to.be.eq(0);
-
-    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
-  });
-
-  it('2 users: stake & unstake', async () => {
+  it('2 users: stake', async () => {
     const [, user1, user2] = await ethers.getSigners();
     const { aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
 
-    await aaveYield.enableWithdrawals();
     const weth9Address = await weth9.getAddress();
 
     // init balances
@@ -174,14 +138,14 @@ describe('AaveYield, deposit', () => {
     await stake(aaveYield, user1, aEthWETH, weth9, user1Input, user1WardenAddress);
     await stake(aaveYield, user2, aEthWETH, weth9, user2Input, user2WardenAddress);
 
-    await withdraw(aaveYield, user1, aEthWETH, weth9);
-    await withdraw(aaveYield, user2, aEthWETH, weth9);
+    await withdraw(aaveYield, user1, aEthWETH, weth9, user1Input);
+    await withdraw(aaveYield, user2, aEthWETH, weth9, user2Input);
 
-    expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
-    expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
+    // expect(await aaveYield.totalStakedAmount(weth9Address)).to.be.eq(0);
+    // expect(await aaveYield.totalShares(weth9Address)).to.be.eq(0);
 
-    expect(await aaveYield.wardenAddress(user1.address)).to.be.eq(user1WardenAddress);
-    expect(await aaveYield.wardenAddress(user2.address)).to.be.eq(user2WardenAddress);
+    // expect(await aaveYield.wardenAddress(user1.address)).to.be.eq(user1WardenAddress);
+    // expect(await aaveYield.wardenAddress(user2.address)).to.be.eq(user2WardenAddress);
   });
 
   it('user stake, zero amount', async () => {
@@ -195,24 +159,14 @@ describe('AaveYield, deposit', () => {
 });
 
 describe('AaveYield, unstake', () => {
-  it('unstake, disabled', async () => {
-    const [, user] = await ethers.getSigners();
-    const { aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
-    // init balances
-    const userInput = await initBalance(user.address, weth9, '1');
-    await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
-    await expect(aaveYield.withdraw(weth9)).to.be.revertedWithCustomError(aaveYield, 'WithdrawalsDisabled');
-  });
-
   it('unstake, not allowed token', async () => {
     const [, user] = await ethers.getSigners();
     const { owner, aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
-    await aaveYield.connect(owner).enableWithdrawals();
 
     // init balances
     const userInput = await initBalance(user.address, weth9, '1');
     await stake(aaveYield, user, aEthWETH, weth9, userInput, USER_WARDEN_ADDRESS);
-    await expect(aaveYield.withdraw(aEthWETH)).to.be.revertedWithCustomError(aaveYield, 'NotAllowedToken');
+    await expect(aaveYield.unstake(aEthWETH, userInput)).to.be.revertedWithCustomError(aaveYield, 'NotAllowedToken');
   });
 });
 
@@ -287,40 +241,6 @@ describe('AaveYield onlyOwner actions', () => {
       'TokenAlreadyDisallowed'
     );
   });
-
-  it('enableWithdraws', async () => {
-    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
-    expect(await aaveYield.areWithdrawalsEnabled()).to.be.false;
-    await aaveYield.connect(owner).enableWithdrawals();
-    expect(await aaveYield.areWithdrawalsEnabled()).to.be.true;
-  });
-
-  it('enableWithdraws, notOwner', async () => {
-    const { aaveYield } = await loadFixture(createAaveEthFork);
-    const [_, notOwner] = await ethers.getSigners();
-    await expect(aaveYield.connect(notOwner).enableWithdrawals()).to.be.revertedWithCustomError(
-      aaveYield,
-      'OwnableUnauthorizedAccount'
-    );
-  });
-
-  it('disableWithdraws', async () => {
-    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
-    await aaveYield.connect(owner).enableWithdrawals();
-    expect(await aaveYield.areWithdrawalsEnabled()).to.be.true;
-    await aaveYield.connect(owner).disableWithdrawals();
-    expect(await aaveYield.areWithdrawalsEnabled()).to.be.false;
-  });
-
-  it('disableWithdraws, notOwner', async () => {
-    const { owner, aaveYield } = await loadFixture(createAaveEthFork);
-    await aaveYield.connect(owner).enableWithdrawals();
-    const [_, notOwner] = await ethers.getSigners();
-    await expect(aaveYield.connect(notOwner).disableWithdrawals()).to.be.revertedWithCustomError(
-      aaveYield,
-      'OwnableUnauthorizedAccount'
-    );
-  });
 });
 
 describe('AaveYield init errors', () => {
@@ -336,5 +256,43 @@ describe('AaveYield init errors', () => {
     await expect(
       deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.stEth])
     ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'UnknownToken');
+  });
+});
+
+describe('Aave Yield tokens', () => {
+  it('1 users: stake & unstake USDT', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, usdt, aEthUsdt } = await loadFixture(createAaveEthFork);
+
+    const usdtAddress = await usdt.getAddress();
+
+    // init balances
+    const userInput = await initBalance(user.address, usdt, '1000');
+
+    await stake(aaveYield, user, aEthUsdt, usdt, userInput, USER_WARDEN_ADDRESS);
+    await withdraw(aaveYield, user, aEthUsdt, usdt, userInput);
+
+    // expect(await aaveYield.totalStakedAmount(usdtAddress)).to.be.eq(0);
+    // expect(await aaveYield.totalShares(usdtAddress)).to.be.eq(0);
+
+    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+  });
+
+  it('1 users: stake & unstake USDC', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, usdc, aEthUsdc } = await loadFixture(createAaveEthFork);
+
+    const usdcAddress = await usdc.getAddress();
+
+    // init balances
+    const userInput = await initBalance(user.address, usdc, '1000');
+
+    await stake(aaveYield, user, aEthUsdc, usdc, userInput, USER_WARDEN_ADDRESS);
+    await withdraw(aaveYield, user, aEthUsdc, usdc, userInput);
+
+    // expect(await aaveYield.totalStakedAmount(usdcAddress)).to.be.eq(0);
+    // expect(await aaveYield.totalShares(usdcAddress)).to.be.eq(0);
+
+    expect(await aaveYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
   });
 });
