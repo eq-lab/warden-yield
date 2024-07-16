@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { ILidoWithdrawalQueueExtended } from '../../typechain-types';
-import { parseEther } from 'ethers';
+import { BigNumberish, BytesLike, parseEther } from 'ethers';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 
 export const USER_WARDEN_ADDRESS = 'warden1234';
@@ -72,4 +72,71 @@ function toHexString(value: bigint): string {
     hexString = '0' + hexString;
   }
   return `0x${hexString}`;
+}
+
+export function encodeWardenPayload(actionType: number, actionId: number, lpAmount: bigint): BytesLike {
+  let value = 0n;
+  value += lpAmount << 72n;
+  value += BigInt(actionId) << 8n;
+  value += BigInt(actionType);
+  return ethers.solidityPacked(['uint256'], [value]);
+}
+
+type WardenStakeResponse = {
+  actionType: number;
+  status: number;
+  actionId: number;
+  lpAmount: bigint;
+  reinitUnstakeId: number;
+};
+
+function decodeArgValues(payload: BytesLike): string {
+  const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+  const gmpPayload = ethers.dataSlice(payload, 4);
+
+  const decoded = abiCoder.decode(['string', 'string[]', 'string[]', 'bytes'], gmpPayload, false);
+  return decoded.at(3);
+}
+
+export function decodeWardenStakeResponse(payload: BytesLike): WardenStakeResponse {
+  const argValues = decodeArgValues(payload);
+
+  return {
+    actionType: ethers.getNumber(ethers.dataSlice(argValues, 0, 1)), //actionType 1 byte
+    status: ethers.getNumber(ethers.dataSlice(argValues, 1, 2)), // status 1 byte
+    actionId: ethers.getNumber(ethers.dataSlice(argValues, 2, 10)), //actionId 8 byte
+    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(argValues, 10, 18)), //reinitUnstakeId 8 byte
+    lpAmount: ethers.getBigInt(ethers.dataSlice(argValues, 18, 34)), //lpAmount 16 byte
+  };
+}
+
+type WardenUnstakeResponse = {
+  actionType: number;
+  status: number;
+  actionId: number;
+  reinitUnstakeId: number;
+};
+
+export function decodeWardenUnstakeResponse(payload: BytesLike): WardenUnstakeResponse {
+  const argValues = decodeArgValues(payload);
+
+  return {
+    actionType: ethers.getNumber(ethers.dataSlice(argValues, 0, 1)), //actionType 1 byte
+    status: ethers.getNumber(ethers.dataSlice(argValues, 1, 2)), // status 1 byte
+    actionId: ethers.getNumber(ethers.dataSlice(argValues, 2, 10)), //actionId 8 byte
+    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(argValues, 10, 18)), //reinitUnstakeId 8 byte
+  };
+}
+
+type WardenReinitResponse = {
+  actionType: number;
+  reinitUnstakeId: number;
+};
+
+export function decodeWardenReinitResponse(payload: BytesLike): WardenReinitResponse {
+  const argValues = decodeArgValues(payload);
+  return {
+    actionType: ethers.getNumber(ethers.dataSlice(argValues, 0, 1)), //actionType 1 byte
+    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(argValues, 1, 9)), //reinitUnstakeId 8 byte
+  };
 }

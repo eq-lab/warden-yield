@@ -5,7 +5,8 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
-import './interfaces/IAxelarGateway.sol';
+import './interfaces/Axelar/IAxelarGateway.sol';
+import './interfaces/Axelar/IAxelarGasService.sol';
 
 /// @notice Handles requests from Warden
 abstract contract WardenHandler is Initializable {
@@ -23,11 +24,12 @@ abstract contract WardenHandler is Initializable {
   uint8 internal constant ERROR_STATUS = 1;
 
   /// keccak256(abi.encode(uint256(keccak256("eq-lab.storage.WardenHandlerData")) - 1)) & ~bytes32(uint256(0xff));
-  bytes32 private constant WardenInteractionDataStorageLocation =
+  bytes32 private constant WardenHandlerDataStorageLocation =
     0x4f376997038d6e5610d23f9f89ae844faaf6e156ed92caa3ff61a3cac093a900;
 
   struct WardenHandlerData {
     address axelarGateway;
+    address axelarGasService;
     string wardenChain;
     string wardenContractAddress;
   }
@@ -58,26 +60,29 @@ abstract contract WardenHandler is Initializable {
     uint64 reinitUnstakeId;
   }
 
-  /// @notice Initialize AxelarExecutable module
+  /// @notice Initialize module
   /// @param axelarGateway Address of Axelar gateway
+  /// @param axelarGasService Address of Axelar gas service
   /// @param wardenChain Identifier of warden chain
   /// @param wardenContractAddress Contract address in warden chain
-  function __WardenInteraction_init(
+  function __WardenHandler_init(
     address axelarGateway,
+    address axelarGasService,
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) internal onlyInitializing {
     if (axelarGateway == address(0)) revert InvalidAddress();
 
-    WardenHandlerData storage $ = _getWardenData();
+    WardenHandlerData storage $ = _getWardenHandlerData();
     $.axelarGateway = axelarGateway;
+    $.axelarGasService = axelarGasService;
     $.wardenChain = wardenChain;
     $.wardenContractAddress = wardenContractAddress;
   }
 
-  function _getWardenData() private pure returns (WardenHandlerData storage $) {
+  function _getWardenHandlerData() private pure returns (WardenHandlerData storage $) {
     assembly {
-      $.slot := WardenInteractionDataStorageLocation
+      $.slot := WardenHandlerDataStorageLocation
     }
   }
 
@@ -168,7 +173,7 @@ abstract contract WardenHandler is Initializable {
     string calldata sourceAddress,
     bytes calldata payload
   ) external {
-    WardenHandlerData storage $ = _getWardenData();
+    WardenHandlerData storage $ = _getWardenHandlerData();
 
     string memory wardenChain = $.wardenChain;
     if (!Strings.equal(wardenChain, sourceChain)) revert InvalidSourceChain();
@@ -231,7 +236,7 @@ abstract contract WardenHandler is Initializable {
     // Most unlikely case, because Warden token amount is limited by uint128 type
     if (amount > type(uint128).max) revert AmountTooBig();
 
-    WardenHandlerData storage $ = _getWardenData();
+    WardenHandlerData storage $ = _getWardenHandlerData();
 
     string memory wardenChain = $.wardenChain;
     if (!Strings.equal(wardenChain, sourceChain)) revert InvalidSourceChain();
@@ -272,5 +277,34 @@ abstract contract WardenHandler is Initializable {
     } else {
       gateway.callContract(wardenChain, wardenContractAddress, response);
     }
+  }
+
+  ///@notice Anyone can call reinit function from EVM chain
+  function executeReinit() external payable {
+    WardenHandlerData storage $ = _getWardenHandlerData();
+
+    ReinitResult memory reinitResult = _handleReinitRequest();
+    if (reinitResult.tokenAmount == 0) {
+      return; // no response for empty reinit
+    }
+
+    bytes memory response = _createReinitResponse(reinitResult.reinitUnstakeId);
+    string memory tokenSymbol = IERC20Metadata(reinitResult.tokenAddress).symbol();
+    string memory wardenChain = $.wardenChain;
+    string memory wardenContractAddress = $.wardenContractAddress;
+
+    IAxelarGasService($.axelarGasService).payNativeGasForContractCallWithToken{value: msg.value}(
+      msg.sender,
+      wardenChain,
+      wardenContractAddress,
+      response,
+      tokenSymbol,
+      reinitResult.tokenAmount,
+      msg.sender
+    );
+
+    IAxelarGateway gateway = IAxelarGateway($.axelarGateway);
+    IERC20(reinitResult.tokenAddress).approve(address(gateway), reinitResult.tokenAmount);
+    gateway.callContractWithToken(wardenChain, wardenContractAddress, response, tokenSymbol, reinitResult.tokenAmount);
   }
 }
