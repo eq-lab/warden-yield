@@ -10,18 +10,24 @@ import './interfaces/Axelar/IAxelarGasService.sol';
 
 /// @notice Handles requests from Warden
 abstract contract WardenHandler is Initializable {
+  using SafeERC20 for IERC20;
+
   error NotApprovedByGateway();
   error InvalidAddress();
   error InvalidSourceChain();
   error InvalidActionType();
   error AmountTooBig();
 
-  uint8 private constant STAKE_ACTION_TYPE = 0;
-  uint8 private constant UUNSTAKE_ACTION_TYPE = 1;
-  uint8 private constant REINIT_ACTION_TYPE = 2;
+  enum ActionType {
+    Stake, //0
+    Unstake, //1
+    Reinit //2
+  }
 
-  uint8 internal constant SUCCESS_STATUS = 0;
-  uint8 internal constant ERROR_STATUS = 1;
+  enum Status {
+    Success, //0
+    Failed //1
+  }
 
   /// keccak256(abi.encode(uint256(keccak256("eq-lab.storage.WardenHandlerData")) - 1)) & ~bytes32(uint256(0xff));
   bytes32 private constant WardenHandlerDataStorageLocation =
@@ -35,22 +41,22 @@ abstract contract WardenHandler is Initializable {
   }
 
   struct WardenRequest {
-    uint8 actionType;
+    ActionType actionType;
     uint64 actionId;
     uint128 lpAmount;
   }
 
   struct StakeResult {
-    uint8 status;
+    Status status;
     uint128 lpAmount;
-    uint128 tokenAmount;
+    uint128 unstakeTokenAmount;
     uint64 reinitUnstakeId;
   }
 
   struct UnstakeResult {
-    uint8 status;
-    address tokenAddress;
-    uint128 tokenAmount;
+    Status status;
+    address unstakeTokenAddress;
+    uint128 unstakeTokenAmount;
     uint64 reinitUnstakeId;
   }
 
@@ -72,6 +78,7 @@ abstract contract WardenHandler is Initializable {
     string calldata wardenContractAddress
   ) internal onlyInitializing {
     if (axelarGateway == address(0)) revert InvalidAddress();
+    if (axelarGasService == address(0)) revert InvalidAddress();
 
     WardenHandlerData storage $ = _getWardenHandlerData();
     $.axelarGateway = axelarGateway;
@@ -91,9 +98,9 @@ abstract contract WardenHandler is Initializable {
     uint256 wardenRequest = abi.decode(payload, (uint256));
     return
       WardenRequest({
-        actionType: (uint8)(wardenRequest),
-        actionId: (uint64)(wardenRequest >> 8),
-        lpAmount: (uint128)(wardenRequest >> 72)
+        actionType: ActionType(uint8(wardenRequest)),
+        actionId: uint64(wardenRequest >> 8),
+        lpAmount: uint128(wardenRequest >> 72)
       });
   }
 
@@ -119,7 +126,7 @@ abstract contract WardenHandler is Initializable {
     return
       _createResponse(
         abi.encodePacked(
-          STAKE_ACTION_TYPE,
+          ActionType.Stake,
           stakeResult.status,
           stakeId,
           stakeResult.reinitUnstakeId,
@@ -133,17 +140,17 @@ abstract contract WardenHandler is Initializable {
   /// @param unstakeId Unstake identifier
   /// @param reinitUnstakeId Reinited unstake identifier
   function _createUnstakeResponse(
-    uint8 status,
+    Status status,
     uint64 unstakeId,
     uint64 reinitUnstakeId
   ) private pure returns (bytes memory) {
-    return _createResponse(abi.encodePacked(UUNSTAKE_ACTION_TYPE, status, unstakeId, reinitUnstakeId));
+    return _createResponse(abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId));
   }
 
   /// @notice Encode reinit response
   /// @param reinitUnstakeId Reinited unstake identifier
   function _createReinitResponse(uint64 reinitUnstakeId) private pure returns (bytes memory) {
-    return _createResponse(abi.encodePacked(REINIT_ACTION_TYPE, reinitUnstakeId));
+    return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId));
   }
 
   ///@notice Handle stake request, should be implemented in Yield contract
@@ -167,7 +174,7 @@ abstract contract WardenHandler is Initializable {
   /// @return reinit result
   function _handleReinitRequest() internal virtual returns (ReinitResult memory);
 
-  ///@notice Axelar relayer calls the function when accept unstake request from Warden
+  ///@notice Axelar relayer calls the function when accept unstake or reinit request from Warden
   function execute(
     bytes32 commandId,
     string calldata sourceChain,
@@ -192,13 +199,13 @@ abstract contract WardenHandler is Initializable {
     uint128 tokenAmount;
     bytes memory response;
 
-    if (request.actionType == UUNSTAKE_ACTION_TYPE) {
+    if (request.actionType == ActionType.Unstake) {
       UnstakeResult memory unstakeResult = _handleUnstakeRequest(request.actionId, request.lpAmount);
 
-      tokenAddress = unstakeResult.tokenAddress;
-      tokenAmount = unstakeResult.tokenAmount;
+      tokenAddress = unstakeResult.unstakeTokenAddress;
+      tokenAmount = unstakeResult.unstakeTokenAmount;
       response = _createUnstakeResponse(unstakeResult.status, request.actionId, unstakeResult.reinitUnstakeId);
-    } else if (request.actionType == REINIT_ACTION_TYPE) {
+    } else if (request.actionType == ActionType.Reinit) {
       ReinitResult memory reinitResult = _handleReinitRequest();
       if (reinitResult.tokenAmount == 0) {
         return; // no response for empty reinit
@@ -212,7 +219,7 @@ abstract contract WardenHandler is Initializable {
     }
 
     if (tokenAmount != 0) {
-      IERC20(tokenAddress).approve(address(gateway), tokenAmount);
+      IERC20(tokenAddress).forceApprove(address(gateway), tokenAmount);
       gateway.callContractWithToken(
         wardenChain,
         wardenContractAddress,
@@ -258,7 +265,7 @@ abstract contract WardenHandler is Initializable {
     ) revert NotApprovedByGateway();
 
     WardenRequest memory request = _decodeWardenPayload(payload);
-    if (request.actionType != STAKE_ACTION_TYPE) revert InvalidActionType();
+    if (request.actionType != ActionType.Stake) revert InvalidActionType();
 
     address tokenAddress = gateway.tokenAddresses(tokenSymbol);
     StakeResult memory stakeResult = _handleStakeRequest(request.actionId, tokenAddress, amount);
@@ -267,14 +274,20 @@ abstract contract WardenHandler is Initializable {
     bytes memory response = _createStakeResponse(request.actionId, stakeResult);
 
     // amount to return could contain withdrawn amount and stake amount when stake failed
-    if (stakeResult.status != SUCCESS_STATUS) {
-      stakeResult.tokenAmount += uint128(amount); // safe cast, checked above
+    if (stakeResult.status != Status.Success) {
+      stakeResult.unstakeTokenAmount += uint128(amount); // safe cast, checked above
     }
 
-    if (stakeResult.tokenAmount != 0) {
+    if (stakeResult.unstakeTokenAmount != 0) {
       /// When stake fails, we need to send tokens back to Warden
-      IERC20(tokenAddress).approve(address(gateway), stakeResult.tokenAmount);
-      gateway.callContractWithToken(wardenChain, wardenContractAddress, response, tokenSymbol, stakeResult.tokenAmount);
+      IERC20(tokenAddress).forceApprove(address(gateway), stakeResult.unstakeTokenAmount);
+      gateway.callContractWithToken(
+        wardenChain,
+        wardenContractAddress,
+        response,
+        tokenSymbol,
+        stakeResult.unstakeTokenAmount
+      );
     } else {
       gateway.callContract(wardenChain, wardenContractAddress, response);
     }
@@ -305,7 +318,7 @@ abstract contract WardenHandler is Initializable {
     );
 
     IAxelarGateway gateway = IAxelarGateway($.axelarGateway);
-    IERC20(reinitResult.tokenAddress).approve(address(gateway), reinitResult.tokenAmount);
+    IERC20(reinitResult.tokenAddress).forceApprove(address(gateway), reinitResult.tokenAmount);
     gateway.callContractWithToken(wardenChain, wardenContractAddress, response, tokenSymbol, reinitResult.tokenAmount);
   }
 }

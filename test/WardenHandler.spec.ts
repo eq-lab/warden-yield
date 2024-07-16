@@ -88,7 +88,7 @@ describe('WardenHandler', () => {
       const stakeResult = {
         actionType: ActionType.Stake,
         status: Status.Success,
-        tokenAmount: 0n,
+        unstakeTokenAmount: 0n,
         reinitUnstakeId: 0n,
         lpAmount: 1000n,
         actionId: 1,
@@ -127,7 +127,7 @@ describe('WardenHandler', () => {
         actionType: ActionType.Stake,
         actionId: 1,
         status: Status.Failed,
-        tokenAmount: 1000n,
+        unstakeTokenAmount: 1000n,
         reinitUnstakeId: 0n,
         lpAmount: 0n,
       };
@@ -165,7 +165,7 @@ describe('WardenHandler', () => {
         actionType: ActionType.Stake,
         actionId: 1,
         status: Status.Success,
-        tokenAmount: 1000n,
+        unstakeTokenAmount: 1000n,
         reinitUnstakeId: 1n,
         lpAmount: 0n,
       };
@@ -255,8 +255,8 @@ describe('WardenHandler', () => {
       const unstakeResult = {
         status: Status.Success,
         reinitUnstakeId: 0n,
-        tokenAmount: tokenAmount,
-        tokenAddress: await testToken.getAddress(),
+        unstakeTokenAmount: tokenAmount,
+        unstakeTokenAddress: await testToken.getAddress(),
       };
       await wardenHandler.setUnstakeResult(unstakeResult);
 
