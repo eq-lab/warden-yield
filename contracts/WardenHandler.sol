@@ -98,6 +98,7 @@ abstract contract WardenHandler is Initializable {
   }
 
   /// @notice Encode warden payload
+  /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
   function _createResponse(bytes memory argValues) private pure returns (bytes memory) {
     string[] memory argNameArray = new string[](1);
     argNameArray[0] = 'response_data';
