@@ -1,0 +1,14 @@
+{
+  "aaveYield-usdc": {
+    "address": "0x0259044395FE54d8aFe28354Ac737EB216064cF9",
+    "implementation": "0x099Ac084fEf4aA9C454D8E882e713bf384329FfE"
+  },
+  "aaveYield-usdt": {
+    "address": "0x0F9d2C03AD21a30746A4b4f07919e1C5F3641F35",
+    "implementation": "0x099Ac084fEf4aA9C454D8E882e713bf384329FfE"
+  },
+  "ethYield": {
+    "address": "0x4DF66BCA96319C6A033cfd86c38BCDb9B3c11a72",
+    "implementation": "0x2c9dA53d37F77dAe5B941CF9a0FC66E680dfF41D"
+  }
+}
