@@ -27,6 +27,8 @@ import {
   TestLidoInteractor__factory,
   ILidoWithdrawalQueueExtended,
   ILidoWithdrawalQueueExtended__factory,
+  TestWETH9,
+  TestWETH9__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EthAddressData } from './utils';
@@ -128,12 +130,15 @@ export async function testLidoInteractorFixture(): Promise<{
   testLidoInteractor: TestLidoInteractor;
   lidoWithdrawalQueue: ILidoWithdrawalQueueExtended;
   stEth: ERC20;
+  weth: TestWETH9;
 }> {
   const [owner] = await ethers.getSigners();
 
+  const weth = await new TestWETH9__factory().connect(owner).deploy();
+
   const testLidoInteractor = await deployTestLidoInteractor(
     owner,
-    EthAddressData.weth,
+    await weth.getAddress(),
     EthAddressData.stEth,
     EthAddressData.lidoWithdrawalQueue
   );
@@ -146,6 +151,7 @@ export async function testLidoInteractorFixture(): Promise<{
     testLidoInteractor,
     lidoWithdrawalQueue,
     stEth,
+    weth,
   };
 }
 
@@ -155,12 +161,15 @@ export async function testEigenLayerInteractorFixture(): Promise<{
   delegationManager: IDelegationManager;
   strategy: IStrategy;
   stEth: ERC20;
+  weth: TestWETH9;
 }> {
   const [owner] = await ethers.getSigners();
 
+  const weth = await new TestWETH9__factory().connect(owner).deploy();
+
   const testEigenLayerInteractor = await deployTestEigenLayerInteractor(
     owner,
-    EthAddressData.weth,
+    await weth.getAddress(),
     EthAddressData.stEth,
     EthAddressData.elStrategy,
     EthAddressData.elStrategyManager,
@@ -178,6 +187,7 @@ export async function testEigenLayerInteractorFixture(): Promise<{
     delegationManager,
     strategy,
     stEth,
+    weth,
   };
 }
 

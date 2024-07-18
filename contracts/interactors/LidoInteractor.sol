@@ -13,8 +13,8 @@ import '../interfaces/Lido/IStETH.sol';
 abstract contract LidoInteractor is Initializable {
   using SafeERC20 for IERC20;
 
-  event LidoWithdrawStart(uint256 stEthToWithdraw);
-  event LidoWithdrawComplete(uint256 ethReceived);
+  event LidoWithdrawStart(uint64 indexed unstakeId, uint256 stEthToWithdraw);
+  event LidoWithdrawComplete(uint64 indexed unstakeId, uint256 ethReceived);
 
   /// @custom:storage-location erc7201:eq-lab.storage.LidoInteractor
   struct LidoInteractorData {
@@ -29,18 +29,20 @@ abstract contract LidoInteractor is Initializable {
   /// @custom:storage-location erc7201:eq-lab.storage.LidoWithdrawQueue
   struct LidoWithdrawQueue {
     /// @dev queue inner starting index. Increased after popping the first element
-    uint256 start;
+    uint128 start;
     /// @dev queue inner ending index. Increased after pushing the new element
-    uint256 end;
+    uint128 end;
     /// @dev requestId of withdrawal with given inner index
-    mapping(uint256 index => uint256) requestId;
-    /// @dev requested of stEth to be withdrawn with given inner index
-    mapping(uint256 index => uint256) requested;
+    mapping(uint128 index => LidoWithdrawQueueElement) items;
   }
 
   /// @dev struct used in view method to get withdrawal queue element by index
   struct LidoWithdrawQueueElement {
+    /// @dev Warden identifier of unstake request
+    uint64 unstakeId;
+    /// @dev Lido identifier of unstake request
     uint256 requestId;
+    /// @dev Requested amount
     uint256 requested;
   }
 
@@ -97,20 +99,17 @@ abstract contract LidoInteractor is Initializable {
     if (ethAmount == 0) revert Errors.ZeroAmount();
     LidoInteractorData memory data = _getLidoInteractorDataStorage();
 
-    if (msg.value == 0) {
-      IERC20(data.wETH9).safeTransferFrom(msg.sender, address(this), ethAmount);
-      IWETH9(data.wETH9).withdraw(ethAmount);
-    } else if (msg.value != ethAmount) {
-      revert Errors.WrongMsgValue(msg.value, ethAmount);
-    }
+    // Axelar sends WETH to this contract
+    IWETH9(data.wETH9).withdraw(ethAmount);
 
     uint256 lidoShares = IStETH(data.stETH).submit{value: ethAmount}(address(0));
     stEthAmount = IStETH(data.stETH).getPooledEthByShares(lidoShares);
   }
 
   /// @dev starts native eth withdraw from Lido protocol
+  /// @param unstakeId unique id of the unstake
   /// @param stEthAmount amount of stEth to perform withdraw on
-  function _lidoWithdraw(uint256 stEthAmount) internal {
+  function _lidoWithdraw(uint64 unstakeId, uint256 stEthAmount) internal {
     LidoInteractorData storage data = _getLidoInteractorDataStorage();
     ILidoWithdrawalQueue withdrawalQueue = ILidoWithdrawalQueue(data.lidoWithdrawalQueue);
 
@@ -129,60 +128,72 @@ abstract contract LidoInteractor is Initializable {
     amounts[additionalWithdrawalsNumber] = stEthAmount % maxLidoWithdrawal;
 
     uint256[] memory requestIds = withdrawalQueue.requestWithdrawals(amounts, address(0));
-    _queuePush(_getLidoWithdrawQueueStorage(), requestIds, amounts);
-    emit LidoWithdrawStart(stEthAmount);
+    _enqueue(_getLidoWithdrawQueueStorage(), unstakeId, requestIds, amounts);
+    emit LidoWithdrawStart(unstakeId, stEthAmount);
   }
 
   /// @dev completes if possible the oldest non-fulfilled withdrawal request
+  /// @return unstakeId unique id of the unstake
   /// @return ethReceived amount of eth received. Returns 0 if no request was completed
-  function _lidoReinit() internal returns (uint256 ethReceived) {
+  function _lidoReinit() internal returns (uint64 unstakeId, uint256 ethReceived) {
     LidoWithdrawQueue storage withdrawQueue = _getLidoWithdrawQueueStorage();
-    uint256 queueStart = withdrawQueue.start;
-    if (queueStart == withdrawQueue.end) return 0;
+    uint128 queueStart = withdrawQueue.start;
+    if (queueStart == withdrawQueue.end) return (0, 0);
+
+    LidoWithdrawQueueElement memory withdrawElement = withdrawQueue.items[queueStart];
 
     try
       ILidoWithdrawalQueue(_getLidoInteractorDataStorage().lidoWithdrawalQueue).claimWithdrawal(
-        withdrawQueue.requestId[queueStart]
+        withdrawElement.requestId
       )
     {
-      ethReceived = withdrawQueue.requested[queueStart];
-      _queuePop(withdrawQueue);
-      emit LidoWithdrawComplete(ethReceived);
+      ethReceived = withdrawElement.requested;
+      unstakeId = withdrawElement.unstakeId;
+      _dequeue(withdrawQueue);
+      emit LidoWithdrawComplete(withdrawElement.unstakeId, ethReceived);
     } catch {}
   }
 
   /// @dev adds new withdraw request to the end of the LidoWithdrawQueue
-  function _queuePush(LidoWithdrawQueue storage queue, uint256[] memory requestIds, uint256[] memory amounts) private {
-    uint256 queueEnd = queue.end;
-    uint256 length = requestIds.length;
+  function _enqueue(
+    LidoWithdrawQueue storage queue,
+    uint64 unstakeId,
+    uint256[] memory requestIds,
+    uint256[] memory amounts
+  ) private {
+    uint128 queueEnd = queue.end;
+    assert(requestIds.length < type(uint128).max); // maybe extra check
+    uint128 length = uint128(requestIds.length);
 
     unchecked {
-      for (uint256 i; i < length; ++i) {
-        uint256 index = queueEnd + i;
-        queue.requestId[index] = requestIds[i];
-        queue.requested[index] = amounts[i];
+      for (uint128 i; i < length; ++i) {
+        uint128 index = queueEnd + i;
+        queue.items[index] = LidoWithdrawQueueElement({
+          requestId: requestIds[i],
+          requested: amounts[i],
+          unstakeId: unstakeId
+        });
       }
       queue.end += length;
     }
   }
 
   /// @dev pops the first request from the LidoWithdrawQueue after it's fulfilled
-  function _queuePop(LidoWithdrawQueue storage queue) private {
-    uint256 queueStart = queue.start;
-    delete queue.requestId[queueStart];
-    delete queue.requested[queueStart];
+  function _dequeue(LidoWithdrawQueue storage queue) private {
+    uint128 queueStart = queue.start;
+    delete queue.items[queueStart];
     unchecked {
       ++queue.start;
     }
   }
 
   /// @dev returns LidoWithdrawQueue element by index
-  function _getLidoWithdrawalQueueElement(uint256 index) internal view returns (LidoWithdrawQueueElement memory) {
+  function _getLidoWithdrawalQueueElement(uint128 index) internal view returns (LidoWithdrawQueueElement memory) {
     LidoWithdrawQueue storage queue = _getLidoWithdrawQueueStorage();
-    uint256 memoryIndex = queue.start + index;
+    uint128 memoryIndex = queue.start + index;
     if (memoryIndex >= queue.end) revert Errors.NoElementWithIndex(index);
 
-    return LidoWithdrawQueueElement({requestId: queue.requestId[memoryIndex], requested: queue.requested[memoryIndex]});
+    return queue.items[memoryIndex];
   }
 
   /// @dev returns min amount allowed to be withdrawn from Lido protocol

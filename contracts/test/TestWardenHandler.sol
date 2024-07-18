@@ -29,7 +29,7 @@ contract TestWardenHandler is WardenHandler {
     _reinitResult = reinitResult;
   }
 
-  function _handleStakeRequest(uint64, address, uint256) internal view override returns (StakeResult memory) {
+  function _handleStakeRequest(uint64, uint256) internal view override returns (StakeResult memory) {
     return _stakeResult;
   }
 

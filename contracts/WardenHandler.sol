@@ -12,6 +12,8 @@ import './interfaces/Axelar/IAxelarGasService.sol';
 abstract contract WardenHandler is Initializable {
   using SafeERC20 for IERC20;
 
+  event RequestFailed(ActionType actionType, uint64 actionId, bytes data);
+
   error NotApprovedByGateway();
   error InvalidAddress();
   error InvalidSourceChain();
@@ -154,15 +156,9 @@ abstract contract WardenHandler is Initializable {
   }
 
   ///@notice Handle stake request, should be implemented in Yield contract
-  ///@param stakeId Stake identifier
-  ///@param tokenAddress Address of the token
   ///@param amountToStake Amount of tokens to stake
   /// @return Stake reesult
-  function _handleStakeRequest(
-    uint64 stakeId,
-    address tokenAddress,
-    uint256 amountToStake
-  ) internal virtual returns (StakeResult memory);
+  function _handleStakeRequest(uint64 stakeId, uint256 amountToStake) internal virtual returns (StakeResult memory);
 
   /// @notice Handle unstake request, should be implemented in Yield contract
   /// @param unstakeId Unstake identifier
@@ -267,8 +263,7 @@ abstract contract WardenHandler is Initializable {
     WardenRequest memory request = _decodeWardenPayload(payload);
     if (request.actionType != ActionType.Stake) revert InvalidActionType();
 
-    address tokenAddress = gateway.tokenAddresses(tokenSymbol);
-    StakeResult memory stakeResult = _handleStakeRequest(request.actionId, tokenAddress, amount);
+    StakeResult memory stakeResult = _handleStakeRequest(request.actionId, amount);
 
     // Response to Warden
     bytes memory response = _createStakeResponse(request.actionId, stakeResult);
@@ -280,6 +275,7 @@ abstract contract WardenHandler is Initializable {
 
     if (stakeResult.unstakeTokenAmount != 0) {
       /// When stake fails, we need to send tokens back to Warden
+      address tokenAddress = gateway.tokenAddresses(tokenSymbol);
       IERC20(tokenAddress).forceApprove(address(gateway), stakeResult.unstakeTokenAmount);
       gateway.callContractWithToken(
         wardenChain,
