@@ -61,7 +61,6 @@ async function deployAaveYield(
   console.log(`Deploy AaveYield. AavePool: ${aaveConfig.aavePool}, allowedTokens: [${allowedTokens}]`);
 
   const blockNumber = await hre.ethers.provider.provider.getBlockNumber();
-  const maxFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
 
   const state = stateStore.getById('aaveYield-proxy');
   let aaveYieldAddress: string;
@@ -75,7 +74,6 @@ async function deployAaveYield(
       {
         initializer: 'initialize',
         txOverrides: {
-          maxFeePerGas: maxFeePerGas,
           gasLimit: ethConnectionConfig.ethOptions.gasLimit,
           gasPrice: ethConnectionConfig.ethOptions.gasPrice,
         },
@@ -128,7 +126,6 @@ async function deployEthYield(
   }
 
   const blockNumber = await hre.ethers.provider.getBlockNumber();
-  const maxFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
 
   const ethYield = (await hre.upgrades.deployProxy(
     await new EthYield__factory().connect(signer),
@@ -143,7 +140,6 @@ async function deployEthYield(
     {
       initializer: 'initialize',
       txOverrides: {
-        maxFeePerGas: maxFeePerGas,
         gasLimit: ethConnectionConfig.ethOptions.gasLimit,
         gasPrice: ethConnectionConfig.ethOptions.gasPrice,
       },
@@ -159,7 +155,7 @@ async function deployEthYield(
   const txHash = ethYield.deploymentTransaction()?.hash;
 
   stateStore.setById('ethYield-proxy', <DeployState>{ txHash, address: ethYieldAddress });
-  stateStore.setById('ethYield-impl', <DeployState>{ address: ethYieldAddress });
+  stateStore.setById('ethYield-impl', <DeployState>{ address: implementationAddress });
   deploymentStore.setById('ethYield', <DeploymentState>{
     address: ethYieldAddress,
     implementation: implementationAddress,

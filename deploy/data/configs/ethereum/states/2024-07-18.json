@@ -1,0 +1,22 @@
+{
+  "contracts": {
+    "aaveYield-usdc-proxy": {
+      "txHash": "0x1a730753229798cfe9175052212b6f3f3b73c621e46f28e487f46e45411f4744",
+      "address": "0x0259044395FE54d8aFe28354Ac737EB216064cF9"
+    },
+    "aaveYield-usdt-proxy": {
+      "txHash": "0x59a595d650149b2fa96fcf132a928c54f44dd28b5c83837c571c4687a2bd8e81",
+      "address": "0x0F9d2C03AD21a30746A4b4f07919e1C5F3641F35"
+    },
+    "aaveYield-impl": {
+      "address": "0x099Ac084fEf4aA9C454D8E882e713bf384329FfE"
+    },
+    "ethYield-proxy": {
+      "txHash": "0xcc54f4ed1593f9eaa14c0b067df5c0f2dc58746a72aec5165442eaee9eda1d7b",
+      "address": "0x4DF66BCA96319C6A033cfd86c38BCDb9B3c11a72"
+    },
+    "ethYield-impl": {
+      "address": "0x2c9dA53d37F77dAe5B941CF9a0FC66E680dfF41D"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "ethConnection": {
+    "chainId": 1,
+    "ethOptions": {
+      "gasPrice": 8500000000
+    }
+  },
+  "aaveYield": {
+    "aavePool": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+    "enableWithdrawals": false,
+    "tokens": [
+      {
+        "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "symbol": "USDC",
+        "decimals": 6
+      },
+      {
+        "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        "symbol": "USDT",
+        "decimals": 6
+      }
+    ]
+  },
+  "ethYield": {
+    "wETH9": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "stETH": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "eigenLayer": {
+      "strategy": "0x93c4b944D05dfe6df7645A86cd2206016c51564D",
+      "strategyManager": "0x858646372CC42E1A627fcE94aa7A7033e7CF075A",
+      "delegationManager": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A",
+      "operator": "0x8e7e7176d3470c6c2efe71004f496a6ef422a56f"
+    }
+  }
+}
