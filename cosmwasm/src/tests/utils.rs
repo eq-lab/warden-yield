@@ -5,7 +5,8 @@ use crate::msg::{
 };
 use crate::state::{QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem};
 use crate::types::{
-    StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage, UnstakeResponseData,
+    ReinitResponseData, StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage,
+    UnstakeResponseData,
 };
 use cosmwasm_std::testing::{
     message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage,
@@ -187,6 +188,21 @@ pub fn create_unstake_response_payload(unstake_response_data: UnstakeResponseDat
         .chain(unstake_response_data.unstake_id.to_be_bytes().into_iter())
         .chain(
             unstake_response_data
+                .reinit_unstake_id
+                .to_be_bytes()
+                .into_iter(),
+        )
+        .map(|x| x)
+        .collect();
+
+    Binary::new(payload)
+}
+
+pub fn create_reinit_response_payload(reinit_response_data: ReinitResponseData) -> Binary {
+    let payload: Vec<u8> = vec![2_u8]
+        .into_iter()
+        .chain(
+            reinit_response_data
                 .reinit_unstake_id
                 .to_be_bytes()
                 .into_iter(),

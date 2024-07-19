@@ -1,6 +1,6 @@
 use crate::encoding::{
-    decode_payload_action_type, decode_stake_response_payload, decode_unstake_response_payload,
-    encode_stake_payload,
+    decode_payload_action_type, decode_reinit_response_payload, decode_stake_response_payload,
+    decode_unstake_response_payload, encode_stake_payload,
 };
 use crate::helpers::{
     assert_msg_sender_is_admin, assert_msg_sender_is_axelar, find_token_by_lp_token_denom,
@@ -401,15 +401,42 @@ pub fn try_handle_unstake_response(
 }
 
 fn try_handle_reinit_response(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
-    _source_chain: String,
-    _source_address: String,
-    _payload: &[u8],
+    info: MessageInfo,
+    source_chain: String,
+    source_address: String,
+    payload: &[u8],
 ) -> Result<Response, ContractError> {
-    // todo
-    Ok(Response::new())
+    if info.funds.len() != 1 {
+        return Err(ContractError::CustomError(
+            "Reinit message must have one type of coins as funds".to_string(),
+        ));
+    }
+
+    let (token_denom, _token_config) =
+        find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
+
+    let coin = info.funds.first().unwrap();
+    if coin.denom != token_denom {
+        return Err(ContractError::InvalidToken {
+            actual: coin.denom.clone(),
+            expected: token_denom,
+        });
+    }
+
+    let reinit_response_data =
+        decode_reinit_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
+
+    let token_stats = TOKENS_STATS_STATE.load(deps.storage, token_denom)?;
+    let (bank_msg, event) = handle_reinit(
+        deps,
+        coin.clone(),
+        &reinit_response_data.reinit_unstake_id,
+        token_stats,
+    )?;
+
+    Ok(Response::new().add_message(bank_msg).add_event(event))
 }
 
 fn handle_reinit(
