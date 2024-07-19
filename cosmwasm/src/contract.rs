@@ -7,17 +7,17 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::execute::{
-    try_add_token, try_handle_stake_response, try_handle_unstake_response, try_stake, try_unstake,
-    try_update_token_config,
+    try_add_token, try_handle_response, try_init_stake, try_init_unstake, try_update_token_config,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_contract_config, query_tokens_configs, query_tokens_stats, query_user_stats,
+    query_contract_config, query_stake_queue_item, query_stake_queue_params, query_tokens_configs,
+    query_tokens_stats, query_unstake_queue_item, query_unstake_queue_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{
-    ContractConfigState, TokenStats, CONTRACT_CONFIG_STATE, TOKENS_CONFIGS_STATE,
-    TOKENS_STATS_STATE,
+    ContractConfigState, QueueParams, TokenStats, CONTRACT_CONFIG_STATE, STAKE_QUEUE_PARAMS,
+    TOKENS_CONFIGS_STATE, TOKENS_STATS_STATE, UNSTAKE_QUEUE_PARAMS,
 };
 use crate::types::ReplyType;
 
@@ -44,6 +44,22 @@ pub fn instantiate(
     for (token_denom, config) in &msg.tokens {
         TOKENS_CONFIGS_STATE.save(deps.storage, token_denom.clone(), config)?;
         TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &TokenStats::default())?;
+        STAKE_QUEUE_PARAMS.save(
+            deps.storage,
+            token_denom.clone(),
+            &QueueParams {
+                count_active: 0,
+                end: 1,
+            },
+        )?;
+        UNSTAKE_QUEUE_PARAMS.save(
+            deps.storage,
+            token_denom.clone(),
+            &QueueParams {
+                count_active: 0,
+                end: 1,
+            },
+        )?;
     }
 
     Ok(Response::new()
@@ -59,8 +75,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Stake => try_stake(deps, env, info),
-        ExecuteMsg::Unstake { token_denom } => try_unstake(deps, env, info, token_denom),
+        ExecuteMsg::Stake => try_init_stake(deps, env, info),
+        ExecuteMsg::Unstake => try_init_unstake(deps, env, info),
         ExecuteMsg::AddToken {
             token_denom,
             config,
@@ -69,38 +85,11 @@ pub fn execute(
             token_denom,
             config,
         } => try_update_token_config(deps, env, info, token_denom, config),
-        ExecuteMsg::HandleStakeResponse {
-            account,
-            token_evm,
-            token_amount,
-            shares_amount,
-            status,
-        } => try_handle_stake_response(
-            deps,
-            env,
-            info,
-            account,
-            token_evm,
-            token_amount,
-            shares_amount,
-            status,
-        ),
-        ExecuteMsg::HandleUnstakeResponse {
-            account,
-            token_evm,
-            token_amount,
-            shares_amount,
-            status,
-        } => try_handle_unstake_response(
-            deps,
-            env,
-            info,
-            account,
-            token_evm,
-            token_amount,
-            shares_amount,
-            status,
-        ),
+        ExecuteMsg::HandleResponse {
+            source_chain,
+            source_address,
+            payload,
+        } => try_handle_response(deps, env, info, source_chain, source_address, payload),
     }
 }
 
@@ -110,10 +99,18 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ContractConfig => to_json_binary(&query_contract_config(deps)?),
         QueryMsg::TokensConfigs => to_json_binary(&query_tokens_configs(deps)?),
         QueryMsg::TokensStats => to_json_binary(&query_tokens_stats(deps)?),
-        QueryMsg::UserStats {
-            account,
-            token_denom,
-        } => to_json_binary(&query_user_stats(deps, account, token_denom)?),
+        QueryMsg::StakeQueueParams { token_denom } => {
+            to_json_binary(&query_stake_queue_params(deps, token_denom)?)
+        }
+        QueryMsg::UnstakeQueueParams { token_denom } => {
+            to_json_binary(&query_unstake_queue_params(deps, token_denom)?)
+        }
+        QueryMsg::StakeQueueElem { token_denom, id } => {
+            to_json_binary(&query_stake_queue_item(deps, token_denom, id)?)
+        }
+        QueryMsg::UnstakeQueueElem { token_denom, id } => {
+            to_json_binary(&query_unstake_queue_item(deps, token_denom, id)?)
+        }
     }
 }
 

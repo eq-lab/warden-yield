@@ -1,7 +1,9 @@
-use crate::state::{ContractConfigState, TokenStats};
-use crate::types::{StakeStatus, TokenConfig, TokenDenom};
+use crate::state::{
+    ContractConfigState, QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem,
+};
+use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint256};
+use cosmwasm_std::{Addr, Binary};
 use serde::{Deserialize, Serialize};
 
 #[cw_serde]
@@ -13,9 +15,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Stake,
-    Unstake {
-        token_denom: TokenDenom,
-    },
+    Unstake,
 
     AddToken {
         token_denom: String,
@@ -26,19 +26,10 @@ pub enum ExecuteMsg {
         config: TokenConfig,
     },
 
-    HandleStakeResponse {
-        account: Addr,
-        token_evm: String,
-        token_amount: Uint256,
-        shares_amount: Uint256,
-        status: StakeStatus,
-    },
-    HandleUnstakeResponse {
-        account: Addr,
-        token_evm: String,
-        token_amount: Uint256,
-        shares_amount: Uint256,
-        status: StakeStatus,
+    HandleResponse {
+        source_chain: String,
+        source_address: String,
+        payload: Binary,
     },
 }
 
@@ -51,11 +42,14 @@ pub enum QueryMsg {
     TokensConfigs,
     #[returns(GetTokensStatsResponse)]
     TokensStats,
-    #[returns(GetUserStatsResponse)]
-    UserStats {
-        account: Addr,
-        token_denom: TokenDenom,
-    },
+    #[returns(GetQueueParamsResponse)]
+    StakeQueueParams { token_denom: TokenDenom },
+    #[returns(GetQueueParamsResponse)]
+    UnstakeQueueParams { token_denom: TokenDenom },
+    #[returns(GetStakeQueueItemResponse)]
+    StakeQueueElem { token_denom: TokenDenom, id: u64 },
+    #[returns(GetUnstakeQueueItemResponse)]
+    UnstakeQueueElem { token_denom: TokenDenom, id: u64 },
 }
 
 #[cw_serde]
@@ -74,8 +68,18 @@ pub struct GetTokensStatsResponse {
 }
 
 #[cw_serde]
-pub struct GetUserStatsResponse {
-    pub stats: TokenStats,
+pub struct GetStakeQueueItemResponse {
+    pub item: StakeQueueItem,
+}
+
+#[cw_serde]
+pub struct GetUnstakeQueueItemResponse {
+    pub item: UnstakeQueueItem,
+}
+
+#[cw_serde]
+pub struct GetQueueParamsResponse {
+    pub params: QueueParams,
 }
 
 #[cw_serde]

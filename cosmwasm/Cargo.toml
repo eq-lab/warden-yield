@@ -39,6 +39,7 @@ cosmwasm-std = { version = "2.0.1", features = [
 ] }
 cw-storage-plus = "2.0.0"
 cw2 = "2.0.0"
+ethabi = { version = "18.0.0", default-features = false, features = [] }
 schemars = "0.8.16"
 serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.58" }
