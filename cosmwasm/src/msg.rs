@@ -16,13 +16,16 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Stake,
     Unstake,
+    Reinit {
+        token_denom: TokenDenom,
+    },
 
     AddToken {
-        token_denom: String,
+        token_denom: TokenDenom,
         config: TokenConfig,
     },
     UpdateTokenConfig {
-        token_denom: String,
+        token_denom: TokenDenom,
         config: TokenConfig,
     },
 

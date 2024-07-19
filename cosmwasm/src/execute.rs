@@ -1,6 +1,7 @@
 use crate::encoding::{
     decode_payload_action_type, decode_reinit_response_payload, decode_stake_response_payload,
-    decode_unstake_response_payload, encode_stake_payload,
+    decode_unstake_response_payload, encode_reinit_payload, encode_stake_payload,
+    encode_unstake_payload,
 };
 use crate::helpers::{
     assert_msg_sender_is_admin, assert_msg_sender_is_axelar, find_token_by_lp_token_denom,
@@ -10,7 +11,9 @@ use crate::state::{
     QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem, STAKE_QUEUE, STAKE_QUEUE_PARAMS,
     TOKENS_CONFIGS_STATE, TOKENS_STATS_STATE, UNSTAKE_QUEUE, UNSTAKE_QUEUE_PARAMS,
 };
-use crate::types::{ActionType, StakeActionStage, Status, TokenConfig, UnstakeActionStage};
+use crate::types::{
+    ActionType, StakeActionStage, Status, TokenConfig, TokenDenom, UnstakeActionStage,
+};
 use crate::ContractError;
 use cosmwasm_std::{
     Attribute, BankMsg, Binary, Coin, DepsMut, Env, Event, MessageInfo, Response, StdError, Uint256,
@@ -112,9 +115,25 @@ pub fn try_init_unstake(
     token_stats.pending_unstake_lp_token_amount += Uint256::from(coin.amount);
     TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &token_stats)?;
 
+    let _unstake_payload = encode_unstake_payload(&unstake_id, &coin.amount);
     // todo: send message to Axelar
 
     Ok(Response::default())
+}
+
+pub fn try_reinit(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    token_denom: TokenDenom,
+) -> Result<Response, ContractError> {
+    let _token_config = TOKENS_CONFIGS_STATE.load(deps.storage, token_denom.clone())?;
+
+    let _reinit_payload = encode_reinit_payload();
+
+    // todo: send message to axelar
+
+    Ok(Response::new())
 }
 
 pub fn try_handle_response(
