@@ -63,12 +63,17 @@ contract EthYield is
     eigenLayerShares = _eigenLayerRestake(stEthAmount);
     address weth = getWeth();
     _addStake(msg.sender, weth, amount, eigenLayerShares);
+
+    //TODO: add lpAmount calculation
     emit Stake(msg.sender, weth, amount, eigenLayerShares);
   }
 
   /// @inheritdoc IEthYield
   function unstake(uint64 unstakeId, uint256 eigenLayerSharesAmount) external virtual {
     require(msg.sender == address(this));
+
+    //TODO: add lpAmount calculation
+    //TODO: change signature to accept lpAmount
 
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`

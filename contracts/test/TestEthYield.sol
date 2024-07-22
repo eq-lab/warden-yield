@@ -3,38 +3,19 @@ pragma solidity =0.8.26;
 
 import '../EthYield.sol';
 
+///@dev Version of EthYield contract that holds all initializer functions
 contract TestEthYield is EthYield {
-  struct InitStruct {
-    //V1
-    address stETH;
-    address wETH9;
-    address elStrategy;
-    address elStrategyManager;
-    address elDelegationManager;
-    address elOperator;
-    //V2
-    address lidoWithdrawQueue;
-    address axelarGateway;
-    address axelarGasService;
-    string wardenChain;
-    string wardenContractAddress;
-  }
-
-  function initialize(InitStruct calldata init) external reinitializer(2) {
-    //V1
+  function initialize(
+    address stETH,
+    address wETH9,
+    address elStrategy,
+    address elStrategyManager,
+    address elDelegationManager,
+    address elOperator
+  ) external initializer {
     __Ownable_init(msg.sender);
     __UUPSUpgradeable_init();
-    __EigenLayerInteractor_init(
-      init.stETH,
-      init.elStrategy,
-      init.elStrategyManager,
-      init.elDelegationManager,
-      init.elOperator
-    );
-    __LidoInteractor_init(init.stETH, init.wETH9);
-
-    //V2
-    __LidoInteractor_initV2(init.lidoWithdrawQueue);
-    __WardenHandler_init(init.axelarGateway, init.axelarGasService, init.wardenChain, init.wardenContractAddress);
+    __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager, elDelegationManager, elOperator);
+    __LidoInteractor_init(stETH, wETH9);
   }
 }

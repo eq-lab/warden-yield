@@ -29,9 +29,14 @@ import {
   ILidoWithdrawalQueueExtended__factory,
   TestWETH9,
   TestWETH9__factory,
+  TestEthYield__factory,
+  IWETH9__factory,
+  IWETH9,
+  TestAxelarGateway,
+  TestAxelarGateway__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
-import { EthAddressData } from './utils';
+import { EthAddressData, WardenChain, WardenContractAddress } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
   return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
@@ -47,12 +52,18 @@ export async function deployEthYieldContract(
   eigenLayerOperator: string
 ): Promise<EthYield> {
   return upgrades.deployProxy(
-    await new EthYield__factory().connect(owner),
+    await new TestEthYield__factory().connect(owner),
     [stEth, weth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
     }
   ) as unknown as EthYield;
+}
+
+export async function deployTestAxelarGateway(owner: SignerWithAddress): Promise<TestAxelarGateway> {
+  const axelarGateway = await new TestAxelarGateway__factory().connect(owner).deploy();
+  await axelarGateway.connect(owner).addTokenAddress('WETH', EthAddressData.weth);
+  return axelarGateway;
 }
 
 export async function deployAaveYieldContract(
@@ -192,7 +203,7 @@ export async function testEigenLayerInteractorFixture(): Promise<{
 }
 
 export interface EthYieldForkTestData {
-  weth9: ERC20;
+  weth9: IWETH9;
   stEth: ERC20;
   lidoWithdrawalQueue: ILidoWithdrawalQueueExtended;
   eigenLayerStrategyManager: IStrategyManager;
@@ -205,6 +216,8 @@ export interface EthYieldForkTestData {
 
 export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
   const [owner] = await ethers.getSigners();
+
+  const axelarGateway = await deployTestAxelarGateway(owner);
   const ethYield = await deployEthYieldContract(
     owner,
     EthAddressData.stEth,
@@ -215,11 +228,20 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
     EthAddressData.eigenLayerOperator
   );
 
-  await upgrades.upgradeProxy(ethYield, await new EthYield__factory().connect(owner), {
-    call: { fn: 'initializeV2', args: [EthAddressData.lidoWithdrawalQueue] },
+  await upgrades.upgradeProxy(ethYield, await new TestEthYield__factory().connect(owner), {
+    call: {
+      fn: 'initializeV2',
+      args: [
+        EthAddressData.lidoWithdrawalQueue,
+        await axelarGateway.getAddress(),
+        EthAddressData.axelarGasService,
+        WardenChain,
+        WardenContractAddress,
+      ],
+    },
   });
 
-  const weth9 = ERC20__factory.connect(EthAddressData.weth, owner);
+  const weth9 = IWETH9__factory.connect(EthAddressData.weth, owner);
   const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
   const eigenLayerStrategyManager = IStrategyManager__factory.connect(EthAddressData.elStrategyManager, owner);
   const eigenLayerStrategy = IStrategy__factory.connect(EthAddressData.elStrategy, owner);
