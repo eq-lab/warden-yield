@@ -35,6 +35,7 @@ abstract contract WardenHandler is Initializable {
   bytes32 private constant WardenHandlerDataStorageLocation =
     0x4f376997038d6e5610d23f9f89ae844faaf6e156ed92caa3ff61a3cac093a900;
 
+  /// @custom:storage-location erc7201:eq-lab.storage.WardenHandlerData
   struct WardenHandlerData {
     address axelarGateway;
     address axelarGasService;

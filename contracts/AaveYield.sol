@@ -44,7 +44,7 @@ contract AaveYield is
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
   /// @inheritdoc IAaveYield
-  function stake(uint256 amount) external returns (uint256 shares) {
+  function stake(uint64 stakeId, uint256 amount) external returns (uint256 shares) {
     require(msg.sender == address(this));
 
     address token = getUnderlyingToken();
@@ -52,18 +52,21 @@ contract AaveYield is
     _addStake(msg.sender, token, amount, shares);
 
     // TODO: add lpAmount calculation
+    uint256 lpAmount = shares;
 
-    emit Stake(msg.sender, token, amount, shares);
+    emit Stake(stakeId, token, amount, lpAmount);
   }
 
-  function unstake(uint256 sharesAmount) external returns (uint256 withdrawn) {
+  function unstake(uint64 unstakeId, uint256 lpAmount) external returns (uint256 withdrawn) {
     require(msg.sender == address(this));
 
     address token = getUnderlyingToken();
+    uint256 sharesAmount = lpAmount; // TODO: convert lpAmount to sharesAmount
     uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount, token);
     withdrawn = _aaveWithdraw(token, withdrawAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
-    // TODO: add lpAmount calculation
+
+    emit Unstake(unstakeId, token, withdrawn);
   }
 
   /// @inheritdoc IAaveYield
@@ -125,7 +128,7 @@ contract AaveYield is
       reinitUnstakeId: 0
     });
 
-    try this.stake(amountToStake) returns (uint256 lpAmount) {
+    try this.stake(stakeId, amountToStake) returns (uint256 lpAmount) {
       result.lpAmount = uint128(lpAmount);
     } catch (bytes memory reason) {
       emit RequestFailed(ActionType.Stake, stakeId, reason);
@@ -143,7 +146,7 @@ contract AaveYield is
       reinitUnstakeId: 0
     });
 
-    try this.unstake(lpAmount) returns (uint256 withdrawnAmount) {
+    try this.unstake(unstakeId, lpAmount) returns (uint256 withdrawnAmount) {
       result.status = WardenHandler.Status.Success;
       result.reinitUnstakeId = unstakeId;
       result.unstakeTokenAmount = uint128(withdrawnAmount);

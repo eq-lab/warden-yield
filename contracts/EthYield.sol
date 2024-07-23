@@ -58,7 +58,7 @@ contract EthYield is
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
   /// @inheritdoc IEthYield
-  function stake(uint256 amount) external virtual returns (uint256 eigenLayerShares) {
+  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 eigenLayerShares) {
     require(msg.sender == address(this));
 
     uint256 stEthAmount = _lidoStake(amount);
@@ -67,7 +67,7 @@ contract EthYield is
     _addStake(msg.sender, weth, amount, eigenLayerShares);
 
     //TODO: add lpAmount calculation
-    emit Stake(msg.sender, weth, amount, eigenLayerShares);
+    emit Stake(stakeId, weth, amount, eigenLayerShares);
   }
 
   /// @inheritdoc IEthYield
@@ -93,6 +93,9 @@ contract EthYield is
     }
 
     (reinitUnstakeId, withdrawnAmount) = _lidoReinit();
+    if (withdrawnAmount != 0) {
+      emit Unstake(reinitUnstakeId, getWeth(), withdrawnAmount);
+    }
   }
 
   /// @dev overloads EigenLayer min withdraw amount taking Lido limit into account
@@ -128,7 +131,7 @@ contract EthYield is
       reinitUnstakeId: reinitResult.reinitUnstakeId
     });
 
-    try this.stake(amountToStake) returns (uint256 lpAmount) {
+    try this.stake(stakeId, amountToStake) returns (uint256 lpAmount) {
       result.lpAmount = uint128(lpAmount);
     } catch (bytes memory reason) {
       emit RequestFailed(ActionType.Stake, stakeId, reason);

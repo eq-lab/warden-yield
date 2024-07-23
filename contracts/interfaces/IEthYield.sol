@@ -6,9 +6,10 @@ import './IYieldBase.sol';
 /// @title Interface for EthYield
 interface IEthYield is IYieldBase {
   /// @notice method to start Lido staking + EigenLayer restaking process
+  /// @param stakeId unique id of the stake from Warden
   /// @param amount an amount of either weth or native eth to be staked
   /// @dev in the case of native eth a msg.value must strictly equal the amount arg; the tx reverts otherwise
-  function stake(uint256 amount) external returns (uint256);
+  function stake(uint64 stakeId, uint256 amount) external returns (uint256);
 
   /// @notice method to start EigenLayer + Lido unstaking process
   /// @param unstakeId unique id of the unstake

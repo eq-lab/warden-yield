@@ -6,8 +6,9 @@ import './IYieldBase.sol';
 /// @title Interface for AaveYield
 interface IAaveYield is IYieldBase {
   /// @notice method to supply tokens to Aave pool
+  /// @param stakeId unique id of the stake from Warden
   /// @param amount an amount of either weth or native eth to be staked
-  function stake(uint256 amount) external returns (uint256);
+  function stake(uint64 stakeId, uint256 amount) external returns (uint256);
 
   /// @notice returns current user balance in Aave pool
   function getUserUnderlyingAmount(
