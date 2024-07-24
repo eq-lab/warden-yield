@@ -162,7 +162,6 @@ abstract contract LidoInteractor is Initializable {
     uint256[] memory amounts
   ) private {
     uint128 queueEnd = queue.end;
-    assert(requestIds.length < type(uint128).max); // maybe extra check
     uint128 length = uint128(requestIds.length);
 
     unchecked {

@@ -13,8 +13,8 @@ interface IEthYield is IYieldBase {
 
   /// @notice method to start EigenLayer + Lido unstaking process
   /// @param unstakeId unique id of the unstake
-  /// @param sharesAmount EigenLayer shares to withdraw and received stEth to convert to Eth
-  function unstake(uint64 unstakeId, uint256 sharesAmount) external;
+  /// @param lpAmount lp amount to be unstaked
+  function unstake(uint64 unstakeId, uint256 lpAmount) external;
 
   /// @notice completes if possible the oldest non-fulfilled withdrawal requests from both EigenLayer and Lido queues
   function reinit() external returns (uint64, uint256);

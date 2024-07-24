@@ -71,12 +71,12 @@ contract EthYield is
   }
 
   /// @inheritdoc IEthYield
-  function unstake(uint64 unstakeId, uint256 eigenLayerSharesAmount) external virtual {
+  function unstake(uint64 unstakeId, uint256 lpAmount) external virtual {
     require(msg.sender == address(this));
 
     //TODO: add lpAmount calculation
     //TODO: change signature to accept lpAmount
-
+    uint256 eigenLayerSharesAmount = lpAmount; //TODO: convert lpAmount to elShares
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
   }
