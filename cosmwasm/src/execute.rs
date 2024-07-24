@@ -43,7 +43,7 @@ pub fn try_init_stake(
     }
 
     let queue_params = STAKE_QUEUE_PARAMS.load(deps.storage, coin.denom.clone())?;
-    let stake_id = queue_params.end.clone();
+    let stake_id = queue_params.end;
 
     // push to stake queue
     STAKE_QUEUE.save(
