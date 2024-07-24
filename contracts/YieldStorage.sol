@@ -20,7 +20,6 @@ abstract contract YieldStorage is Initializable {
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _stakedAmount;
     /// @dev total amount shares received by 'user' after locking the 'token'
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _shares;
-
     uint256 totalShares;
   }
 
@@ -34,7 +33,6 @@ abstract contract YieldStorage is Initializable {
   /// @dev keccak256(abi.encode(uint256(keccak256("eq-lab.storage.StakingData")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant StakingDataStorageLocation =
     0x69b3bfac4ac6bf246ceef7427e431f481bd6bde26467dffa51aa8b49ac672600;
-
 
   function __YieldStorage_initV2(address token) internal onlyInitializing {
     StakingData storage $ = _getStakingDataStorage();
