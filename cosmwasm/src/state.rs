@@ -48,5 +48,6 @@ pub struct UnstakeQueueItem {
 pub struct QueueParams {
     /// Count of stake/unstake requests in pending state
     pub peding_count: u64,
-    pub end: u64,
+    /// Id counter for stake, unstake requests
+    pub next_id: u64,
 }
