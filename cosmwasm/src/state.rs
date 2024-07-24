@@ -46,6 +46,7 @@ pub struct UnstakeQueueItem {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueueParams {
-    pub count_active: u64,
+    /// Count of stake/unstake requests in pending state
+    pub peding_count: u64,
     pub end: u64,
 }
