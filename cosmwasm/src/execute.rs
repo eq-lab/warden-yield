@@ -48,7 +48,7 @@ pub fn try_init_stake(
     // push to stake queue
     STAKE_QUEUE.save(
         deps.storage,
-        (coin.denom.clone(), stake_id.clone()),
+        (coin.denom.clone(), stake_id),
         &StakeQueueItem {
             user: info.sender,
             token_amount: coin.amount,
