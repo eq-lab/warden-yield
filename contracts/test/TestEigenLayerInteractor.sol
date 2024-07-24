@@ -8,6 +8,7 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
   using SafeERC20 for IERC20;
 
   struct QueueElement {
+    uint64 unstakeId;
     uint256 shares;
     uint32 blockNumber;
   }
@@ -27,21 +28,24 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
   }
 
   function stake(uint256 amount) external payable {
+    require(msg.value == amount);
+    IWETH9(getWeth()).deposit{value: msg.value}();
+
     _eigenLayerReinit();
     uint256 stEthAmount = _lidoStake(amount);
     uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
     emit Stake(eigenLayerShares);
   }
 
-  function withdraw(uint256 amount) external {
+  function withdraw(uint64 unstakeId, uint256 amount) external {
     _eigenLayerReinit();
-    _eigenLayerWithdraw(amount);
+    _eigenLayerWithdraw(unstakeId, amount);
   }
 
-  function getQueueElement(uint256 index) external view returns (QueueElement memory element) {
+  function getQueueElement(uint128 index) external view returns (EigenLayerWithdrawQueueElement memory element) {
     EigenLayerWithdrawQueue storage $ = _getEigenLayerWithdrawQueueStorage();
     index += $.start;
-    element = QueueElement({shares: $.shares[index], blockNumber: $.blockNumber[index]});
+    element = $.items[index];
   }
 
   function reinit() external {

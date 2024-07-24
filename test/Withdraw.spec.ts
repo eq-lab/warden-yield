@@ -17,7 +17,8 @@ describe('EigenLayer withdraw', () => {
     const [event] = await testEigenLayerInteractor.queryFilter(filter, -1);
 
     const sharesToWithdraw = event.args[0];
-    await testEigenLayerInteractor.connect(user).withdraw(sharesToWithdraw);
+    const unstakeId = 1;
+    await testEigenLayerInteractor.connect(user).withdraw(unstakeId, sharesToWithdraw);
 
     expect(await testEigenLayerInteractor.getQueueLength()).to.be.eq(1);
 
@@ -37,7 +38,8 @@ describe('EigenLayer withdraw', () => {
     const [stakeEvent] = await testEigenLayerInteractor.queryFilter(stakeFilter, -1);
 
     const sharesToWithdraw = stakeEvent.args[0];
-    await testEigenLayerInteractor.connect(user).withdraw(sharesToWithdraw);
+    const unstakeId = 1;
+    await testEigenLayerInteractor.connect(user).withdraw(unstakeId, sharesToWithdraw);
 
     const blocksToAwait = await delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
 
@@ -45,12 +47,14 @@ describe('EigenLayer withdraw', () => {
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
     await testEigenLayerInteractor.reinit();
 
-    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint256)'];
+    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint64,uint256)'];
     const [withdrawEvent] = await testEigenLayerInteractor.queryFilter(withdrawFilter, -1);
-    const stEthWithdrawnAmount = withdrawEvent.args[0];
+    const completeUnstakeId = withdrawEvent.args[0];
+    const stEthWithdrawnAmount = withdrawEvent.args[1];
 
     const stEthBalanceAfter = await stEth.balanceOf(testEigenLayerInteractor.target);
     expect(stEthBalanceAfter).to.be.closeTo(stEthBalanceBefore + stEthWithdrawnAmount, 1);
+    expect(completeUnstakeId).to.be.eq(unstakeId);
     expect(await testEigenLayerInteractor.getQueueStart()).to.be.eq(1);
     expect(await testEigenLayerInteractor.getQueueEnd()).to.be.eq(1);
     expect(await testEigenLayerInteractor.getQueueLength()).to.be.eq(0);
@@ -66,7 +70,8 @@ describe('EigenLayer withdraw', () => {
     const filter = testEigenLayerInteractor.filters['Stake(uint256)'];
     const [userEvent] = await testEigenLayerInteractor.queryFilter(filter, -1);
 
-    await testEigenLayerInteractor.connect(user).withdraw(userEvent.args[0]);
+    const unstakeId = 1;
+    await testEigenLayerInteractor.connect(user).withdraw(unstakeId, userEvent.args[0]);
 
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
     await testEigenLayerInteractor.reinit();
@@ -92,7 +97,8 @@ describe('EigenLayer withdraw', () => {
     const [userEvent] = await testEigenLayerInteractor.queryFilter(filter, -1);
 
     const sharesToWithdraw = userEvent.args[0];
-    await testEigenLayerInteractor.connect(user1).withdraw(sharesToWithdraw);
+    const unstakeId = 1;
+    await testEigenLayerInteractor.connect(user1).withdraw(unstakeId, sharesToWithdraw);
 
     const blocksToAwait = await delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
@@ -100,12 +106,14 @@ describe('EigenLayer withdraw', () => {
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
     await testEigenLayerInteractor.connect(user2).stake(amount, { value: amount });
 
-    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint256)'];
+    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint64,uint256)'];
     const [withdrawEvent] = await testEigenLayerInteractor.queryFilter(withdrawFilter, -1);
-    const stEthWithdrawnAmount = withdrawEvent.args[0];
+    const completeUnstakeId = withdrawEvent.args[0];
+    const stEthWithdrawnAmount = withdrawEvent.args[1];
 
     const stEthBalanceAfter = await stEth.balanceOf(testEigenLayerInteractor.target);
     expect(stEthBalanceAfter).to.be.closeTo(stEthBalanceBefore + stEthWithdrawnAmount, 1);
+    expect(completeUnstakeId).to.be.eq(unstakeId);
     expect(await testEigenLayerInteractor.getQueueStart()).to.be.eq(1);
     expect(await testEigenLayerInteractor.getQueueEnd()).to.be.eq(1);
     expect(await testEigenLayerInteractor.getQueueLength()).to.be.eq(0);
@@ -123,20 +131,23 @@ describe('EigenLayer withdraw', () => {
     const [user1Event, user2Event] = await testEigenLayerInteractor.queryFilter(filter, -1);
 
     const sharesToWithdraw = user1Event.args[0];
-    await testEigenLayerInteractor.connect(user1).withdraw(sharesToWithdraw);
+    const unstakeId = 1;
+    await testEigenLayerInteractor.connect(user1).withdraw(unstakeId, sharesToWithdraw);
 
     const blocksToAwait = await delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
 
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
-    await testEigenLayerInteractor.connect(user2).withdraw(user2Event.args[0]);
+    await testEigenLayerInteractor.connect(user2).withdraw(unstakeId, user2Event.args[0]);
 
-    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint256)'];
+    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint64,uint256)'];
     const [withdrawEvent] = await testEigenLayerInteractor.queryFilter(withdrawFilter, -1);
-    const stEthWithdrawnAmount = withdrawEvent.args[0];
+    const completeUnstakeId = withdrawEvent.args[0];
+    const stEthWithdrawnAmount = withdrawEvent.args[1];
 
     const stEthBalanceAfter = await stEth.balanceOf(testEigenLayerInteractor.target);
     expect(stEthBalanceAfter).to.be.closeTo(stEthBalanceBefore + stEthWithdrawnAmount, 1);
+    expect(completeUnstakeId).to.be.eq(unstakeId);
     expect(await testEigenLayerInteractor.getQueueStart()).to.be.eq(1);
     expect(await testEigenLayerInteractor.getQueueEnd()).to.be.eq(2);
     expect(await testEigenLayerInteractor.getQueueLength()).to.be.eq(1);
@@ -154,8 +165,10 @@ describe('EigenLayer withdraw', () => {
     const [user1Event, user2Event] = await testEigenLayerInteractor.queryFilter(filter, -1);
 
     const sharesToWithdraw = user1Event.args[0];
-    await testEigenLayerInteractor.connect(user1).withdraw(sharesToWithdraw);
-    await testEigenLayerInteractor.connect(user2).withdraw(user2Event.args[0]);
+    const unstakeId = 1;
+    const unstakeId2 = 2;
+    await testEigenLayerInteractor.connect(user1).withdraw(unstakeId, sharesToWithdraw);
+    await testEigenLayerInteractor.connect(user2).withdraw(unstakeId2, user2Event.args[0]);
 
     const blocksToAwait = await delegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
@@ -163,12 +176,14 @@ describe('EigenLayer withdraw', () => {
     const stEthBalanceBefore = await stEth.balanceOf(testEigenLayerInteractor.target);
     await testEigenLayerInteractor.reinit();
 
-    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint256)'];
+    const withdrawFilter = testEigenLayerInteractor.filters['EigenLayerWithdrawComplete(uint64,uint256)'];
     const [withdrawEvent] = await testEigenLayerInteractor.queryFilter(withdrawFilter, -1);
-    const stEthWithdrawnAmount = withdrawEvent.args[0];
+    const completeUnstakeId = withdrawEvent.args[0];
+    const stEthWithdrawnAmount = withdrawEvent.args[1];
 
     const stEthBalanceAfter = await stEth.balanceOf(testEigenLayerInteractor.target);
     expect(stEthBalanceAfter).to.be.closeTo(stEthBalanceBefore + stEthWithdrawnAmount, 1);
+    expect(completeUnstakeId).to.be.eq(unstakeId);
     expect(await testEigenLayerInteractor.getQueueStart()).to.be.eq(1);
     expect(await testEigenLayerInteractor.getQueueEnd()).to.be.eq(2);
     expect(await testEigenLayerInteractor.getQueueLength()).to.be.eq(1);
@@ -187,7 +202,9 @@ describe('Lido withdraw', () => {
     await testLidoInteractor.connect(user).stake(amount, { value: amount });
 
     const sharesToWithdraw = amount;
-    await testLidoInteractor.connect(user).withdraw(sharesToWithdraw);
+    const unstakeId = 1;
+
+    await testLidoInteractor.connect(user).withdraw(unstakeId, sharesToWithdraw);
 
     expect(await testLidoInteractor.getQueueLength()).to.be.eq(1);
 
@@ -200,10 +217,11 @@ describe('Lido withdraw', () => {
     const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
+    const unstakeId = 1;
     const amount = parseEther('1');
     await (await testLidoInteractor.connect(user).stake(amount, { value: amount })).wait();
 
-    await testLidoInteractor.connect(user).withdraw(amount);
+    await testLidoInteractor.connect(user).withdraw(unstakeId, amount);
 
     const queueElement = await testLidoInteractor.getQueueElement(0);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, queueElement.requestId);
@@ -222,10 +240,11 @@ describe('Lido withdraw', () => {
     const { testLidoInteractor } = await loadFixture(testLidoInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
+    const unstakeId = 1;
     const amount = parseEther('1');
     await (await testLidoInteractor.connect(user).stake(amount, { value: amount })).wait();
 
-    await testLidoInteractor.connect(user).withdraw(amount);
+    await testLidoInteractor.connect(user).withdraw(unstakeId, amount);
     await testLidoInteractor.reinit();
 
     expect(await testLidoInteractor.getQueueStart()).to.be.eq(0);
@@ -240,10 +259,11 @@ describe('Lido withdraw', () => {
     const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
+    const unstakeId = 1;
     const amount = parseEther('1');
     await (await testLidoInteractor.connect(user1).stake(amount, { value: amount })).wait();
 
-    await testLidoInteractor.connect(user1).withdraw(amount);
+    await testLidoInteractor.connect(user1).withdraw(unstakeId, amount);
 
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await testLidoInteractor.getQueueElement(0)).requestId);
 
@@ -261,16 +281,18 @@ describe('Lido withdraw', () => {
     const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
+    const unstakeId = 1;
     const amount = parseEther('1');
     await testLidoInteractor.connect(user1).stake(amount, { value: amount });
     await testLidoInteractor.connect(user2).stake(amount, { value: amount });
 
-    await testLidoInteractor.connect(user1).withdraw(amount);
+    await testLidoInteractor.connect(user1).withdraw(unstakeId, amount);
 
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await testLidoInteractor.getQueueElement(0)).requestId);
 
+    const unstakeId2 = 2;
     const etherBalanceBefore = await user1.provider.getBalance(testLidoInteractor.target);
-    await testLidoInteractor.connect(user2).withdraw(amount);
+    await testLidoInteractor.connect(user2).withdraw(unstakeId2, amount);
 
     const etherBalanceAfter = await user1.provider.getBalance(testLidoInteractor.target);
     expect(etherBalanceAfter).to.be.eq(etherBalanceBefore + amount);
@@ -283,12 +305,14 @@ describe('Lido withdraw', () => {
     const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
+    const unstakeId = 1;
+    const unstakeId2 = 2;
     const amount = parseEther('1');
     await (await testLidoInteractor.connect(user1).stake(amount, { value: amount })).wait();
     await (await testLidoInteractor.connect(user2).stake(amount, { value: amount })).wait();
 
-    await testLidoInteractor.connect(user1).withdraw(amount);
-    await testLidoInteractor.connect(user2).withdraw(amount);
+    await testLidoInteractor.connect(user1).withdraw(unstakeId, amount);
+    await testLidoInteractor.connect(user2).withdraw(unstakeId2, amount);
 
     const secondWithdrawId = (await testLidoInteractor.getQueueElement(1)).requestId;
 
@@ -311,12 +335,13 @@ describe('Lido withdraw', () => {
     const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
+    const unstakeId = 1;
     const stakeAmount = parseEther('2010');
     const maxLidoWithdraw = await lidoWithdrawalQueue.MAX_STETH_WITHDRAWAL_AMOUNT();
     expect(stakeAmount).to.be.gt(maxLidoWithdraw);
 
     await testLidoInteractor.connect(user).stake(stakeAmount, { value: stakeAmount });
-    await testLidoInteractor.connect(user).withdraw(stakeAmount);
+    await testLidoInteractor.connect(user).withdraw(unstakeId, stakeAmount);
 
     const withdrawsRequests = stakeAmount / maxLidoWithdraw;
     expect(withdrawsRequests).to.be.gte(1);

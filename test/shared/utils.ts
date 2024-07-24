@@ -2,8 +2,12 @@ import { ethers } from 'hardhat';
 import { ILidoWithdrawalQueueExtended } from '../../typechain-types';
 import { BigNumberish, BytesLike, parseEther } from 'ethers';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
+import { ActionType } from './warden-handler-fixtures';
 
 export const USER_WARDEN_ADDRESS = 'warden1234';
+
+export const WardenChain = 'warden';
+export const WardenContractAddress = 'warden-cosm-wasm-address';
 
 export enum EthAddressData {
   weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -20,6 +24,8 @@ export enum EthAddressData {
   elStrategy = '0x93c4b944D05dfe6df7645A86cd2206016c51564D',
   elDelegationManager = '0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A',
   eigenLayerOperator = '0x71C6F7Ed8C2d4925d0bAf16f6A85BB1736D412eb',
+  axelarGateway = '0x4F4495243837681061C4743b74B3eEdf548D56A5',
+  axelarGasService = '0x2d5d7d31F671F86C782533cc367F14109a082712',
 }
 
 export const TokenBalanceStorage: Map<string, string> = new Map([
@@ -72,6 +78,18 @@ function toHexString(value: bigint): string {
     hexString = '0' + hexString;
   }
   return `0x${hexString}`;
+}
+
+export function encodeStakeAction(stakeId: number): BytesLike {
+  return encodeWardenPayload(ActionType.Stake, stakeId, 0n);
+}
+
+export function encodeUnstakeAction(unstakeId: number, lpAmount: bigint): BytesLike {
+  return encodeWardenPayload(ActionType.Unstake, unstakeId, lpAmount);
+}
+
+export function encodeReinitAction(): BytesLike {
+  return encodeWardenPayload(ActionType.Reinit, 0, 0n);
 }
 
 export function encodeWardenPayload(actionType: number, actionId: number, lpAmount: bigint): BytesLike {

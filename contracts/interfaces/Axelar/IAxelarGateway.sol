@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 ///@title Interface for AxelarGateway
+///@dev Copied from https://github.com/axelarnetwork/axelar-gmp-sdk-solidity/blob/main/contracts/interfaces/IAxelarGateway.sol
 interface IAxelarGateway {
   function callContract(
     string calldata destinationChain,

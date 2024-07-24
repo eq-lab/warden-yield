@@ -20,8 +20,10 @@ abstract contract AaveInteractor is Initializable {
     address aavePool;
     /// @dev flag showing if users can call a 'withdraw' method of this contract
     bool areWithdrawalsEnabled;
-    /// @dev mapping showing if the token can be supplied to Aave pool via this contract
+    /// @dev Not used in V2, mapping showing if the token can be supplied to Aave pool via this contract
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
+    /// @dev token address used in stake/unstake operations
+    address underlyingToken;
   }
 
   /// @dev 'AaveInteractorData' storage slot address
@@ -54,6 +56,13 @@ abstract contract AaveInteractor is Initializable {
     }
   }
 
+  function __AaveInteractor_initV2(address underlyingToken) internal onlyInitializing {
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+
+    if (!$.allowedTokens[underlyingToken]) revert Errors.NotAllowedToken(underlyingToken);
+    $.underlyingToken = underlyingToken;
+  }
+
   /// @dev method implementing 'stake' interaction with Aave pool
   /// @param token address of a token to be supplied to Aave pool
   /// @param amount amount of the supplied token
@@ -62,8 +71,6 @@ abstract contract AaveInteractor is Initializable {
     if (token == address(0)) revert Errors.ZeroAddress();
     if (amount == 0) revert Errors.ZeroAmount();
     if (!getTokenAllowance(token)) revert Errors.NotAllowedToken(token);
-
-    IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
     address aavePool = getAavePool();
     address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
@@ -86,10 +93,8 @@ abstract contract AaveInteractor is Initializable {
 
     address aavePool = getAavePool();
 
-    try IPool(aavePool).withdraw(token, amount, msg.sender) returns (uint256 withdrawnAmount) {
-      if (withdrawnAmount < amount) revert Errors.InvalidAmount(amount, withdrawnAmount);
-      withdrawn = withdrawnAmount;
-    } catch {}
+    withdrawn = IPool(aavePool).withdraw(token, amount, msg.sender);
+    if (withdrawn < amount) revert Errors.InvalidAmount(amount, withdrawn);
   }
 
   /// @dev returns current balance of token supplied to Aave pool by this contract
@@ -121,5 +126,11 @@ abstract contract AaveInteractor is Initializable {
   function _setTokenAllowance(address token, bool enabled) internal {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     $.allowedTokens[token] = enabled;
+  }
+
+  /// @notice returns address of the underlying token
+  function getUnderlyingToken() public view returns (address) {
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    return $.underlyingToken;
   }
 }
