@@ -348,7 +348,7 @@ pub fn try_handle_unstake_response(
     if unstake_queue_item.action_stage != UnstakeActionStage::WaitingRegistration {
         return Err(ContractError::UnstakeRequestInvalidStage {
             symbol: token_config.symbol,
-            unstake_id: unstake_response.unstake_id.clone(),
+            unstake_id: unstake_response.unstake_id,
         });
     }
     let mut token_stats = TOKENS_STATS_STATE.load(deps.storage, token_denom.clone())?;
