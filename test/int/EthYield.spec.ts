@@ -33,14 +33,11 @@ describe('EthYield stake', () => {
     const stakePayload = encodeStakeAction(stakeId);
     await ethYield.executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', input);
 
-    expect(await ethYield.totalStakedAmount(await ethYield.getWeth())).to.be.eq(input);
-    expect(await ethYield.userStakedAmount(ethYield.target, weth9.target)).to.be.eq(input);
-
     const userEthBalanceAfter = await user.provider.getBalance(user.address);
     expect(userEthBalanceBefore - userEthBalanceAfter).to.be.gte(input);
 
     const contractShares = await eigenLayerStrategy.shares(ethYield.target);
-    expect(contractShares).to.be.eq(await ethYield.totalShares(weth9.target));
+    expect(contractShares).to.be.eq(await ethYield.totalShares());
 
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
@@ -84,10 +81,11 @@ describe('EthYield withdraw', () => {
     const elWithdrawFilter = ethYield.filters.EigenLayerWithdrawStart;
     const lidoWithdrawFilter = ethYield.filters.LidoWithdrawStart;
 
-    const userShares = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const totalSharesBefore = await ethYield.totalShares();
+    const sharesToUnstake = totalSharesBefore / 2n;
 
     const unstakeId = 1;
-    const unstakePayload = encodeUnstakeAction(unstakeId, userShares);
+    const unstakePayload = encodeUnstakeAction(unstakeId, sharesToUnstake);
     await ethYield.execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
 
     const [elWithdrawStartEvent] = await ethYield.queryFilter(elWithdrawFilter, -1);
@@ -112,6 +110,8 @@ describe('EthYield withdraw', () => {
 
     const balanceAfter = await user.provider.getBalance(ethYield.target);
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
+
+    expect(await ethYield.totalShares()).to.be.eq(totalSharesBefore - sharesToUnstake);
   });
 
   it('too low withdraw', async () => {

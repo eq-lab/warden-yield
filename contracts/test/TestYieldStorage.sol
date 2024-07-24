@@ -21,11 +21,7 @@ contract TestYieldStorage is UUPSUpgradeable, Ownable2StepUpgradeable, YieldStor
 
   function stake(uint256 amount) external {
     uint256 stakedAmount = getStakedAmount(amount);
-    _addStake(msg.sender, WETH9, amount, stakedAmount);
-  }
-
-  function addWardenAddress(string calldata userWardenAddress) external {
-    _addWardenAddress(msg.sender, userWardenAddress);
+    _addStake(stakedAmount);
   }
 
   function getStakedAmount(uint256 amount) public pure returns (uint256) {

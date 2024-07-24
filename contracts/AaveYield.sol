@@ -47,72 +47,34 @@ contract AaveYield is
   function stake(uint64 stakeId, uint256 amount) external returns (uint256 shares) {
     require(msg.sender == address(this));
 
-    address token = getUnderlyingToken();
-    shares = _aaveStake(token, amount);
-    _addStake(msg.sender, token, amount, shares);
+    shares = _aaveStake(amount);
+    _addStake(shares);
 
     // TODO: add lpAmount calculation
     uint256 lpAmount = shares;
 
-    emit Stake(stakeId, token, amount, lpAmount);
+    emit Stake(stakeId, amount, lpAmount);
   }
 
   function unstake(uint64 unstakeId, uint256 lpAmount) external returns (uint256 withdrawn) {
     require(msg.sender == address(this));
 
-    address token = getUnderlyingToken();
     uint256 sharesAmount = lpAmount; // TODO: convert lpAmount to sharesAmount
-    uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount, token);
-    withdrawn = _aaveWithdraw(token, withdrawAmount);
-    // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
+    uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount);
+    withdrawn = _aaveWithdraw(withdrawAmount);
+    _removeStake(sharesAmount);
 
-    emit Unstake(unstakeId, token, withdrawn);
-  }
-
-  /// @inheritdoc IAaveYield
-  function getUserUnderlyingAmount(
-    address user,
-    address underlyingToken
-  ) public view returns (uint256 availableToWithdraw) {
-    uint256 scaledDeposit = userShares(user, underlyingToken);
-    availableToWithdraw = _getBalanceFromScaled(scaledDeposit, underlyingToken);
+    emit Unstake(unstakeId, withdrawn);
   }
 
   /// @notice converts amount of passed token to the shares
-  function underlyingToShares(uint256 amount, address underlyingToken) external view returns (uint256) {
-    return _getScaledFromBalance(amount, underlyingToken);
+  function underlyingToShares(uint256 amount) external view returns (uint256) {
+    return _getScaledFromBalance(amount);
   }
 
   /// @notice converts shares of passed token to its amount
-  function sharesToUnderlying(uint256 shares, address underlyingToken) external view returns (uint256) {
-    return _getBalanceFromScaled(shares, underlyingToken);
-  }
-
-  /// @notice disallows passed tokens usage in 'stake' call
-  function disallowTokens(address[] calldata tokens) external onlyOwner {
-    uint256 tokensCount = tokens.length;
-    for (uint256 i; i < tokensCount; ++i) {
-      address token = tokens[i];
-      if (!getTokenAllowance(token)) revert Errors.TokenAlreadyDisallowed(token);
-
-      _setTokenAllowance(token, false);
-    }
-  }
-
-  /// @notice allows passed tokens usage in 'stake' call
-  /// @dev checks if tokens are included in 'AavePool.getReservesList()'
-  function allowTokens(address[] calldata tokens) external onlyOwner {
-    uint256 tokensCount = tokens.length;
-    for (uint256 i; i < tokensCount; ++i) {
-      address token = tokens[i];
-      if (getTokenAllowance(token)) revert Errors.TokenAlreadyAllowed(token);
-
-      address aavePool = getAavePool();
-      uint256 coeff = IPool(aavePool).getReserveNormalizedIncome(token);
-      if (coeff == 0) revert Errors.UnknownToken(token);
-
-      _setTokenAllowance(token, true);
-    }
+  function sharesToUnderlying(uint256 shares) external view returns (uint256) {
+    return _getBalanceFromScaled(shares);
   }
 
   /*** WardenHandler ***/

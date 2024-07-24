@@ -63,11 +63,10 @@ contract EthYield is
 
     uint256 stEthAmount = _lidoStake(amount);
     eigenLayerShares = _eigenLayerRestake(stEthAmount);
-    address weth = getWeth();
-    _addStake(msg.sender, weth, amount, eigenLayerShares);
+    _addStake(eigenLayerShares);
 
     //TODO: add lpAmount calculation
-    emit Stake(stakeId, weth, amount, eigenLayerShares);
+    emit Stake(stakeId, amount, eigenLayerShares);
   }
 
   /// @inheritdoc IEthYield
@@ -78,6 +77,7 @@ contract EthYield is
     //TODO: change signature to accept lpAmount
     uint256 eigenLayerSharesAmount = lpAmount; //TODO: convert lpAmount to elShares
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
+    _removeStake(eigenLayerSharesAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
   }
 
@@ -94,7 +94,7 @@ contract EthYield is
 
     (reinitUnstakeId, withdrawnAmount) = _lidoReinit();
     if (withdrawnAmount != 0) {
-      emit Unstake(reinitUnstakeId, getWeth(), withdrawnAmount);
+      emit Unstake(reinitUnstakeId, withdrawnAmount);
     }
   }
 
