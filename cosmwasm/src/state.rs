@@ -4,7 +4,7 @@ use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const CONTRACT_CONFIG_STATE: Item<ContractConfigState> = Item::new("contract_config_state");
+pub const CONTRACT_CONFIG: Item<ContractConfigState> = Item::new("contract_config");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub struct ContractConfigState {
@@ -13,32 +13,36 @@ pub struct ContractConfigState {
 }
 
 // Map<> doc - https://book.cosmwasm.com/cross-contract/map-storage.html
-pub const TOKENS_CONFIGS_STATE: Map<TokenDenom, TokenConfig> = Map::new("tokens_config_state_map");
+pub const TOKEN_CONFIG: Map<&TokenDenom, TokenConfig> = Map::new("token_config_map");
 
-pub const TOKENS_STATS_STATE: Map<TokenDenom, TokenStats> = Map::new("tokens_stats_state");
+/// Map<(source_chain, source_address), token_denom>
+pub const TOKEN_DENOM_BY_SOURCE: Map<(&String, &String), TokenDenom> =
+    Map::new("token_denom_by_source_map");
+
+pub const TOKEN_STATS: Map<&TokenDenom, StakeStatsItem> = Map::new("stake_stats_map");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, Default)]
-pub struct TokenStats {
+pub struct StakeStatsItem {
     pub pending_stake: Uint256,
     pub lp_token_amount: Uint256,
     pub pending_unstake_lp_token_amount: Uint256,
 }
 
-pub const STAKE_QUEUE: Map<(TokenDenom, u64), StakeQueueItem> = Map::new("stake_queue");
-pub const STAKE_QUEUE_PARAMS: Map<TokenDenom, QueueParams> = Map::new("stake_queue_params");
+pub const STAKES: Map<(&TokenDenom, u64), StakeItem> = Map::new("stakes_map");
+pub const STAKE_QUEUE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("stake_queue_params");
 
-pub const UNSTAKE_QUEUE: Map<(TokenDenom, u64), UnstakeQueueItem> = Map::new("unstake_queue");
-pub const UNSTAKE_QUEUE_PARAMS: Map<TokenDenom, QueueParams> = Map::new("unstake_queue_params");
+pub const UNSTAKES: Map<(&TokenDenom, u64), UnstakeItem> = Map::new("unstakes_map");
+pub const UNSTAKE_QUEUE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("unstake_queue_params");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct StakeQueueItem {
+pub struct StakeItem {
     pub user: Addr,
     pub token_amount: Uint128,
     pub action_stage: StakeActionStage,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct UnstakeQueueItem {
+pub struct UnstakeItem {
     pub user: Addr,
     pub lp_token_amount: Uint128,
     pub action_stage: UnstakeActionStage,
@@ -47,7 +51,7 @@ pub struct UnstakeQueueItem {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueueParams {
     /// Count of stake/unstake requests in pending state
-    pub peding_count: u64,
+    pub pending_count: u64,
     /// Id counter for stake, unstake requests
     pub next_id: u64,
 }

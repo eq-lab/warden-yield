@@ -8,11 +8,12 @@ use crate::helpers::{
     find_token_by_message_source,
 };
 use crate::state::{
-    QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem, STAKE_QUEUE, STAKE_QUEUE_PARAMS,
-    TOKENS_CONFIGS_STATE, TOKENS_STATS_STATE, UNSTAKE_QUEUE, UNSTAKE_QUEUE_PARAMS,
+    QueueParams, StakeItem, StakeStatsItem, UnstakeItem, STAKES, STAKE_QUEUE_PARAMS, TOKEN_CONFIG,
+    TOKEN_STATS, UNSTAKES, UNSTAKE_QUEUE_PARAMS,
 };
 use crate::types::{
-    ActionType, StakeActionStage, Status, TokenConfig, TokenDenom, UnstakeActionStage,
+    ActionType, StakeActionStage, StakeResponseData, Status, TokenConfig, TokenDenom,
+    UnstakeActionStage, UnstakeResponseData,
 };
 use crate::ContractError;
 use cosmwasm_std::{
@@ -33,8 +34,8 @@ pub fn try_init_stake(
     if coin.amount.is_zero() {
         return Err(ContractError::ZeroTokenAmount);
     }
-    let token_config = TOKENS_CONFIGS_STATE
-        .may_load(deps.storage, coin.denom.clone())?
+    let token_config = TOKEN_CONFIG
+        .may_load(deps.storage, &coin.denom)?
         .ok_or(ContractError::UnknownToken(coin.denom.clone()))?;
 
     // check is staking enabled
@@ -42,14 +43,14 @@ pub fn try_init_stake(
         return Err(ContractError::StakeDisabled(token_config.symbol));
     }
 
-    let queue_params = STAKE_QUEUE_PARAMS.load(deps.storage, coin.denom.clone())?;
-    let stake_id = queue_params.end;
+    let queue_params = STAKE_QUEUE_PARAMS.load(deps.storage, &coin.denom)?;
+    let stake_id = queue_params.next_id;
 
     // push to stake queue
-    STAKE_QUEUE.save(
+    STAKES.save(
         deps.storage,
-        (coin.denom.clone(), stake_id),
-        &StakeQueueItem {
+        (&coin.denom, stake_id),
+        &StakeItem {
             user: info.sender,
             token_amount: coin.amount,
             action_stage: StakeActionStage::WaitingExecution,
@@ -59,17 +60,17 @@ pub fn try_init_stake(
     // increment queue size
     STAKE_QUEUE_PARAMS.save(
         deps.storage,
-        coin.denom.clone(),
+        &coin.denom,
         &QueueParams {
-            count_active: queue_params.count_active + 1,
-            end: stake_id + 1,
+            pending_count: queue_params.pending_count + 1,
+            next_id: stake_id + 1,
         },
     )?;
 
     // update token stats
-    let mut token_stats = TOKENS_STATS_STATE.load(deps.storage, coin.denom.clone())?;
+    let mut token_stats = TOKEN_STATS.load(deps.storage, &coin.denom)?;
     token_stats.pending_stake += Uint256::from(coin.amount);
-    TOKENS_STATS_STATE.save(deps.storage, coin.denom.clone(), &token_stats)?;
+    TOKEN_STATS.save(deps.storage, &coin.denom, &token_stats)?;
 
     let _payload = encode_stake_payload(&stake_id);
     // todo: send tokens to Axelar
@@ -93,17 +94,17 @@ pub fn try_init_unstake(
     let (token_denom, _token_config) = find_token_by_lp_token_denom(deps.as_ref(), &coin.denom)?;
 
     // update unstake queue params
-    let mut unstake_queue_params = UNSTAKE_QUEUE_PARAMS.load(deps.storage, token_denom.clone())?;
-    let unstake_id = unstake_queue_params.end;
-    unstake_queue_params.count_active += 1;
-    unstake_queue_params.end += 1;
-    UNSTAKE_QUEUE_PARAMS.save(deps.storage, token_denom.clone(), &unstake_queue_params)?;
+    let mut unstake_queue_params = UNSTAKE_QUEUE_PARAMS.load(deps.storage, &token_denom)?;
+    let unstake_id = unstake_queue_params.next_id;
+    unstake_queue_params.pending_count += 1;
+    unstake_queue_params.next_id += 1;
+    UNSTAKE_QUEUE_PARAMS.save(deps.storage, &token_denom, &unstake_queue_params)?;
 
     // push item to unstake queue
-    UNSTAKE_QUEUE.save(
+    UNSTAKES.save(
         deps.storage,
-        (token_denom.clone(), unstake_id),
-        &UnstakeQueueItem {
+        (&token_denom, unstake_id),
+        &UnstakeItem {
             user: info.sender,
             lp_token_amount: coin.amount,
             action_stage: UnstakeActionStage::WaitingRegistration,
@@ -111,9 +112,9 @@ pub fn try_init_unstake(
     )?;
 
     // update token stats
-    let mut token_stats = TOKENS_STATS_STATE.load(deps.storage, token_denom.clone())?;
+    let mut token_stats = TOKEN_STATS.load(deps.storage, &token_denom)?;
     token_stats.pending_unstake_lp_token_amount += Uint256::from(coin.amount);
-    TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &token_stats)?;
+    TOKEN_STATS.save(deps.storage, &token_denom, &token_stats)?;
 
     let _unstake_payload = encode_unstake_payload(&unstake_id, &coin.amount);
     // todo: send message to Axelar
@@ -127,7 +128,7 @@ pub fn try_reinit(
     _info: MessageInfo,
     token_denom: TokenDenom,
 ) -> Result<Response, ContractError> {
-    let _token_config = TOKENS_CONFIGS_STATE.load(deps.storage, token_denom.clone())?;
+    let _token_config = TOKEN_CONFIG.load(deps.storage, &token_denom)?;
 
     let _reinit_payload = encode_reinit_payload();
 
@@ -179,44 +180,13 @@ pub fn try_handle_stake_response(
     let (token_denom, _) =
         find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
 
-    // assert message funds
-    if info.funds.len() == 0 {
-        if stake_response.reinit_unstake_id != 0 {
-            return Err(ContractError::CustomError(
-                "Stake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
-            ));
-        }
-        if stake_response.status == Status::Fail {
-            return Err(ContractError::CustomError(
-                "Fail stake response must have tokens in message".to_string(),
-            ));
-        }
-    }
-    if info.funds.len() == 1 {
-        if stake_response.reinit_unstake_id == 0 && stake_response.status == Status::Success {
-            return Err(ContractError::CustomError(
-                "Stake response: reinit_unstake_id == 0 and status is Success, but message have tokens".to_string(),
-            ));
-        }
-        let coin = info.funds.first().unwrap();
-        if coin.denom != *token_denom {
-            return Err(ContractError::InvalidToken {
-                expected: token_denom.clone(),
-                actual: coin.denom.clone(),
-            });
-        }
-    }
-    if info.funds.len() > 1 {
-        return Err(ContractError::CustomError(
-            "Stake response has too much coins in message".to_string(),
-        ));
-    }
+    ensure_stake_response_is_valid(&info, &token_denom, &stake_response)?;
 
     let mut stake_queue_item =
-        STAKE_QUEUE.load(deps.storage, (token_denom.clone(), stake_response.stake_id))?;
+        STAKES.load(deps.storage, (&token_denom, stake_response.stake_id))?;
     let stake_amount = stake_queue_item.token_amount;
 
-    let mut token_stats = TOKENS_STATS_STATE.load(deps.storage, token_denom.clone())?;
+    let mut token_stats = TOKEN_STATS.load(deps.storage, &token_denom)?;
 
     let mut messages: Vec<BankMsg> = vec![];
     let attributes: Vec<Attribute> = vec![];
@@ -227,7 +197,7 @@ pub fn try_handle_stake_response(
         token_stats.pending_stake -= Uint256::from(stake_amount);
         token_stats.lp_token_amount += Uint256::from(stake_response.lp_token_amount);
 
-        TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &token_stats)?;
+        TOKEN_STATS.save(deps.storage, &token_denom, &token_stats)?;
 
         stake_queue_item.action_stage = StakeActionStage::Executed;
         // todo: add attributes? events?
@@ -244,7 +214,7 @@ pub fn try_handle_stake_response(
         // update token and user stats
         token_stats.pending_stake -= Uint256::from(stake_amount);
 
-        TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &token_stats)?;
+        TOKEN_STATS.save(deps.storage, &token_denom, &token_stats)?;
 
         stake_queue_item.action_stage = StakeActionStage::Failed;
 
@@ -259,16 +229,16 @@ pub fn try_handle_stake_response(
     }
 
     // update stake queue item
-    STAKE_QUEUE.save(
+    STAKES.save(
         deps.storage,
-        (token_denom.clone(), stake_response.stake_id.clone()),
+        (&token_denom, stake_response.stake_id.clone()),
         &stake_queue_item,
     )?;
 
     // decrease stake queue counter of active
-    let mut stake_queue_params = STAKE_QUEUE_PARAMS.load(deps.storage, token_denom.clone())?;
-    stake_queue_params.count_active -= 1;
-    STAKE_QUEUE_PARAMS.save(deps.storage, token_denom.clone(), &stake_queue_params)?;
+    let mut stake_queue_params = STAKE_QUEUE_PARAMS.load(deps.storage, &token_denom)?;
+    stake_queue_params.pending_count -= 1;
+    STAKE_QUEUE_PARAMS.save(deps.storage, &token_denom, &stake_queue_params)?;
 
     // handle reinit
     if stake_response.reinit_unstake_id != 0 {
@@ -298,6 +268,45 @@ pub fn try_handle_stake_response(
         .add_events(events))
 }
 
+fn ensure_stake_response_is_valid(
+    info: &MessageInfo,
+    token_denom: &str,
+    stake_response: &StakeResponseData,
+) -> Result<(), ContractError> {
+    if info.funds.len() == 0 {
+        if stake_response.reinit_unstake_id != 0 {
+            return Err(ContractError::CustomError(
+                "Stake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
+            ));
+        }
+        if stake_response.status == Status::Fail {
+            return Err(ContractError::CustomError(
+                "Fail stake response must have tokens in message".to_string(),
+            ));
+        }
+    }
+    if info.funds.len() == 1 {
+        if stake_response.reinit_unstake_id == 0 && stake_response.status == Status::Success {
+            return Err(ContractError::CustomError(
+                "Stake response: reinit_unstake_id == 0 and status is Success, but message have tokens".to_string(),
+            ));
+        }
+        let coin = info.funds.first().unwrap();
+        if coin.denom != *token_denom {
+            return Err(ContractError::InvalidToken {
+                expected: token_denom.to_owned(),
+                actual: coin.denom.clone(),
+            });
+        }
+    }
+    if info.funds.len() > 1 {
+        return Err(ContractError::CustomError(
+            "Stake response has too much coins in message".to_string(),
+        ));
+    }
+
+    Ok(())
+}
 pub fn try_handle_unstake_response(
     deps: DepsMut,
     _env: Env,
@@ -313,36 +322,10 @@ pub fn try_handle_unstake_response(
     let unstake_response =
         decode_unstake_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
 
-    // assert message funds
-    if info.funds.len() == 0 && unstake_response.reinit_unstake_id != 0 {
-        return Err(ContractError::CustomError(
-            "Unstake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
-        ));
-    }
-    if info.funds.len() == 1 {
-        if unstake_response.reinit_unstake_id == 0 {
-            return Err(ContractError::CustomError(
-                "Unstake response: reinit_unstake_id == 0, but message have tokens".to_string(),
-            ));
-        }
-        let coin = info.funds.first().unwrap();
-        if coin.denom != *token_denom {
-            return Err(ContractError::InvalidToken {
-                expected: token_denom.clone(),
-                actual: coin.denom.clone(),
-            });
-        }
-    }
-    if info.funds.len() > 1 {
-        return Err(ContractError::CustomError(
-            "Unstake response has too much coins in message".to_string(),
-        ));
-    }
+    ensure_unstake_response_is_valid(&info, &token_denom, &unstake_response)?;
 
-    let mut unstake_queue_item = UNSTAKE_QUEUE.load(
-        deps.storage,
-        (token_denom.clone(), unstake_response.unstake_id),
-    )?;
+    let mut unstake_queue_item =
+        UNSTAKES.load(deps.storage, (&token_denom, unstake_response.unstake_id))?;
 
     // todo: discuss it
     if unstake_queue_item.action_stage != UnstakeActionStage::WaitingRegistration {
@@ -351,7 +334,7 @@ pub fn try_handle_unstake_response(
             unstake_id: unstake_response.unstake_id,
         });
     }
-    let mut token_stats = TOKENS_STATS_STATE.load(deps.storage, token_denom.clone())?;
+    let mut token_stats = TOKEN_STATS.load(deps.storage, &token_denom)?;
 
     let mut messages: Vec<BankMsg> = vec![];
     let attributes: Vec<Attribute> = vec![];
@@ -360,7 +343,7 @@ pub fn try_handle_unstake_response(
     if unstake_response.status == Status::Success {
         // update token stats
         token_stats.lp_token_amount -= Uint256::from(unstake_queue_item.lp_token_amount);
-        TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &token_stats)?;
+        TOKEN_STATS.save(deps.storage, &token_denom, &token_stats)?;
 
         // update action stage
         unstake_queue_item.action_stage = UnstakeActionStage::Registered;
@@ -370,17 +353,16 @@ pub fn try_handle_unstake_response(
         // update token stats
         token_stats.pending_unstake_lp_token_amount -=
             Uint256::from(unstake_queue_item.lp_token_amount);
-        TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &token_stats)?;
+        TOKEN_STATS.save(deps.storage, &token_denom, &token_stats)?;
 
         // pop unstake queue and update unstake queue params
-        UNSTAKE_QUEUE.remove(
+        UNSTAKES.remove(
             deps.storage,
-            (token_denom.clone(), unstake_response.unstake_id.clone()),
+            (&token_denom, unstake_response.unstake_id.clone()),
         );
-        let mut unstake_queue_params =
-            UNSTAKE_QUEUE_PARAMS.load(deps.storage, token_denom.clone())?;
-        unstake_queue_params.count_active -= 1;
-        UNSTAKE_QUEUE_PARAMS.save(deps.storage, token_denom.clone(), &unstake_queue_params)?;
+        let mut unstake_queue_params = UNSTAKE_QUEUE_PARAMS.load(deps.storage, &token_denom)?;
+        unstake_queue_params.pending_count -= 1;
+        UNSTAKE_QUEUE_PARAMS.save(deps.storage, &token_denom, &unstake_queue_params)?;
 
         // update action stage
         unstake_queue_item.action_stage = UnstakeActionStage::Failed;
@@ -388,9 +370,9 @@ pub fn try_handle_unstake_response(
         // todo: return LP tokens to user
     }
 
-    UNSTAKE_QUEUE.save(
+    UNSTAKES.save(
         deps.storage,
-        (token_denom.clone(), unstake_response.unstake_id.clone()),
+        (&token_denom, unstake_response.unstake_id.clone()),
         &unstake_queue_item,
     )?;
 
@@ -417,6 +399,39 @@ pub fn try_handle_unstake_response(
         .add_messages(messages)
         .add_attributes(attributes)
         .add_events(events))
+}
+
+fn ensure_unstake_response_is_valid(
+    info: &MessageInfo,
+    token_denom: &str,
+    unstake_response: &UnstakeResponseData,
+) -> Result<(), ContractError> {
+    // assert message funds
+    if info.funds.len() == 0 && unstake_response.reinit_unstake_id != 0 {
+        return Err(ContractError::CustomError(
+            "Unstake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
+        ));
+    }
+    if info.funds.len() == 1 {
+        if unstake_response.reinit_unstake_id == 0 {
+            return Err(ContractError::CustomError(
+                "Unstake response: reinit_unstake_id == 0, but message have tokens".to_string(),
+            ));
+        }
+        let coin = info.funds.first().unwrap();
+        if coin.denom != *token_denom {
+            return Err(ContractError::InvalidToken {
+                expected: token_denom.to_owned(),
+                actual: coin.denom.clone(),
+            });
+        }
+    }
+    if info.funds.len() > 1 {
+        return Err(ContractError::CustomError(
+            "Unstake response has too much coins in message".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 fn try_handle_reinit_response(
@@ -447,7 +462,7 @@ fn try_handle_reinit_response(
     let reinit_response_data =
         decode_reinit_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
 
-    let token_stats = TOKENS_STATS_STATE.load(deps.storage, token_denom)?;
+    let token_stats = TOKEN_STATS.load(deps.storage, &token_denom)?;
     let (bank_msg, event) = handle_reinit(
         deps,
         coin.clone(),
@@ -462,12 +477,10 @@ fn handle_reinit(
     deps: DepsMut,
     coin: Coin,
     reinit_unstake_id: &u64,
-    mut token_stats: TokenStats,
+    mut token_stats: StakeStatsItem,
 ) -> Result<(BankMsg, Event), ContractError> {
-    let mut unstake_queue_item = UNSTAKE_QUEUE.load(
-        deps.storage,
-        (coin.denom.clone(), reinit_unstake_id.clone()),
-    )?;
+    let mut unstake_queue_item =
+        UNSTAKES.load(deps.storage, (&coin.denom, reinit_unstake_id.clone()))?;
 
     // return deposit + earnings to user
     let message = BankMsg::Send {
@@ -477,26 +490,26 @@ fn handle_reinit(
 
     // update unstake queue item
     unstake_queue_item.action_stage = UnstakeActionStage::Executed;
-    UNSTAKE_QUEUE.save(
+    UNSTAKES.save(
         deps.storage,
-        (coin.denom.clone(), reinit_unstake_id.clone()),
+        (&coin.denom, reinit_unstake_id.clone()),
         &unstake_queue_item,
     )?;
 
     // decrease unstake queue counter
-    let unstake_queue_params = UNSTAKE_QUEUE_PARAMS.load(deps.storage, coin.denom.clone())?;
+    let unstake_queue_params = UNSTAKE_QUEUE_PARAMS.load(deps.storage, &coin.denom)?;
     UNSTAKE_QUEUE_PARAMS.save(
         deps.storage,
-        coin.denom.clone(),
+        &coin.denom,
         &QueueParams {
-            count_active: unstake_queue_params.count_active - 1,
-            end: unstake_queue_params.end,
+            pending_count: unstake_queue_params.pending_count - 1,
+            next_id: unstake_queue_params.next_id,
         },
     )?;
 
     token_stats.pending_unstake_lp_token_amount -=
         Uint256::from(unstake_queue_item.lp_token_amount);
-    TOKENS_STATS_STATE.save(deps.storage, coin.denom.clone(), &token_stats)?;
+    TOKEN_STATS.save(deps.storage, &coin.denom, &token_stats)?;
 
     // todo: add message to burn LP tokens
 
@@ -518,13 +531,13 @@ pub fn try_add_token(
 ) -> Result<Response, ContractError> {
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
-    if TOKENS_CONFIGS_STATE.has(deps.storage, token_denom.clone()) {
+    if TOKEN_CONFIG.has(deps.storage, &token_denom) {
         return Err(ContractError::TokenAlreadyExist(token_denom));
     }
 
-    TOKENS_CONFIGS_STATE.save(deps.storage, token_denom.clone(), &config)?;
+    TOKEN_CONFIG.save(deps.storage, &token_denom, &config)?;
 
-    TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &TokenStats::default())?;
+    TOKEN_STATS.save(deps.storage, &token_denom, &StakeStatsItem::default())?;
 
     // todo: instantiate LP token
     Ok(Response::default())
@@ -539,10 +552,10 @@ pub fn try_update_token_config(
 ) -> Result<Response, ContractError> {
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
-    if !TOKENS_CONFIGS_STATE.has(deps.storage, token_denom.clone()) {
+    if !TOKEN_CONFIG.has(deps.storage, &token_denom) {
         return Err(ContractError::UnknownToken(token_denom.clone()));
     }
-    TOKENS_CONFIGS_STATE.save(deps.storage, token_denom, &config)?;
+    TOKEN_CONFIG.save(deps.storage, &token_denom, &config)?;
 
     Ok(Response::default())
 }

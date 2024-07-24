@@ -1,9 +1,9 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
-    ExecuteMsg, GetQueueParamsResponse, GetStakeQueueItemResponse, GetTokensStatsResponse,
-    GetUnstakeQueueItemResponse, InstantiateMsg, QueryMsg,
+    ExecuteMsg, GetQueueParamsResponse, GetStakeItemResponse, GetTokensStatsResponse,
+    GetUnstakeItemResponse, InstantiateMsg, QueryMsg,
 };
-use crate::state::{QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem};
+use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::types::{
     ReinitResponseData, StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage,
     UnstakeResponseData,
@@ -117,8 +117,8 @@ pub fn get_stake_queue_item(
     env: Env,
     token_denom: TokenDenom,
     id: u64,
-) -> Option<StakeQueueItem> {
-    let response: GetStakeQueueItemResponse = from_json(
+) -> Option<StakeItem> {
+    let response: GetStakeItemResponse = from_json(
         query(
             deps,
             env.clone(),
@@ -136,8 +136,8 @@ pub fn get_unstake_queue_item(
     env: Env,
     token_denom: TokenDenom,
     id: u64,
-) -> Option<UnstakeQueueItem> {
-    let response: GetUnstakeQueueItemResponse = from_json(
+) -> Option<UnstakeItem> {
+    let response: GetUnstakeItemResponse = from_json(
         query(
             deps,
             env.clone(),
@@ -171,7 +171,6 @@ pub fn create_stake_response_payload(stake_response_data: StakeResponseData) -> 
                 .to_be_bytes()
                 .into_iter(),
         )
-        .map(|x| x)
         .collect();
 
     Binary::new(payload)
@@ -192,7 +191,6 @@ pub fn create_unstake_response_payload(unstake_response_data: UnstakeResponseDat
                 .to_be_bytes()
                 .into_iter(),
         )
-        .map(|x| x)
         .collect();
 
     Binary::new(payload)
@@ -207,13 +205,12 @@ pub fn create_reinit_response_payload(reinit_response_data: ReinitResponseData) 
                 .to_be_bytes()
                 .into_iter(),
         )
-        .map(|x| x)
         .collect();
 
     Binary::new(payload)
 }
 
-pub fn get_tokens_stats(deps: Deps, env: Env) -> HashMap<TokenDenom, TokenStats> {
+pub fn get_tokens_stats(deps: Deps, env: Env) -> HashMap<TokenDenom, StakeStatsItem> {
     let tokens_stats: GetTokensStatsResponse =
         from_json(query(deps, env, QueryMsg::TokensStats).unwrap()).unwrap();
 
@@ -221,7 +218,7 @@ pub fn get_tokens_stats(deps: Deps, env: Env) -> HashMap<TokenDenom, TokenStats>
     stats
 }
 
-pub fn get_token_stats(deps: Deps, env: Env, token_denom: &TokenDenom) -> TokenStats {
+pub fn get_token_stats(deps: Deps, env: Env, token_denom: &TokenDenom) -> StakeStatsItem {
     let token_stats = get_tokens_stats(deps, env);
 
     token_stats[token_denom].clone()
@@ -242,7 +239,7 @@ pub fn stake_and_unstake(
     token_config: &TokenConfig,
 ) -> UnstakeDetails {
     let stake_id =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).end;
+        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).next_id;
 
     let stake_amount = Uint128::from(14000_u128);
 
@@ -278,7 +275,7 @@ pub fn stake_and_unstake(
     .unwrap();
 
     let unstake_id =
-        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).end;
+        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).next_id;
 
     // init unstake
     execute(
@@ -316,8 +313,8 @@ pub fn stake_and_unstake(
     assert_eq!(
         unstake_queue_params,
         QueueParams {
-            count_active: 1_u64,
-            end: 2_u64,
+            pending_count: 1_u64,
+            next_id: 2_u64,
         }
     );
 
@@ -330,7 +327,7 @@ pub fn stake_and_unstake(
     .unwrap();
     assert_eq!(
         unstake_queue_item,
-        UnstakeQueueItem {
+        UnstakeItem {
             user: user.clone(),
             lp_token_amount,
             action_stage: UnstakeActionStage::Registered
@@ -340,7 +337,7 @@ pub fn stake_and_unstake(
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),

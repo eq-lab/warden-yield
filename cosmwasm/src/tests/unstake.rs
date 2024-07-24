@@ -1,6 +1,6 @@
 use crate::contract::execute;
 use crate::msg::ExecuteMsg;
-use crate::state::{QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem};
+use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::{
     create_stake_response_payload, create_unstake_response_payload, get_stake_queue_item,
     get_stake_queue_params, get_token_stats, get_unstake_queue_item, get_unstake_queue_params,
@@ -22,7 +22,7 @@ fn stake_and_response(
     let stake_queue_params_before =
         get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     let token_stats_before = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), token_denom);
-    let stake_id = stake_queue_params_before.end.clone();
+    let stake_id = stake_queue_params_before.next_id.clone();
 
     // init stake
     execute(
@@ -60,8 +60,8 @@ fn stake_and_response(
     assert_eq!(
         stake_queue_params,
         QueueParams {
-            count_active: stake_queue_params_before.count_active,
-            end: stake_queue_params_before.end + 1
+            pending_count: stake_queue_params_before.pending_count,
+            next_id: stake_queue_params_before.next_id + 1
         }
     );
     let stake_queue_item = get_stake_queue_item(
@@ -73,7 +73,7 @@ fn stake_and_response(
     .unwrap();
     assert_eq!(
         stake_queue_item,
-        StakeQueueItem {
+        StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
             action_stage: StakeActionStage::Executed,
@@ -84,7 +84,7 @@ fn stake_and_response(
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: token_stats_before.pending_stake,
             lp_token_amount: token_stats_before.lp_token_amount + Uint256::from(lp_token_amount),
             pending_unstake_lp_token_amount: token_stats_before.pending_unstake_lp_token_amount
@@ -121,8 +121,8 @@ fn test_init_unstake_one_coin() {
     assert_eq!(
         unstake_queue_params,
         QueueParams {
-            count_active: 1_u64,
-            end: 2_u64
+            pending_count: 1_u64,
+            next_id: 2_u64
         }
     );
 
@@ -135,7 +135,7 @@ fn test_init_unstake_one_coin() {
     .unwrap();
     assert_eq!(
         unstake_queue_item,
-        UnstakeQueueItem {
+        UnstakeItem {
             user: ctx.user.clone(),
             lp_token_amount,
             action_stage: UnstakeActionStage::WaitingRegistration
@@ -146,7 +146,7 @@ fn test_init_unstake_one_coin() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::from(0_u64),
             lp_token_amount: Uint256::from(lp_token_amount),
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
@@ -198,7 +198,7 @@ fn test_unstake_response_successful() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
@@ -254,7 +254,7 @@ fn test_unstake_response_successful_instant_reinit() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),
             pending_unstake_lp_token_amount: Uint256::zero(),
@@ -266,8 +266,8 @@ fn test_unstake_response_successful_instant_reinit() {
     assert_eq!(
         unstake_queue_params,
         QueueParams {
-            count_active: 0_u64,
-            end: 2_u64
+            pending_count: 0_u64,
+            next_id: 2_u64
         }
     );
 
@@ -280,7 +280,7 @@ fn test_unstake_response_successful_instant_reinit() {
     .unwrap();
     assert_eq!(
         unstake_queue_item,
-        UnstakeQueueItem {
+        UnstakeItem {
             user: ctx.user.clone(),
             action_stage: UnstakeActionStage::Executed,
             lp_token_amount,
@@ -340,7 +340,7 @@ fn test_unstake_response_successful_with_reinit() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
@@ -352,8 +352,8 @@ fn test_unstake_response_successful_with_reinit() {
     assert_eq!(
         unstake_queue_params,
         QueueParams {
-            count_active: 1_u64,
-            end: 3_u64
+            pending_count: 1_u64,
+            next_id: 3_u64
         }
     );
 
@@ -366,7 +366,7 @@ fn test_unstake_response_successful_with_reinit() {
     .unwrap();
     assert_eq!(
         unstake_queue_item,
-        UnstakeQueueItem {
+        UnstakeItem {
             user: ctx.user.clone(),
             action_stage: UnstakeActionStage::Executed,
             lp_token_amount,
@@ -419,7 +419,7 @@ fn test_unstake_response_fail() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::from(lp_token_amount),
             pending_unstake_lp_token_amount: Uint256::zero()
@@ -480,7 +480,7 @@ fn test_unstake_response_fail_with_reinit() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::from(lp_token_amount),
             pending_unstake_lp_token_amount: Uint256::zero()

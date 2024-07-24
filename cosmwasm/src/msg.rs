@@ -1,6 +1,4 @@
-use crate::state::{
-    ContractConfigState, QueueParams, StakeQueueItem, TokenStats, UnstakeQueueItem,
-};
+use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary};
@@ -49,9 +47,9 @@ pub enum QueryMsg {
     StakeQueueParams { token_denom: TokenDenom },
     #[returns(GetQueueParamsResponse)]
     UnstakeQueueParams { token_denom: TokenDenom },
-    #[returns(GetStakeQueueItemResponse)]
+    #[returns(GetStakeItemResponse)]
     StakeQueueElem { token_denom: TokenDenom, id: u64 },
-    #[returns(GetUnstakeQueueItemResponse)]
+    #[returns(GetUnstakeItemResponse)]
     UnstakeQueueElem { token_denom: TokenDenom, id: u64 },
 }
 
@@ -67,17 +65,17 @@ pub struct GetTokensConfigsResponse {
 
 #[cw_serde]
 pub struct GetTokensStatsResponse {
-    pub stats: Vec<(TokenDenom, TokenStats)>,
+    pub stats: Vec<(TokenDenom, StakeStatsItem)>,
 }
 
 #[cw_serde]
-pub struct GetStakeQueueItemResponse {
-    pub item: StakeQueueItem,
+pub struct GetStakeItemResponse {
+    pub item: StakeItem,
 }
 
 #[cw_serde]
-pub struct GetUnstakeQueueItemResponse {
-    pub item: UnstakeQueueItem,
+pub struct GetUnstakeItemResponse {
+    pub item: UnstakeItem,
 }
 
 #[cw_serde]

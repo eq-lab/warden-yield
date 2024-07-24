@@ -1,6 +1,6 @@
 use crate::contract::execute;
 use crate::msg::ExecuteMsg;
-use crate::state::{QueueParams, TokenStats, UnstakeQueueItem};
+use crate::state::{QueueParams, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::{
     create_reinit_response_payload, get_token_stats, get_unstake_queue_item,
     get_unstake_queue_params, instantiate_contract, stake_and_unstake,
@@ -44,7 +44,7 @@ fn test_reinit() {
     let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
         token_stats,
-        TokenStats {
+        StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),
             pending_unstake_lp_token_amount: Uint256::zero(),
@@ -57,8 +57,8 @@ fn test_reinit() {
     assert_eq!(
         unstake_queue_params,
         QueueParams {
-            count_active: 0_u64,
-            end: 2_u64,
+            pending_count: 0_u64,
+            next_id: 2_u64,
         }
     );
 
@@ -71,7 +71,7 @@ fn test_reinit() {
     .unwrap();
     assert_eq!(
         unstake_queue_item,
-        UnstakeQueueItem {
+        UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
             action_stage: UnstakeActionStage::Executed,

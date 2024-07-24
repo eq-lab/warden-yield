@@ -17,8 +17,8 @@ use crate::query::{
 };
 use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{
-    ContractConfigState, QueueParams, TokenStats, CONTRACT_CONFIG_STATE, STAKE_QUEUE_PARAMS,
-    TOKENS_CONFIGS_STATE, TOKENS_STATS_STATE, UNSTAKE_QUEUE_PARAMS,
+    ContractConfigState, QueueParams, StakeStatsItem, CONTRACT_CONFIG, STAKE_QUEUE_PARAMS,
+    TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE, TOKEN_STATS, UNSTAKE_QUEUE_PARAMS,
 };
 use crate::types::ReplyType;
 
@@ -40,26 +40,32 @@ pub fn instantiate(
         owner: info.sender.clone(),
         axelar: msg.axelar,
     };
-    CONTRACT_CONFIG_STATE.save(deps.storage, &contract_config)?;
+    CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
 
     for (token_denom, config) in &msg.tokens {
-        TOKENS_CONFIGS_STATE.save(deps.storage, token_denom.clone(), config)?;
-        TOKENS_STATS_STATE.save(deps.storage, token_denom.clone(), &TokenStats::default())?;
+        TOKEN_CONFIG.save(deps.storage, token_denom, config)?;
+        TOKEN_STATS.save(deps.storage, token_denom, &StakeStatsItem::default())?;
         STAKE_QUEUE_PARAMS.save(
             deps.storage,
-            token_denom.clone(),
+            token_denom,
             &QueueParams {
-                count_active: 0,
-                end: 1,
+                pending_count: 0,
+                next_id: 1,
             },
         )?;
         UNSTAKE_QUEUE_PARAMS.save(
             deps.storage,
-            token_denom.clone(),
+            token_denom,
             &QueueParams {
-                count_active: 0,
-                end: 1,
+                pending_count: 0,
+                next_id: 1,
             },
+        )?;
+
+        TOKEN_DENOM_BY_SOURCE.save(
+            deps.storage,
+            (&config.chain, &config.evm_yield_contract),
+            token_denom,
         )?;
     }
 

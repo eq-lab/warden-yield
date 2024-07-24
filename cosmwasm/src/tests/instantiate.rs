@@ -2,7 +2,7 @@ use crate::contract::query;
 use crate::msg::{
     GetContractConfigResponse, GetTokensConfigsResponse, GetTokensStatsResponse, QueryMsg,
 };
-use crate::state::{ContractConfigState, TokenStats};
+use crate::state::{ContractConfigState, StakeStatsItem};
 use crate::tests::utils::instantiate_contract;
 use cosmwasm_std::from_json;
 
@@ -41,7 +41,7 @@ fn test_instantiate() {
             stats: ctx
                 .tokens
                 .iter()
-                .map(|(token_denom, _)| (token_denom.clone(), TokenStats::default()))
+                .map(|(token_denom, _)| (token_denom.clone(), StakeStatsItem::default()))
                 .collect()
         }
     );

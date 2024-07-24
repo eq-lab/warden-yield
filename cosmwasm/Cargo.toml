@@ -33,17 +33,16 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 [dependencies]
 cosmwasm-schema = "2.0.1"
 cosmwasm-std = { version = "2.0.1", features = [
-  "cosmwasm_1_3",
-  # Enable this if you only deploy to chains that have CosmWasm 1.4 or higher
-  # "cosmwasm_1_4",
+    "cosmwasm_1_3",
+    # Enable this if you only deploy to chains that have CosmWasm 1.4 or higher
+    # "cosmwasm_1_4",
 ] }
 cw-storage-plus = "2.0.0"
 cw2 = "2.0.0"
-ethabi = { version = "18.0.0", default-features = false, features = [] }
 schemars = "0.8.16"
 serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.58" }
-protobuf = { version = "2.28.0", features = [ "with-bytes" ] }
+protobuf = { version = "3.5.0", features = ["with-bytes"] }
 
 [dev-dependencies]
 cw-multi-test = "2.0.0"

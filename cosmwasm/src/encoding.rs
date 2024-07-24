@@ -7,8 +7,7 @@ pub fn encode_stake_payload(stake_id: &u64) -> Binary {
     let payload: Vec<u8> = stake_id
         .to_be_bytes()
         .into_iter()
-        .chain(vec![0_u8].into_iter()) // ActionType: stake = 0_u8
-        .map(|x| x)
+        .chain(Some(0)) // ActionType: stake = 0_u8
         .collect();
 
     let result: Binary = Binary::new(payload);
@@ -20,8 +19,7 @@ pub fn encode_unstake_payload(unstake_id: &u64, lp_token_amount: &Uint128) -> Bi
         .to_be_bytes()
         .into_iter()
         .chain(unstake_id.to_be_bytes().into_iter())
-        .chain(vec![1_u8].into_iter()) // ActionType::Unstake = 1_u8
-        .map(|x| x)
+        .chain(Some(1)) // ActionType::Unstake = 1_u8
         .collect();
 
     let result: Binary = Binary::new(payload);

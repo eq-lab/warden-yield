@@ -17,7 +17,6 @@ fn test_decode_stake_response() {
         .chain(stake_id.to_be_bytes().into_iter())
         .chain(reinit_unstake_id.to_be_bytes().into_iter())
         .chain(lp_token_amount.to_be_bytes().into_iter())
-        .map(|x| x)
         .collect();
 
     println!("Bytes: {:?}", payload);
@@ -43,7 +42,6 @@ fn test_decode_unstake_response() {
         .into_iter()
         .chain(unstake_id.to_be_bytes().into_iter())
         .chain(reinit_unstake_id.to_be_bytes().into_iter())
-        .map(|x| x)
         .collect();
 
     // println!("Bytes: {:?}", payload);
@@ -62,11 +60,7 @@ fn test_decode_unstake_response() {
 fn test_decode_reinit_response() {
     let reinit_unstake_id = 2007_u64; // 8 = 64 bit
 
-    let payload: Vec<u8> = reinit_unstake_id
-        .to_be_bytes()
-        .into_iter()
-        .map(|x| x)
-        .collect();
+    let payload: Vec<u8> = reinit_unstake_id.to_be_bytes().into_iter().collect();
 
     // println!("Bytes: {:?}", payload);
     let data = decode_reinit_response_payload(payload.as_slice()).unwrap();
