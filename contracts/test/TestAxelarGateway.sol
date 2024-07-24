@@ -25,41 +25,37 @@ contract TestAxelarGateway is IAxelarGateway {
     _tokenAddresses[symbol] = tokenAddress;
   }
 
-  function callContract(
-    string calldata destinationChain,
-    string calldata contractAddress,
-    bytes calldata payload
-  ) external override {
+  function callContract(string calldata, string calldata, bytes calldata payload) external override {
     callContractPayload = payload;
   }
 
   function callContractWithToken(
-    string calldata destinationChain,
-    string calldata contractAddress,
+    string calldata,
+    string calldata,
     bytes calldata payload,
-    string calldata symbol,
-    uint256 amount
+    string calldata,
+    uint256
   ) external override {
     callContractWithTokenPayload = payload;
   }
 
   function validateContractCall(
-    bytes32 commandId,
-    string calldata sourceChain,
-    string calldata sourceAddress,
-    bytes32 payloadHash
-  ) external override returns (bool) {
+    bytes32,
+    string calldata,
+    string calldata,
+    bytes32
+  ) external view override returns (bool) {
     return _isValidCall;
   }
 
   function validateContractCallAndMint(
-    bytes32 commandId,
-    string calldata sourceChain,
-    string calldata sourceAddress,
-    bytes32 payloadHash,
-    string calldata symbol,
-    uint256 amount
-  ) external override returns (bool) {
+    bytes32,
+    string calldata,
+    string calldata,
+    bytes32,
+    string calldata,
+    uint256
+  ) external view override returns (bool) {
     return _isValidCall;
   }
 
