@@ -132,6 +132,7 @@ contract EthYield is
     });
 
     try this.stake(stakeId, amountToStake) returns (uint256 lpAmount) {
+      result.status = WardenHandler.Status.Success;
       result.lpAmount = uint128(lpAmount);
     } catch (bytes memory reason) {
       emit RequestFailed(ActionType.Stake, stakeId, reason);

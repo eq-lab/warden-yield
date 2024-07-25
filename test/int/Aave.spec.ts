@@ -30,7 +30,13 @@ import {
   IERC20Metadata__factory,
   IWETH9,
   TestAaveYield__factory,
+  TestAxelarGateway,
 } from '../../typechain-types';
+
+async function ensureSuccessCall(aaveYield: AaveYield) {
+  const [requestFailedEvent] = await aaveYield.queryFilter(aaveYield.filters.RequestFailed, -1);
+  expect(requestFailedEvent).to.be.undefined;
+}
 
 async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken, token: string) {
   const stakedAmountBefore = await aaveYield.userStakedAmount(aaveYield.target, token);
@@ -81,6 +87,7 @@ async function stake(
   await aaveYield
     .connect(signer)
     .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, tokenSymbol, amount);
+  await ensureSuccessCall(aaveYield);
 
   // check balances
   expect(await stakeToken.balanceOf(signer.address)).to.be.eq(0);
@@ -100,6 +107,7 @@ async function stake(
 
 async function withdraw(
   aaveYield: AaveYield,
+  axelarGateway: TestAxelarGateway,
   signer: HardhatEthersSigner,
   aToken: IAToken,
   tokenToWithdraw: ERC20 | IWETH9,
@@ -111,13 +119,15 @@ async function withdraw(
 
   // state before withdraw
   const aTokenScaledBalanceBefore = await aToken.scaledBalanceOf(aaveYieldAddress);
-  const tokenBalanceBefore = await tokenToWithdraw.balanceOf(signer.address);
+  const tokenBalanceBefore = await tokenToWithdraw.balanceOf(axelarGateway.target);
 
   const unstakePayload = encodeUnstakeAction(unstakeId, lpAmount);
   await aaveYield.connect(signer).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
+  await ensureSuccessCall(aaveYield);
+
   const underlyingBalance = await aaveYield.sharesToUnderlying(lpAmount, tokenAddress);
 
-  expect(await tokenToWithdraw.balanceOf(aaveYield.target)).to.be.eq(underlyingBalance + tokenBalanceBefore);
+  expect(await tokenToWithdraw.balanceOf(axelarGateway.target)).to.be.eq(underlyingBalance + tokenBalanceBefore);
   expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aTokenScaledBalanceBefore - lpAmount);
 }
 
@@ -138,7 +148,7 @@ describe('AaveYield, deposit', () => {
 
   it('1 users: weth stake', async () => {
     const [, user] = await ethers.getSigners();
-    const { aaveYield, weth9, aEthWETH } = await loadFixture(createAaveEthFork);
+    const { aaveYield, weth9, aEthWETH, axelarGateway } = await loadFixture(createAaveEthFork);
 
     // init balances
     const userInput = await initBalance(user.address, weth9, '1');
@@ -336,7 +346,7 @@ describe('AaveYield init errors', () => {
 describe('Aave Yield tokens', () => {
   it('1 users: stake & unstake USDT', async () => {
     const [, user] = await ethers.getSigners();
-    const { aaveYield, usdt, aEthUsdt } = await loadFixture(createAaveForkWithUsdtUnderlying);
+    const { aaveYield, usdt, aEthUsdt, axelarGateway } = await loadFixture(createAaveForkWithUsdtUnderlying);
 
     // init balances
     const userInput = await initBalance(user.address, usdt, '1000');
@@ -345,12 +355,12 @@ describe('Aave Yield tokens', () => {
     const stakeId = 1;
     const lpAmount = await stake(aaveYield, user, aEthUsdt, usdt, userInput, stakeId);
     const unstakeId = 1;
-    await withdraw(aaveYield, user, aEthUsdt, usdt, lpAmount, unstakeId);
+    await withdraw(aaveYield, axelarGateway, user, aEthUsdt, usdt, lpAmount, unstakeId);
   });
 
   it('1 users: stake & unstake USDC', async () => {
     const [, user] = await ethers.getSigners();
-    const { aaveYield, usdc, aEthUsdc } = await loadFixture(createAaveForkWithUsdcUnderlying);
+    const { aaveYield, usdc, aEthUsdc, axelarGateway } = await loadFixture(createAaveForkWithUsdcUnderlying);
 
     // init balances
     const userInput = await initBalance(user.address, usdc, '1000');
@@ -359,6 +369,6 @@ describe('Aave Yield tokens', () => {
     const lpAmount = await stake(aaveYield, user, aEthUsdc, usdc, userInput, stakeId);
 
     const unstakeId = 1;
-    await withdraw(aaveYield, user, aEthUsdc, usdc, lpAmount, unstakeId);
+    await withdraw(aaveYield, axelarGateway, user, aEthUsdc, usdc, lpAmount, unstakeId);
   });
 });
