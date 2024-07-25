@@ -23,4 +23,4 @@ jobs:
       - name: Run integration tests
         run: yarn test:int
       - name: Run cosmwasm
-        run: cd cosmwasm && cargo unit-tes
+        run: cd cosmwasm && cargo unit-test
