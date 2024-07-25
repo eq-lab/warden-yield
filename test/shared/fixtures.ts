@@ -1,12 +1,10 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { ethers, upgrades } from 'hardhat';
 import {
-  AaveYield__factory,
   AaveYield,
   ERC20,
   ERC20__factory,
   EthYield,
-  EthYield__factory,
   IAToken,
   IAToken__factory,
   IDelegationManager,
@@ -232,6 +230,7 @@ export interface EthYieldForkTestData {
   eigenLayerOperator: string;
   ethYield: EthYield;
   owner: SignerWithAddress;
+  axelarGateway: TestAxelarGateway;
 }
 
 export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
@@ -278,6 +277,7 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
     eigenLayerDelegationManager,
     eigenLayerOperator: EthAddressData.eigenLayerOperator,
     owner,
+    axelarGateway,
   };
 }
 
@@ -291,6 +291,7 @@ export interface AaveForkTestData {
   aaveYield: AaveYield;
   aavePool: IPool;
   owner: SignerWithAddress;
+  axelarGateway: TestAxelarGateway;
 }
 
 export async function createAaveEthFork(): Promise<AaveForkTestData> {
@@ -329,6 +330,7 @@ export async function createAaveEthFork(): Promise<AaveForkTestData> {
     aaveYield,
     aavePool,
     owner,
+    axelarGateway,
   };
 }
 
@@ -368,6 +370,7 @@ export async function createAaveForkWithUsdtUnderlying(): Promise<AaveForkTestDa
     aaveYield,
     aavePool,
     owner,
+    axelarGateway,
   };
 }
 
@@ -407,5 +410,6 @@ export async function createAaveForkWithUsdcUnderlying(): Promise<AaveForkTestDa
     aaveYield,
     aavePool,
     owner,
+    axelarGateway,
   };
 }
