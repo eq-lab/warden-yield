@@ -2,7 +2,7 @@ use crate::contract::execute;
 use crate::msg::ExecuteMsg;
 use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::{
-    create_stake_response_payload, get_stake_queue_item, get_stake_queue_params, get_token_stats,
+    create_stake_response_payload, get_stake_queue_item, get_stake_queue_params, get_stake_stats,
     get_unstake_queue_item, get_unstake_queue_params, instantiate_contract, stake_and_unstake,
 };
 use crate::types::{StakeActionStage, StakeResponseData, Status, UnstakeActionStage};
@@ -49,9 +49,9 @@ fn test_init_stake_one_coin() {
         }
     );
 
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::from(stake_amount),
             lp_token_amount: Uint256::zero(),
@@ -102,9 +102,9 @@ fn test_stake_in_two_tx() {
     .unwrap();
 
     // check stats
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::from(staked_total),
             lp_token_amount: Uint256::zero(),
@@ -190,9 +190,9 @@ fn test_stake_response_successful() {
     .unwrap();
 
     // check stats
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::from(lp_token_amount),
@@ -275,9 +275,9 @@ fn test_stake_response_successful_with_reinit() {
     .unwrap();
 
     // check stats
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::from(lp_token_amount),
@@ -383,9 +383,9 @@ fn test_stake_response_fail() {
     .unwrap();
 
     // check stats
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),
@@ -465,9 +465,9 @@ fn test_stake_response_fail_with_reinit() {
     .unwrap();
 
     // check stats
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),

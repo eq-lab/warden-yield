@@ -1,6 +1,6 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
-    ExecuteMsg, GetQueueParamsResponse, GetStakeItemResponse, GetTokensStatsResponse,
+    ExecuteMsg, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
     GetUnstakeItemResponse, InstantiateMsg, QueryMsg,
 };
 use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
@@ -210,18 +210,18 @@ pub fn create_reinit_response_payload(reinit_response_data: ReinitResponseData) 
     Binary::new(payload)
 }
 
-pub fn get_tokens_stats(deps: Deps, env: Env) -> HashMap<TokenDenom, StakeStatsItem> {
-    let tokens_stats: GetTokensStatsResponse =
-        from_json(query(deps, env, QueryMsg::TokensStats).unwrap()).unwrap();
+pub fn get_all_stake_stats(deps: Deps, env: Env) -> HashMap<TokenDenom, StakeStatsItem> {
+    let stake_stats: GetStakeStatsResponse =
+        from_json(query(deps, env, QueryMsg::StakeStats).unwrap()).unwrap();
 
-    let stats: HashMap<_, _> = tokens_stats.stats.into_iter().collect();
+    let stats: HashMap<_, _> = stake_stats.stats.into_iter().collect();
     stats
 }
 
-pub fn get_token_stats(deps: Deps, env: Env, token_denom: &TokenDenom) -> StakeStatsItem {
-    let token_stats = get_tokens_stats(deps, env);
+pub fn get_stake_stats(deps: Deps, env: Env, token_denom: &TokenDenom) -> StakeStatsItem {
+    let stake_stats = get_all_stake_stats(deps, env);
 
-    token_stats[token_denom].clone()
+    stake_stats[token_denom].clone()
 }
 
 pub struct UnstakeDetails {
@@ -334,9 +334,9 @@ pub fn stake_and_unstake(
         }
     );
 
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),

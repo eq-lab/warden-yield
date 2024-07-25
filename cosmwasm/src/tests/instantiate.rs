@@ -1,6 +1,6 @@
 use crate::contract::query;
 use crate::msg::{
-    GetContractConfigResponse, GetTokensConfigsResponse, GetTokensStatsResponse, QueryMsg,
+    GetContractConfigResponse, GetStakeStatsResponse, GetTokensConfigsResponse, QueryMsg,
 };
 use crate::state::{ContractConfigState, StakeStatsItem};
 use crate::tests::utils::instantiate_contract;
@@ -33,11 +33,11 @@ fn test_instantiate() {
         }
     );
 
-    let tokens_stats_response: GetTokensStatsResponse =
-        from_json(query(ctx.deps.as_ref(), ctx.env, QueryMsg::TokensStats).unwrap()).unwrap();
+    let tokens_stats_response: GetStakeStatsResponse =
+        from_json(query(ctx.deps.as_ref(), ctx.env, QueryMsg::StakeStats).unwrap()).unwrap();
     assert_eq!(
         tokens_stats_response,
-        GetTokensStatsResponse {
+        GetStakeStatsResponse {
             stats: ctx
                 .tokens
                 .iter()

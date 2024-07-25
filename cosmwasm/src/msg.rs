@@ -41,8 +41,8 @@ pub enum QueryMsg {
     ContractConfig,
     #[returns(GetTokensConfigsResponse)]
     TokensConfigs,
-    #[returns(GetTokensStatsResponse)]
-    TokensStats,
+    #[returns(GetStakeStatsResponse)]
+    StakeStats,
     #[returns(GetQueueParamsResponse)]
     StakeQueueParams { token_denom: TokenDenom },
     #[returns(GetQueueParamsResponse)]
@@ -64,7 +64,7 @@ pub struct GetTokensConfigsResponse {
 }
 
 #[cw_serde]
-pub struct GetTokensStatsResponse {
+pub struct GetStakeStatsResponse {
     pub stats: Vec<(TokenDenom, StakeStatsItem)>,
 }
 

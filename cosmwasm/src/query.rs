@@ -1,9 +1,9 @@
 use crate::msg::{
-    GetContractConfigResponse, GetQueueParamsResponse, GetStakeItemResponse,
-    GetTokensConfigsResponse, GetTokensStatsResponse, GetUnstakeItemResponse,
+    GetContractConfigResponse, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
+    GetTokensConfigsResponse, GetUnstakeItemResponse,
 };
 use crate::state::{
-    CONTRACT_CONFIG, STAKES, STAKE_QUEUE_PARAMS, TOKEN_CONFIG, TOKEN_STATS, UNSTAKES,
+    CONTRACT_CONFIG, STAKES, STAKE_QUEUE_PARAMS, STAKE_STATS, TOKEN_CONFIG, UNSTAKES,
     UNSTAKE_QUEUE_PARAMS,
 };
 use crate::types::TokenDenom;
@@ -24,12 +24,12 @@ pub fn query_tokens_configs(deps: Deps) -> StdResult<GetTokensConfigsResponse> {
     })
 }
 
-pub fn query_tokens_stats(deps: Deps) -> StdResult<GetTokensStatsResponse> {
-    let tokens_stats: StdResult<Vec<_>> = TOKEN_STATS
+pub fn query_stake_stats(deps: Deps) -> StdResult<GetStakeStatsResponse> {
+    let tokens_stats: StdResult<Vec<_>> = STAKE_STATS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
 
-    Ok(GetTokensStatsResponse {
+    Ok(GetStakeStatsResponse {
         stats: tokens_stats?,
     })
 }

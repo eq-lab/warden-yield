@@ -2,7 +2,7 @@ use crate::contract::execute;
 use crate::msg::ExecuteMsg;
 use crate::state::{QueueParams, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::{
-    create_reinit_response_payload, get_token_stats, get_unstake_queue_item,
+    create_reinit_response_payload, get_stake_stats, get_unstake_queue_item,
     get_unstake_queue_params, instantiate_contract, stake_and_unstake,
 };
 use crate::types::{ReinitResponseData, UnstakeActionStage};
@@ -41,9 +41,9 @@ fn test_reinit() {
     .unwrap();
 
     // check stats
-    let token_stats = get_token_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
     assert_eq!(
-        token_stats,
+        stake_stats,
         StakeStatsItem {
             pending_stake: Uint256::zero(),
             lp_token_amount: Uint256::zero(),

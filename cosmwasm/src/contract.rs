@@ -12,13 +12,13 @@ use crate::execute::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_contract_config, query_stake_queue_item, query_stake_queue_params, query_tokens_configs,
-    query_tokens_stats, query_unstake_queue_item, query_unstake_queue_params,
+    query_contract_config, query_stake_queue_item, query_stake_queue_params, query_stake_stats,
+    query_tokens_configs, query_unstake_queue_item, query_unstake_queue_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{
     ContractConfigState, QueueParams, StakeStatsItem, CONTRACT_CONFIG, STAKE_QUEUE_PARAMS,
-    TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE, TOKEN_STATS, UNSTAKE_QUEUE_PARAMS,
+    STAKE_STATS, TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE, UNSTAKE_QUEUE_PARAMS,
 };
 use crate::types::ReplyType;
 
@@ -44,7 +44,7 @@ pub fn instantiate(
 
     for (token_denom, config) in &msg.tokens {
         TOKEN_CONFIG.save(deps.storage, token_denom, config)?;
-        TOKEN_STATS.save(deps.storage, token_denom, &StakeStatsItem::default())?;
+        STAKE_STATS.save(deps.storage, token_denom, &StakeStatsItem::default())?;
         STAKE_QUEUE_PARAMS.save(
             deps.storage,
             token_denom,
@@ -106,7 +106,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ContractConfig => to_json_binary(&query_contract_config(deps)?),
         QueryMsg::TokensConfigs => to_json_binary(&query_tokens_configs(deps)?),
-        QueryMsg::TokensStats => to_json_binary(&query_tokens_stats(deps)?),
+        QueryMsg::StakeStats => to_json_binary(&query_stake_stats(deps)?),
         QueryMsg::StakeQueueParams { token_denom } => {
             to_json_binary(&query_stake_queue_params(deps, token_denom)?)
         }
