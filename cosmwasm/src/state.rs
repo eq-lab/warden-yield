@@ -13,13 +13,13 @@ pub struct ContractConfigState {
 }
 
 // Map<> doc - https://book.cosmwasm.com/cross-contract/map-storage.html
-pub const TOKEN_CONFIG: Map<&TokenDenom, TokenConfig> = Map::new("token_config_map");
+pub const TOKEN_CONFIG: Map<&str, TokenConfig> = Map::new("token_config_map");
 
 /// Map<(source_chain, source_address), token_denom>
-pub const TOKEN_DENOM_BY_SOURCE: Map<(&String, &String), TokenDenom> =
+pub const TOKEN_DENOM_BY_SOURCE: Map<(&str, &str), TokenDenom> =
     Map::new("token_denom_by_source_map");
 
-pub const TOKEN_STATS: Map<&TokenDenom, StakeStatsItem> = Map::new("stake_stats_map");
+pub const TOKEN_STATS: Map<&str, StakeStatsItem> = Map::new("stake_stats_map");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, Default)]
 pub struct StakeStatsItem {
@@ -28,11 +28,11 @@ pub struct StakeStatsItem {
     pub pending_unstake_lp_token_amount: Uint256,
 }
 
-pub const STAKES: Map<(&TokenDenom, u64), StakeItem> = Map::new("stakes_map");
-pub const STAKE_QUEUE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("stake_queue_params");
+pub const STAKES: Map<(&str, u64), StakeItem> = Map::new("stakes_map");
+pub const STAKE_QUEUE_PARAMS: Map<&str, QueueParams> = Map::new("stake_queue_params");
 
-pub const UNSTAKES: Map<(&TokenDenom, u64), UnstakeItem> = Map::new("unstakes_map");
-pub const UNSTAKE_QUEUE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("unstake_queue_params");
+pub const UNSTAKES: Map<(&str, u64), UnstakeItem> = Map::new("unstakes_map");
+pub const UNSTAKE_QUEUE_PARAMS: Map<&str, QueueParams> = Map::new("unstake_queue_params");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct StakeItem {
