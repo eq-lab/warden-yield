@@ -34,6 +34,7 @@ contract AaveYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
+    __YieldStorage_initV2(underlyingToken);
     __AaveInteractor_initV2(underlyingToken);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
 

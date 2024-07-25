@@ -48,6 +48,7 @@ contract EthYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
+    __YieldStorage_initV2(getWeth());
     __LidoInteractor_initV2(lidoWithdrawQueue);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
 

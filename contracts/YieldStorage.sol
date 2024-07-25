@@ -21,6 +21,7 @@ abstract contract YieldStorage is Initializable {
     /// @dev total amount shares received by 'user' after locking the 'token'
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _shares;
     uint256 totalShares;
+    uint256 totalLpt;
   }
 
   /// @custom:storage-location erc7201:eq-lab.storage.UserWardenData
