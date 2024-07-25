@@ -57,17 +57,32 @@ contract EthYield is
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+  /// @dev Convert shares (EigenLayer shares) to lp amount
+  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return sharesAmount;
+  }
+
+  /// @dev Convert lpAmount to shares (EigenLayer shares)
+  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return lpAmount;
+  }
+
   /// @inheritdoc IEthYield
-  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 eigenLayerShares) {
+  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 lpAmount) {
     require(msg.sender == address(this));
 
-    uint256 stEthAmount = _lidoStake(amount);
-    eigenLayerShares = _eigenLayerRestake(stEthAmount);
     address weth = getWeth();
+    // Axelar sends WETH to this contract, Lido needs ETH to stake
+    IWETH9(weth).withdraw(amount);
+
+    uint256 stEthAmount = _lidoStake(amount);
+    uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
     _addStake(msg.sender, weth, amount, eigenLayerShares);
 
-    //TODO: add lpAmount calculation
-    emit Stake(stakeId, weth, amount, eigenLayerShares);
+    lpAmount = _sharesToLpAmount(eigenLayerShares);
+    emit Stake(stakeId, weth, amount, lpAmount);
   }
 
   /// @inheritdoc IEthYield
@@ -75,8 +90,7 @@ contract EthYield is
     require(msg.sender == address(this));
 
     //TODO: add lpAmount calculation
-    //TODO: change signature to accept lpAmount
-    uint256 eigenLayerSharesAmount = lpAmount; //TODO: convert lpAmount to elShares
+    uint256 eigenLayerSharesAmount = _lpAmountToShares(lpAmount);
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
   }
@@ -94,6 +108,8 @@ contract EthYield is
 
     (reinitUnstakeId, withdrawnAmount) = _lidoReinit();
     if (withdrawnAmount != 0) {
+      // Wraps ETH back to WETH
+      IWETH9(getWeth()).deposit{value: withdrawnAmount}();
       emit Unstake(reinitUnstakeId, getWeth(), withdrawnAmount);
     }
   }

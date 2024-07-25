@@ -10,7 +10,6 @@ contract TestLidoInteractor is LidoInteractor {
 
   function stake(uint256 amount) external payable {
     require(msg.value == amount);
-    IWETH9(getWeth()).deposit{value: msg.value}();
 
     _reinit();
     _lidoStake(amount);
