@@ -12,11 +12,25 @@ pub enum ContractError {
     #[error("Unknown token: {0}")]
     UnknownToken(String),
 
+    #[error(
+        "Unknown token associated with chain: {source_chain} and source_address: {source_address}"
+    )]
+    UnknownTokenBySource {
+        source_chain: String,
+        source_address: String,
+    },
+
     #[error("Unknown LP token: {0}")]
     UnknownLpToken(String),
 
+    #[error("Message has invalid action type")]
+    InvalidActionType,
+
     #[error("Invalid token: {actual}, expected: {expected}")]
     InvalidToken { actual: String, expected: String },
+
+    #[error("Invalid message payload")]
+    InvalidMessagePayload,
 
     #[error("Token already exist: {0}")]
     TokenAlreadyExist(String),
@@ -27,6 +41,9 @@ pub enum ContractError {
     #[error("Nothing to unstake")]
     NothingToUnstake,
 
+    #[error("Unstake request has invalid stage for {symbol} token, unstake id: {unstake_id}")]
+    UnstakeRequestInvalidStage { symbol: String, unstake_id: u64 },
+
     #[error("Unrecognized reply id: {0}")]
     UnrecognizedReply(u64),
 
@@ -35,6 +52,9 @@ pub enum ContractError {
 
     #[error("Invalid reply from sub-message {id}, {err}")]
     ReplyParseFailure { id: u64, err: String },
+
+    #[error("Zero token amount")]
+    ZeroTokenAmount,
 
     #[error("Custom Error: {0}")]
     CustomError(String),

@@ -1,20 +1,20 @@
 use crate::msg::{
-    GetContractConfigResponse, GetTokensConfigsResponse, GetTokensStatsResponse,
-    GetUserStatsResponse,
+    GetContractConfigResponse, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
+    GetTokensConfigsResponse, GetUnstakeItemResponse,
 };
 use crate::state::{
-    TokenStats, CONTRACT_CONFIG_STATE, TOKENS_CONFIGS_STATE, TOKENS_STATS_STATE, USERS_STATS_STATE,
+    CONTRACT_CONFIG, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
 use crate::types::TokenDenom;
-use cosmwasm_std::{Addr, Deps, Order, StdError, StdResult};
+use cosmwasm_std::{Deps, Order, StdResult};
 
 pub fn query_contract_config(deps: Deps) -> StdResult<GetContractConfigResponse> {
-    let config = CONTRACT_CONFIG_STATE.load(deps.storage)?;
+    let config = CONTRACT_CONFIG.load(deps.storage)?;
     Ok(GetContractConfigResponse { config })
 }
 
 pub fn query_tokens_configs(deps: Deps) -> StdResult<GetTokensConfigsResponse> {
-    let tokens_configs: StdResult<Vec<_>> = TOKENS_CONFIGS_STATE
+    let tokens_configs: StdResult<Vec<_>> = TOKEN_CONFIG
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
 
@@ -23,34 +23,50 @@ pub fn query_tokens_configs(deps: Deps) -> StdResult<GetTokensConfigsResponse> {
     })
 }
 
-pub fn query_tokens_stats(deps: Deps) -> StdResult<GetTokensStatsResponse> {
-    let tokens_stats: StdResult<Vec<_>> = TOKENS_STATS_STATE
+pub fn query_stake_stats(deps: Deps) -> StdResult<GetStakeStatsResponse> {
+    let tokens_stats: StdResult<Vec<_>> = STAKE_STATS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
 
-    Ok(GetTokensStatsResponse {
+    Ok(GetStakeStatsResponse {
         stats: tokens_stats?,
     })
 }
 
-pub fn query_user_stats(
+pub fn query_stake_params(
     deps: Deps,
-    account: Addr,
     token_denom: TokenDenom,
-) -> StdResult<GetUserStatsResponse> {
-    // todo: fix this token check
-    let _ = TOKENS_CONFIGS_STATE.load(deps.storage, token_denom.clone())?;
+) -> StdResult<GetQueueParamsResponse> {
+    Ok(GetQueueParamsResponse {
+        params: STAKE_PARAMS.load(deps.storage, &token_denom)?,
+    })
+}
 
-    let stats = USERS_STATS_STATE.load(deps.storage, (account, token_denom));
+pub fn query_unstake_params(
+    deps: Deps,
+    token_denom: TokenDenom,
+) -> StdResult<GetQueueParamsResponse> {
+    Ok(GetQueueParamsResponse {
+        params: UNSTAKE_PARAMS.load(deps.storage, &token_denom)?,
+    })
+}
 
-    match stats {
-        Ok(token_stats) => Ok(GetUserStatsResponse { stats: token_stats }),
-        Err(StdError::NotFound {
-            kind: _kind,
-            backtrace: _backtrace,
-        }) => Ok(GetUserStatsResponse {
-            stats: TokenStats::default(),
-        }),
-        Err(other_error) => Err(other_error), // if possible
-    }
+pub fn query_stake_item(
+    deps: Deps,
+    token_denom: TokenDenom,
+    id: u64,
+) -> StdResult<GetStakeItemResponse> {
+    Ok(GetStakeItemResponse {
+        item: STAKES.load(deps.storage, (&token_denom, id))?,
+    })
+}
+
+pub fn query_unstake_item(
+    deps: Deps,
+    token_denom: TokenDenom,
+    id: u64,
+) -> StdResult<GetUnstakeItemResponse> {
+    Ok(GetUnstakeItemResponse {
+        item: UNSTAKES.load(deps.storage, (&token_denom, id))?,
+    })
 }
