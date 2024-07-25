@@ -12,13 +12,13 @@ use crate::execute::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_contract_config, query_stake_queue_item, query_stake_queue_params, query_stake_stats,
-    query_tokens_configs, query_unstake_queue_item, query_unstake_queue_params,
+    query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
+    query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{
-    ContractConfigState, QueueParams, StakeStatsItem, CONTRACT_CONFIG, STAKE_QUEUE_PARAMS,
-    STAKE_STATS, TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE, UNSTAKE_QUEUE_PARAMS,
+    ContractConfigState, QueueParams, StakeStatsItem, CONTRACT_CONFIG, STAKE_PARAMS, STAKE_STATS,
+    TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE, UNSTAKE_PARAMS,
 };
 use crate::types::ReplyType;
 
@@ -45,7 +45,7 @@ pub fn instantiate(
     for (token_denom, config) in &msg.tokens {
         TOKEN_CONFIG.save(deps.storage, token_denom, config)?;
         STAKE_STATS.save(deps.storage, token_denom, &StakeStatsItem::default())?;
-        STAKE_QUEUE_PARAMS.save(
+        STAKE_PARAMS.save(
             deps.storage,
             token_denom,
             &QueueParams {
@@ -53,7 +53,7 @@ pub fn instantiate(
                 next_id: 1,
             },
         )?;
-        UNSTAKE_QUEUE_PARAMS.save(
+        UNSTAKE_PARAMS.save(
             deps.storage,
             token_denom,
             &QueueParams {
@@ -107,17 +107,17 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ContractConfig => to_json_binary(&query_contract_config(deps)?),
         QueryMsg::TokensConfigs => to_json_binary(&query_tokens_configs(deps)?),
         QueryMsg::StakeStats => to_json_binary(&query_stake_stats(deps)?),
-        QueryMsg::StakeQueueParams { token_denom } => {
-            to_json_binary(&query_stake_queue_params(deps, token_denom)?)
+        QueryMsg::StakeParams { token_denom } => {
+            to_json_binary(&query_stake_params(deps, token_denom)?)
         }
-        QueryMsg::UnstakeQueueParams { token_denom } => {
-            to_json_binary(&query_unstake_queue_params(deps, token_denom)?)
+        QueryMsg::UnstakeParams { token_denom } => {
+            to_json_binary(&query_unstake_params(deps, token_denom)?)
         }
-        QueryMsg::StakeQueueElem { token_denom, id } => {
-            to_json_binary(&query_stake_queue_item(deps, token_denom, id)?)
+        QueryMsg::StakeElem { token_denom, id } => {
+            to_json_binary(&query_stake_item(deps, token_denom, id)?)
         }
-        QueryMsg::UnstakeQueueElem { token_denom, id } => {
-            to_json_binary(&query_unstake_queue_item(deps, token_denom, id)?)
+        QueryMsg::UnstakeElem { token_denom, id } => {
+            to_json_binary(&query_unstake_item(deps, token_denom, id)?)
         }
     }
 }

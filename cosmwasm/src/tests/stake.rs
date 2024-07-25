@@ -2,8 +2,8 @@ use crate::contract::execute;
 use crate::msg::ExecuteMsg;
 use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::{
-    create_stake_response_payload, get_stake_queue_item, get_stake_queue_params, get_stake_stats,
-    get_unstake_queue_item, get_unstake_queue_params, instantiate_contract, stake_and_unstake,
+    create_stake_response_payload, get_stake_item, get_stake_params, get_stake_stats,
+    get_unstake_item, get_unstake_params, instantiate_contract, stake_and_unstake,
 };
 use crate::types::{StakeActionStage, StakeResponseData, Status, UnstakeActionStage};
 use cosmwasm_std::testing::message_info;
@@ -28,20 +28,19 @@ fn test_init_stake_one_coin() {
     .unwrap();
 
     // check states
-    let stake_queue_params =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        stake_queue_params,
+        stake_params,
         QueueParams {
             pending_count: 1_u64,
             next_id: 2_u64
         }
     );
 
-    let stake_queue_item =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
+    let stake_item =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
     assert_eq!(
-        stake_queue_item,
+        stake_item,
         StakeItem {
             user: ctx.user,
             token_amount: stake_amount,
@@ -113,20 +112,19 @@ fn test_stake_in_two_tx() {
     );
 
     // check queue states
-    let stake_queue_params =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        stake_queue_params,
+        stake_params,
         QueueParams {
             pending_count: 2_u64,
             next_id: 3_u64,
         }
     );
 
-    let stake_queue_item_1 =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
+    let stake_item_1 =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
     assert_eq!(
-        stake_queue_item_1,
+        stake_item_1,
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount_1,
@@ -134,10 +132,10 @@ fn test_stake_in_two_tx() {
         }
     );
 
-    let stake_queue_item_2 =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 2).unwrap();
+    let stake_item_2 =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 2).unwrap();
     assert_eq!(
-        stake_queue_item_2,
+        stake_item_2,
         StakeItem {
             user: ctx.user,
             token_amount: stake_amount_2,
@@ -200,21 +198,20 @@ fn test_stake_response_successful() {
         }
     );
 
-    // check queue states
-    let stake_queue_params =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    // check stake states
+    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        stake_queue_params,
+        stake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 2_u64,
         }
     );
 
-    let stake_queue_item_after =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
+    let stake_item_after =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
     assert_eq!(
-        stake_queue_item_after,
+        stake_item_after,
         StakeItem {
             user: ctx.user,
             token_amount: stake_amount,
@@ -286,20 +283,19 @@ fn test_stake_response_successful_with_reinit() {
     );
 
     // check stake queue states
-    let stake_queue_params =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        stake_queue_params,
+        stake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 3_u64,
         }
     );
 
-    let stake_queue_item_after =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 2).unwrap();
+    let stake_item_after =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 2).unwrap();
     assert_eq!(
-        stake_queue_item_after,
+        stake_item_after,
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
@@ -308,17 +304,17 @@ fn test_stake_response_successful_with_reinit() {
     );
 
     // check unstake queue states
-    let unstake_queue_params =
-        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let unstake_params =
+        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        unstake_queue_params,
+        unstake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 2_u64,
         }
     );
 
-    let unstake_queue_item_after = get_unstake_queue_item(
+    let unstake_item_after = get_unstake_item(
         ctx.deps.as_ref(),
         ctx.env.clone(),
         token_denom.clone(),
@@ -326,7 +322,7 @@ fn test_stake_response_successful_with_reinit() {
     )
     .unwrap();
     assert_eq!(
-        unstake_queue_item_after,
+        unstake_item_after,
         UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
@@ -394,20 +390,19 @@ fn test_stake_response_fail() {
     );
 
     // check queue states
-    let stake_queue_params =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        stake_queue_params,
+        stake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 2_u64,
         }
     );
 
-    let stake_queue_item_after =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
+    let stake_item_after =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 1).unwrap();
     assert_eq!(
-        stake_queue_item_after,
+        stake_item_after,
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
@@ -475,21 +470,20 @@ fn test_stake_response_fail_with_reinit() {
         }
     );
 
-    // check queue states
-    let stake_queue_params =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    // check stake states
+    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        stake_queue_params,
+        stake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 3_u64,
         }
     );
 
-    let stake_queue_item_after =
-        get_stake_queue_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 2).unwrap();
+    let stake_item_after =
+        get_stake_item(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone(), 2).unwrap();
     assert_eq!(
-        stake_queue_item_after,
+        stake_item_after,
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
@@ -497,18 +491,18 @@ fn test_stake_response_fail_with_reinit() {
         }
     );
 
-    // check unstake queue states
-    let unstake_queue_params =
-        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    // check unstake states
+    let unstake_params =
+        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        unstake_queue_params,
+        unstake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 2_u64,
         }
     );
 
-    let unstake_queue_item_after = get_unstake_queue_item(
+    let unstake_item_after = get_unstake_item(
         ctx.deps.as_ref(),
         ctx.env.clone(),
         token_denom.clone(),
@@ -516,7 +510,7 @@ fn test_stake_response_fail_with_reinit() {
     )
     .unwrap();
     assert_eq!(
-        unstake_queue_item_after,
+        unstake_item_after,
         UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,

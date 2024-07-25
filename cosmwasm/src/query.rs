@@ -3,8 +3,7 @@ use crate::msg::{
     GetTokensConfigsResponse, GetUnstakeItemResponse,
 };
 use crate::state::{
-    CONTRACT_CONFIG, STAKES, STAKE_QUEUE_PARAMS, STAKE_STATS, TOKEN_CONFIG, UNSTAKES,
-    UNSTAKE_QUEUE_PARAMS,
+    CONTRACT_CONFIG, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
 use crate::types::TokenDenom;
 use cosmwasm_std::{Deps, Order, StdResult};
@@ -34,25 +33,25 @@ pub fn query_stake_stats(deps: Deps) -> StdResult<GetStakeStatsResponse> {
     })
 }
 
-pub fn query_stake_queue_params(
+pub fn query_stake_params(
     deps: Deps,
     token_denom: TokenDenom,
 ) -> StdResult<GetQueueParamsResponse> {
     Ok(GetQueueParamsResponse {
-        params: STAKE_QUEUE_PARAMS.load(deps.storage, &token_denom)?,
+        params: STAKE_PARAMS.load(deps.storage, &token_denom)?,
     })
 }
 
-pub fn query_unstake_queue_params(
+pub fn query_unstake_params(
     deps: Deps,
     token_denom: TokenDenom,
 ) -> StdResult<GetQueueParamsResponse> {
     Ok(GetQueueParamsResponse {
-        params: UNSTAKE_QUEUE_PARAMS.load(deps.storage, &token_denom)?,
+        params: UNSTAKE_PARAMS.load(deps.storage, &token_denom)?,
     })
 }
 
-pub fn query_stake_queue_item(
+pub fn query_stake_item(
     deps: Deps,
     token_denom: TokenDenom,
     id: u64,
@@ -62,7 +61,7 @@ pub fn query_stake_queue_item(
     })
 }
 
-pub fn query_unstake_queue_item(
+pub fn query_unstake_item(
     deps: Deps,
     token_denom: TokenDenom,
     id: u64,

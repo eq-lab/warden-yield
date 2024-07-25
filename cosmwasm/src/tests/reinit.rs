@@ -2,8 +2,8 @@ use crate::contract::execute;
 use crate::msg::ExecuteMsg;
 use crate::state::{QueueParams, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::{
-    create_reinit_response_payload, get_stake_stats, get_unstake_queue_item,
-    get_unstake_queue_params, instantiate_contract, stake_and_unstake,
+    create_reinit_response_payload, get_stake_stats, get_unstake_item, get_unstake_params,
+    instantiate_contract, stake_and_unstake,
 };
 use crate::types::{ReinitResponseData, UnstakeActionStage};
 use cosmwasm_std::testing::message_info;
@@ -51,18 +51,18 @@ fn test_reinit() {
         }
     );
 
-    // check unstake queue states
-    let unstake_queue_params =
-        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    // check unstake states
+    let unstake_params =
+        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        unstake_queue_params,
+        unstake_params,
         QueueParams {
             pending_count: 0_u64,
             next_id: 2_u64,
         }
     );
 
-    let unstake_queue_item = get_unstake_queue_item(
+    let unstake_item = get_unstake_item(
         ctx.deps.as_ref(),
         ctx.env.clone(),
         token_denom.clone(),
@@ -70,7 +70,7 @@ fn test_reinit() {
     )
     .unwrap();
     assert_eq!(
-        unstake_queue_item,
+        unstake_item,
         UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,

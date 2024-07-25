@@ -44,13 +44,13 @@ pub enum QueryMsg {
     #[returns(GetStakeStatsResponse)]
     StakeStats,
     #[returns(GetQueueParamsResponse)]
-    StakeQueueParams { token_denom: TokenDenom },
+    StakeParams { token_denom: TokenDenom },
     #[returns(GetQueueParamsResponse)]
-    UnstakeQueueParams { token_denom: TokenDenom },
+    UnstakeParams { token_denom: TokenDenom },
     #[returns(GetStakeItemResponse)]
-    StakeQueueElem { token_denom: TokenDenom, id: u64 },
+    StakeElem { token_denom: TokenDenom, id: u64 },
     #[returns(GetUnstakeItemResponse)]
-    UnstakeQueueElem { token_denom: TokenDenom, id: u64 },
+    UnstakeElem { token_denom: TokenDenom, id: u64 },
 }
 
 #[cw_serde]

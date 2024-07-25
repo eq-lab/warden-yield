@@ -84,68 +84,38 @@ fn create_tokens_config() -> Vec<(TokenDenom, TokenConfig)> {
     ]
 }
 
-pub fn get_stake_queue_params(deps: Deps, env: Env, token_denom: TokenDenom) -> QueueParams {
-    let response: GetQueueParamsResponse = from_json(
-        query(
-            deps,
-            env.clone(),
-            QueryMsg::StakeQueueParams { token_denom },
-        )
-        .unwrap(),
-    )
-    .unwrap();
+pub fn get_stake_params(deps: Deps, env: Env, token_denom: TokenDenom) -> QueueParams {
+    let response: GetQueueParamsResponse =
+        from_json(query(deps, env.clone(), QueryMsg::StakeParams { token_denom }).unwrap())
+            .unwrap();
 
     response.params
 }
 
-pub fn get_unstake_queue_params(deps: Deps, env: Env, token_denom: TokenDenom) -> QueueParams {
-    let response: GetQueueParamsResponse = from_json(
-        query(
-            deps,
-            env.clone(),
-            QueryMsg::UnstakeQueueParams { token_denom },
-        )
-        .unwrap(),
-    )
-    .unwrap();
+pub fn get_unstake_params(deps: Deps, env: Env, token_denom: TokenDenom) -> QueueParams {
+    let response: GetQueueParamsResponse =
+        from_json(query(deps, env.clone(), QueryMsg::UnstakeParams { token_denom }).unwrap())
+            .unwrap();
 
     response.params
 }
 
-pub fn get_stake_queue_item(
-    deps: Deps,
-    env: Env,
-    token_denom: TokenDenom,
-    id: u64,
-) -> Option<StakeItem> {
-    let response: GetStakeItemResponse = from_json(
-        query(
-            deps,
-            env.clone(),
-            QueryMsg::StakeQueueElem { token_denom, id },
-        )
-        .ok()?,
-    )
-    .ok()?;
+pub fn get_stake_item(deps: Deps, env: Env, token_denom: TokenDenom, id: u64) -> Option<StakeItem> {
+    let response: GetStakeItemResponse =
+        from_json(query(deps, env.clone(), QueryMsg::StakeElem { token_denom, id }).ok()?).ok()?;
 
     Some(response.item)
 }
 
-pub fn get_unstake_queue_item(
+pub fn get_unstake_item(
     deps: Deps,
     env: Env,
     token_denom: TokenDenom,
     id: u64,
 ) -> Option<UnstakeItem> {
-    let response: GetUnstakeItemResponse = from_json(
-        query(
-            deps,
-            env.clone(),
-            QueryMsg::UnstakeQueueElem { token_denom, id },
-        )
-        .ok()?,
-    )
-    .ok()?;
+    let response: GetUnstakeItemResponse =
+        from_json(query(deps, env.clone(), QueryMsg::UnstakeElem { token_denom, id }).ok()?)
+            .ok()?;
 
     Some(response.item)
 }
@@ -239,7 +209,7 @@ pub fn stake_and_unstake(
     token_config: &TokenConfig,
 ) -> UnstakeDetails {
     let stake_id =
-        get_stake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).next_id;
+        get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).next_id;
 
     let stake_amount = Uint128::from(14000_u128);
 
@@ -275,7 +245,7 @@ pub fn stake_and_unstake(
     .unwrap();
 
     let unstake_id =
-        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).next_id;
+        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone()).next_id;
 
     // init unstake
     execute(
@@ -308,17 +278,17 @@ pub fn stake_and_unstake(
     )
     .unwrap();
 
-    let unstake_queue_params =
-        get_unstake_queue_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let unstake_params =
+        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
     assert_eq!(
-        unstake_queue_params,
+        unstake_params,
         QueueParams {
             pending_count: 1_u64,
             next_id: 2_u64,
         }
     );
 
-    let unstake_queue_item = get_unstake_queue_item(
+    let unstake_item = get_unstake_item(
         ctx.deps.as_ref(),
         ctx.env.clone(),
         token_denom.clone(),
@@ -326,7 +296,7 @@ pub fn stake_and_unstake(
     )
     .unwrap();
     assert_eq!(
-        unstake_queue_item,
+        unstake_item,
         UnstakeItem {
             user: user.clone(),
             lp_token_amount,

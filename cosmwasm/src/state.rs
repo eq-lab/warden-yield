@@ -29,10 +29,10 @@ pub struct StakeStatsItem {
 }
 
 pub const STAKES: Map<(&TokenDenom, u64), StakeItem> = Map::new("stakes_map");
-pub const STAKE_QUEUE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("stake_queue_params");
+pub const STAKE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("stake_params");
 
 pub const UNSTAKES: Map<(&TokenDenom, u64), UnstakeItem> = Map::new("unstakes_map");
-pub const UNSTAKE_QUEUE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("unstake_queue_params");
+pub const UNSTAKE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("unstake_params");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct StakeItem {
