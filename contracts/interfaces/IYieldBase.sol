@@ -13,4 +13,5 @@ interface IYieldBase {
   /// @param unstakeId unstake identifier from Warden chain
   /// @param unstakedAmount amount of 'token' withdrawn
   event Unstake(uint64 indexed unstakeId, uint256 unstakedAmount);
+
 }

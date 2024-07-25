@@ -2,8 +2,11 @@
 pragma solidity =0.8.26;
 
 import '../interfaces/Axelar/IAxelarGateway.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 contract TestAxelarGateway is IAxelarGateway {
+  using SafeERC20 for IERC20;
+
   bool public _isValidCall = true;
 
   mapping(string symbol => address tokenAddress) _tokenAddresses;
@@ -33,9 +36,12 @@ contract TestAxelarGateway is IAxelarGateway {
     string calldata,
     string calldata,
     bytes calldata payload,
-    string calldata,
-    uint256
+    string calldata symbol,
+    uint256 amount
   ) external override {
+    address token = _tokenAddresses[symbol];
+    require(token != address(0), 'DEBUG');
+    IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     callContractWithTokenPayload = payload;
   }
 

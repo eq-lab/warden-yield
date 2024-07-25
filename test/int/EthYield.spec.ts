@@ -11,8 +11,13 @@ import {
   encodeUnstakeAction,
   finalizeLidoWithdraw,
 } from '../shared/utils';
-import { EthYieldUpgradeTest__factory, TestEthYield__factory } from '../../typechain-types';
+import { EthYield, EthYieldUpgradeTest__factory, TestEthYield__factory } from '../../typechain-types';
 import { ActionType, CommandId } from '../shared/warden-handler-fixtures';
+
+async function ensureSuccessCall(ethYield: EthYield) {
+  const [requestFailedEvent] = await ethYield.queryFilter(ethYield.filters.RequestFailed, -1);
+  expect(requestFailedEvent).to.be.undefined;
+}
 
 describe('EthYield stake', () => {
   it('user stake, weth', async () => {
@@ -68,7 +73,8 @@ describe('EthYield stake', () => {
 
 describe('EthYield withdraw', () => {
   it('user full withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9, axelarGateway } =
+      await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
     const stakeAmount = parseEther('1');
@@ -87,6 +93,7 @@ describe('EthYield withdraw', () => {
     const unstakeId = 1;
     const unstakePayload = encodeUnstakeAction(unstakeId, sharesToUnstake);
     await ethYield.execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
+    await ensureSuccessCall(ethYield);
 
     const [elWithdrawStartEvent] = await ethYield.queryFilter(elWithdrawFilter, -1);
     const elElement = await ethYield.getEigenLayerWithdrawalQueueElement(0);
@@ -98,6 +105,7 @@ describe('EthYield withdraw', () => {
     await mine(blocksToAwait);
 
     await ethYield.connect(user).executeReinit();
+    await ensureSuccessCall(ethYield);
 
     const [lidoWithdrawStartEvent] = await ethYield.queryFilter(lidoWithdrawFilter, -1);
     const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
@@ -108,7 +116,14 @@ describe('EthYield withdraw', () => {
     await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
     await ethYield.connect(user).executeReinit();
 
-    const balanceAfter = await user.provider.getBalance(ethYield.target);
+    await ethYield.connect(user).executeReinit();
+    await ensureSuccessCall(ethYield);
+
+    const [lidoWithdrawComplete] = await ethYield.queryFilter(ethYield.filters.LidoWithdrawComplete, -1);
+    expect(lidoWithdrawComplete.args[0]).to.be.eq(unstakeId);
+    expect(lidoWithdrawComplete.args[1]).to.be.eq(lidoElement.requested);
+
+    const balanceAfter = await weth9.balanceOf(axelarGateway.target);
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
 
     expect(await ethYield.totalShares()).to.be.eq(totalSharesBefore - sharesToUnstake);
@@ -144,7 +159,7 @@ describe('EthYield withdraw', () => {
   });
 
   it('lowest allowed unstake passes', async () => {
-    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy, eigenLayerDelegationManager, weth9 } =
+    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy, eigenLayerDelegationManager, weth9, axelarGateway } =
       await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
@@ -156,6 +171,7 @@ describe('EthYield withdraw', () => {
     await ethYield
       .connect(user)
       .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
+    await ensureSuccessCall(ethYield);
 
     const minAllowedShares =
       (await eigenLayerStrategy.underlyingToSharesView(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT())) + 1n;
@@ -163,17 +179,20 @@ describe('EthYield withdraw', () => {
     const unstakeId = 1;
     const unstakePayload = encodeUnstakeAction(unstakeId, minAllowedShares);
     await ethYield.connect(user).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
+    await ensureSuccessCall(ethYield);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
     await ethYield.connect(user).executeReinit();
+    await ensureSuccessCall(ethYield);
 
     const lidoElement = await ethYield.getLidoWithdrawalQueueElement(0);
-    const balanceBefore = await user.provider.getBalance(ethYield.target);
+    const balanceBefore = await weth9.balanceOf(axelarGateway.target);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, lidoElement.requestId);
     await ethYield.connect(user).executeReinit();
+    await ensureSuccessCall(ethYield);
 
-    const balanceAfter = await user.provider.getBalance(ethYield.target);
+    const balanceAfter = await weth9.balanceOf(axelarGateway.target);
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
   });
 });

@@ -40,5 +40,5 @@ export async function testWardentHandlerFixture() {
     WardenContractAddress
   );
 
-  return { axelarGateway, axelarGasService, wardenHandler, testToken };
+  return { axelarGateway, axelarGasService, wardenHandler, testToken, owner };
 }

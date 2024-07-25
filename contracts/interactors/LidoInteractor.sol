@@ -150,8 +150,14 @@ abstract contract LidoInteractor is Initializable {
       ethReceived = withdrawElement.requested;
       unstakeId = withdrawElement.unstakeId;
       _dequeue(withdrawQueue);
+
+      // Wraps ETH back to WETH
+      IWETH9(getWeth()).deposit{value: ethReceived}();
+
       emit LidoWithdrawComplete(withdrawElement.unstakeId, ethReceived);
-    } catch {}
+    } catch {
+      //TODO: need refactoring: log error in catch or avoid try catch
+    }
   }
 
   /// @dev adds new withdraw request to the end of the LidoWithdrawQueue

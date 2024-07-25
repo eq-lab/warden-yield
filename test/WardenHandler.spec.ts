@@ -115,13 +115,16 @@ describe('WardenHandler', () => {
     });
 
     it('Should call staking and reply failed', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
       const payload = encodeWardenPayload(ActionType.Stake, 1, 0n);
       const tokenSymbol = await testToken.symbol();
       const tokenAmount = parseUnits('1', 18);
+      const unstakeTokenAmount = 1000n;
+
+      await testToken.connect(owner).mint(wardenHandler.target, tokenAmount + unstakeTokenAmount);
 
       const stakeResult = {
         actionType: ActionType.Stake,
@@ -132,7 +135,6 @@ describe('WardenHandler', () => {
         lpAmount: 0n,
       };
       await wardenHandler.setStakeResult(stakeResult);
-
       await wardenHandler.executeWithToken(
         CommandId,
         sourceChain,
@@ -153,19 +155,22 @@ describe('WardenHandler', () => {
     });
 
     it('Should call staking, reply success with reinitUnstakeId', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
       const payload = encodeWardenPayload(ActionType.Stake, 1, 0n);
       const tokenSymbol = await testToken.symbol();
       const tokenAmount = parseUnits('1', 18);
+      const unstakeTokenAmount = 1000n;
+
+      await testToken.connect(owner).mint(wardenHandler.target, tokenAmount + unstakeTokenAmount);
 
       const stakeResult = {
         actionType: ActionType.Stake,
         actionId: 1,
         status: Status.Success,
-        unstakeTokenAmount: 1000n,
+        unstakeTokenAmount: unstakeTokenAmount,
         reinitUnstakeId: 1n,
         lpAmount: 0n,
       };
@@ -243,7 +248,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should call unstake and reply success', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -251,6 +256,8 @@ describe('WardenHandler', () => {
       const lpAmount = parseUnits('1', 18);
       const payload = encodeWardenPayload(ActionType.Unstake, unstakeId, lpAmount);
       const tokenAmount = parseUnits('1', 18);
+
+      await testToken.connect(owner).mint(wardenHandler.target, tokenAmount);
 
       const unstakeResult = {
         status: Status.Success,
@@ -272,12 +279,14 @@ describe('WardenHandler', () => {
     });
 
     it('Should call reinit and reply success', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
       const payload = encodeWardenPayload(ActionType.Reinit, 0, 0n);
       const tokenAmount = parseUnits('1', 18);
+
+      await testToken.connect(owner).mint(wardenHandler.target, tokenAmount);
 
       const reinitResult = {
         reinitUnstakeId: 1n,
@@ -322,13 +331,15 @@ describe('WardenHandler', () => {
 
   describe('Reinit from EVM', () => {
     it('Should reinit and reply to Warden', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
       await axelarGateway.resetPayload();
 
       expect(await axelarGateway.callContractPayload()).to.eq('0x');
       expect(await axelarGateway.callContractWithTokenPayload()).to.eq('0x');
 
       const tokenAmount = parseUnits('1', 18);
+
+      await testToken.connect(owner).mint(wardenHandler.target, tokenAmount);
 
       const reinitResult = {
         reinitUnstakeId: 1n,

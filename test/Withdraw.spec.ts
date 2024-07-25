@@ -214,7 +214,7 @@ describe('Lido withdraw', () => {
   });
 
   it('reinit withdraw completion', async () => {
-    const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
+    const { testLidoInteractor, lidoWithdrawalQueue, weth } = await loadFixture(testLidoInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
     const unstakeId = 1;
@@ -225,12 +225,12 @@ describe('Lido withdraw', () => {
 
     const queueElement = await testLidoInteractor.getQueueElement(0);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, queueElement.requestId);
-    const etherBalanceBefore = await user.provider.getBalance(testLidoInteractor.target);
+    const wethBalanceBefore = await weth.balanceOf(testLidoInteractor.target);
 
     await testLidoInteractor.connect(user).reinit();
 
-    const etherBalanceAfter = await user.provider.getBalance(testLidoInteractor.target);
-    expect(etherBalanceAfter).to.be.eq(amount + etherBalanceBefore);
+    const wethBalanceAfter = await weth.balanceOf(testLidoInteractor.target);
+    expect(wethBalanceAfter).to.be.eq(amount + wethBalanceBefore);
     expect(await testLidoInteractor.getQueueStart()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueEnd()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueLength()).to.be.eq(0);
@@ -256,7 +256,7 @@ describe('Lido withdraw', () => {
   });
 
   it('stake + reinit', async () => {
-    const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
+    const { testLidoInteractor, lidoWithdrawalQueue, weth } = await loadFixture(testLidoInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
     const unstakeId = 1;
@@ -267,18 +267,18 @@ describe('Lido withdraw', () => {
 
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await testLidoInteractor.getQueueElement(0)).requestId);
 
-    const etherBalanceBefore = await user1.provider.getBalance(testLidoInteractor.target);
+    const wethBalanceBefore = await weth.balanceOf(testLidoInteractor.target);
     await testLidoInteractor.connect(user2).stake(amount, { value: amount });
 
-    const etherBalanceAfter = await user1.provider.getBalance(testLidoInteractor.target);
-    expect(etherBalanceAfter).to.be.eq(etherBalanceBefore + amount);
+    const wethBalanceAfter = await weth.balanceOf(testLidoInteractor.target);
+    expect(wethBalanceAfter).to.be.eq(wethBalanceBefore + amount);
     expect(await testLidoInteractor.getQueueStart()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueEnd()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueLength()).to.be.eq(0);
   });
 
   it('withdraw + reinit', async () => {
-    const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
+    const { testLidoInteractor, lidoWithdrawalQueue, weth } = await loadFixture(testLidoInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
     const unstakeId = 1;
@@ -291,18 +291,18 @@ describe('Lido withdraw', () => {
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await testLidoInteractor.getQueueElement(0)).requestId);
 
     const unstakeId2 = 2;
-    const etherBalanceBefore = await user1.provider.getBalance(testLidoInteractor.target);
+    const wethBalanceBefore = await weth.balanceOf(testLidoInteractor.target);
     await testLidoInteractor.connect(user2).withdraw(unstakeId2, amount);
 
-    const etherBalanceAfter = await user1.provider.getBalance(testLidoInteractor.target);
-    expect(etherBalanceAfter).to.be.eq(etherBalanceBefore + amount);
+    const wethBalanceAfter = await weth.balanceOf(testLidoInteractor.target);
+    expect(wethBalanceAfter).to.be.eq(wethBalanceBefore + amount);
     expect(await testLidoInteractor.getQueueStart()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueEnd()).to.be.eq(2);
     expect(await testLidoInteractor.getQueueLength()).to.be.eq(1);
   });
 
   it('reinit 2+ withdraws in queue', async () => {
-    const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
+    const { testLidoInteractor, lidoWithdrawalQueue, weth } = await loadFixture(testLidoInteractorFixture);
     const [_, user1, user2] = await ethers.getSigners();
 
     const unstakeId = 1;
@@ -318,11 +318,11 @@ describe('Lido withdraw', () => {
 
     await finalizeLidoWithdraw(lidoWithdrawalQueue, secondWithdrawId);
 
-    const etherBalanceBefore = await user1.provider.getBalance(testLidoInteractor.target);
+    const wethBalanceBefore = await weth.balanceOf(testLidoInteractor.target);
     await testLidoInteractor.reinit();
 
-    const etherBalanceAfter = await user1.provider.getBalance(testLidoInteractor.target);
-    expect(etherBalanceAfter).to.be.eq(etherBalanceBefore + amount);
+    const wethBalanceAfter = await weth.balanceOf(testLidoInteractor.target);
+    expect(wethBalanceAfter).to.be.eq(wethBalanceBefore + amount);
     expect(await testLidoInteractor.getQueueStart()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueEnd()).to.be.eq(2);
     expect(await testLidoInteractor.getQueueLength()).to.be.eq(1);
@@ -332,7 +332,7 @@ describe('Lido withdraw', () => {
   });
 
   it('big lido unstake split', async () => {
-    const { testLidoInteractor, lidoWithdrawalQueue } = await loadFixture(testLidoInteractorFixture);
+    const { testLidoInteractor, lidoWithdrawalQueue, weth } = await loadFixture(testLidoInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
     const unstakeId = 1;
@@ -351,11 +351,11 @@ describe('Lido withdraw', () => {
     }
     const lastLidoElement = await testLidoInteractor.getQueueElement(withdrawsRequests);
 
-    const balanceBefore = await user.provider.getBalance(testLidoInteractor.target);
+    const balanceBefore = await weth.balanceOf(testLidoInteractor.target);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, lastLidoElement.requestId);
     await testLidoInteractor.reinit();
 
-    const balanceAfter = await user.provider.getBalance(testLidoInteractor.target);
+    const balanceAfter = await weth.balanceOf(testLidoInteractor.target);
     expect(balanceAfter).to.be.eq(balanceBefore + maxLidoWithdraw);
   });
 });
