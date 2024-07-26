@@ -44,6 +44,9 @@ describe('EthYield stake', () => {
     const contractShares = await eigenLayerStrategy.shares(ethYield.target);
     expect(contractShares).to.be.eq(await ethYield.totalShares());
 
+    const lpTokenAmount = contractShares;
+    expect(lpTokenAmount).to.be.eq(await ethYield.totalLpTokens());
+
     const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
     expect(event.args[0]).to.be.eq(eigenLayerOperator);
     expect(event.args[1]).to.be.eq(ethYield.target);
@@ -88,10 +91,11 @@ describe('EthYield withdraw', () => {
     const lidoWithdrawFilter = ethYield.filters.LidoWithdrawStart;
 
     const totalSharesBefore = await ethYield.totalShares();
-    const sharesToUnstake = totalSharesBefore / 2n;
+    const totalLpBefore = await ethYield.totalLpTokens();
+    const lpToUnstake = totalLpBefore / 2n;
 
     const unstakeId = 1;
-    const unstakePayload = encodeUnstakeAction(unstakeId, sharesToUnstake);
+    const unstakePayload = encodeUnstakeAction(unstakeId, lpToUnstake);
     await ethYield.execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
     await ensureSuccessCall(ethYield);
 
@@ -126,7 +130,9 @@ describe('EthYield withdraw', () => {
     const balanceAfter = await weth9.balanceOf(axelarGateway.target);
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
 
-    expect(await ethYield.totalShares()).to.be.eq(totalSharesBefore - sharesToUnstake);
+    const sharesDelta = lpToUnstake;
+    expect(await ethYield.totalShares()).to.be.eq(totalSharesBefore - sharesDelta);
+    expect(await ethYield.totalLpTokens()).to.be.eq(totalLpBefore - lpToUnstake);
   });
 
   it('too low withdraw', async () => {
@@ -143,11 +149,11 @@ describe('EthYield withdraw', () => {
       .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
 
     //TODO: use lpAmount when implemented
-    const minShares = await eigenLayerStrategy.underlyingToSharesView(
+    const minLp = await eigenLayerStrategy.underlyingToSharesView(
       await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()
     );
     const unstakeId = 1;
-    const unstakePayload = encodeUnstakeAction(unstakeId, minShares);
+    const unstakePayload = encodeUnstakeAction(unstakeId, minLp);
     await ethYield.connect(user).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
 
     const [requestFailed] = await ethYield.queryFilter(ethYield.filters.RequestFailed, -1);
@@ -155,7 +161,7 @@ describe('EthYield withdraw', () => {
     expect(requestFailed.args[1]).to.be.eq(unstakeId);
     // cast sig "LowWithdrawalAmount(uint256)" = 0x9d7ecf5d
     expect(requestFailed.args[2].startsWith('0x9d7ecf5d')).to.be.true;
-    expect(requestFailed.args[2].endsWith(ethers.toBeHex(minShares).replace('0x', ''))).to.be.true;
+    expect(requestFailed.args[2].endsWith(ethers.toBeHex(minLp).replace('0x', ''))).to.be.true;
   });
 
   it('lowest allowed unstake passes', async () => {
@@ -173,11 +179,12 @@ describe('EthYield withdraw', () => {
       .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
     await ensureSuccessCall(ethYield);
 
-    const minAllowedShares =
+    // TODO convert to lp tokens
+    const minAllowedLp =
       (await eigenLayerStrategy.underlyingToSharesView(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT())) + 1n;
 
     const unstakeId = 1;
-    const unstakePayload = encodeUnstakeAction(unstakeId, minAllowedShares);
+    const unstakePayload = encodeUnstakeAction(unstakeId, minAllowedLp);
     await ethYield.connect(user).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
     await ensureSuccessCall(ethYield);
 

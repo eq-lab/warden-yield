@@ -40,14 +40,18 @@ async function ensureSuccessCall(aaveYield: AaveYield) {
 
 async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken) {
   const totalSharesBefore = await aaveYield.totalShares();
+  const totalLpBefore = await aaveYield.totalLpTokens();
   const aTokenScaledBalanceBefore = await aToken.scaledBalanceOf(await aaveYield.getAddress());
 
-  return async (stakedDeltaExpected: bigint) => {
+  return async () => {
     const aTokenScaledBalanceDelta =
       (await aToken.scaledBalanceOf(await aaveYield.getAddress())) - aTokenScaledBalanceBefore;
     const totalShares = await aaveYield.totalShares();
     expect(totalShares).to.be.eq(totalSharesBefore + aTokenScaledBalanceDelta);
-    // TODO add totalLpTokens delta check
+
+    const totalLp = await aaveYield.totalLpTokens();
+    const lpDelta = aTokenScaledBalanceDelta;
+    expect(totalLp).to.be.eq(totalLpBefore + lpDelta);
   };
 }
 
@@ -65,7 +69,7 @@ async function stake(
   // state before stake
   const aEthScaledBalanceBefore = await aToken.scaledBalanceOf(aaveYieldAddress);
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken);
-  const availableToWithdrawBefore = await aaveYield.sharesToUnderlying(await aaveYield.totalShares());
+  const availableToWithdrawBefore = await aaveYield.totalLpTokens();
 
   // approve WETH before stake
   await stakeToken.connect(signer).transfer(aaveYield.target, amount);
@@ -83,11 +87,12 @@ async function stake(
   expect(await stakeToken.balanceOf(aaveYieldAddress)).to.be.eq(0);
   expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.greaterThan(aEthScaledBalanceBefore);
 
+  // TODO convert from lp
   let availableToWithdraw = await aaveYield.sharesToUnderlying(await aaveYield.totalShares());
   expect(availableToWithdraw).to.be.greaterThanOrEqual(availableToWithdrawBefore + amount);
 
   // check YieldStorage data
-  await assertYieldStorage(amount);
+  await assertYieldStorage();
 
   const [stakeEvent] = await aaveYield.queryFilter(aaveYield.filters.Stake, -1);
   const lpAmount = stakeEvent.args[2];
@@ -107,6 +112,7 @@ async function withdraw(
 
   // state before withdraw
   const aTokenScaledBalanceBefore = await aToken.scaledBalanceOf(aaveYieldAddress);
+  const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken);
   const tokenBalanceBefore = await tokenToWithdraw.balanceOf(axelarGateway.target);
 
   const unstakePayload = encodeUnstakeAction(unstakeId, lpAmount);
@@ -117,6 +123,9 @@ async function withdraw(
 
   expect(await tokenToWithdraw.balanceOf(axelarGateway.target)).to.be.eq(underlyingBalance + tokenBalanceBefore);
   expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aTokenScaledBalanceBefore - lpAmount);
+
+   // check YieldStorage data
+   await assertYieldStorage();
 }
 
 async function initBalance(account: string, token: IERC20 | IWETH9, balanceStr: string): Promise<bigint> {

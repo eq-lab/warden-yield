@@ -14,7 +14,9 @@ describe('Staking', () => {
     await testYieldStorage.connect(user).stake(stakeAmount);
 
     const shares = await testYieldStorage.getStakedAmount(stakeAmount);
+    const lpt = await testYieldStorage.getLptAmount(shares);
 
     expect(await testYieldStorage.totalShares()).to.be.eq(shares);
+    expect(await testYieldStorage.totalLpTokens()).to.be.eq(lpt);
   });
 });

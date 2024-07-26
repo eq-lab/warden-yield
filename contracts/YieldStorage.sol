@@ -50,21 +50,29 @@ abstract contract YieldStorage is Initializable {
 
   /// @notice adds new staking amounts to storage
   /// @param shares amount of shares that were received from the staking protocol
-  function _addStake(uint256 shares) internal {
+  function _addStake(uint256 shares, uint256 lpTokenAmount) internal {
     StakingData storage $ = _getStakingDataStorage();
     $.totalShares += shares;
+    $.totalLpt += lpTokenAmount;
   }
 
   /// @notice sets user staking data to zero and decreases total values
   /// @param shares amount of shares that were released from the staking protocol
-  function _removeStake(uint256 shares) internal {
+  function _removeStake(uint256 shares, uint256 lpTokenAmount) internal {
     StakingData storage $ = _getStakingDataStorage();
     $.totalShares -= shares;
+    $.totalLpt -= lpTokenAmount;
   }
 
   /// @notice returns total shares received in all stake calls
   function totalShares() external view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $.totalShares;
+  }
+
+  /// @notice returns total lp tokens amount
+  function totalLpTokens() external view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return $.totalLpt;
   }
 }

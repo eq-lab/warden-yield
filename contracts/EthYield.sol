@@ -77,8 +77,8 @@ contract EthYield is
     IWETH9(getWeth()).withdraw(amount);
     uint256 stEthAmount = _lidoStake(amount);
     uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
-    _addStake(eigenLayerShares);
     lpAmount = _sharesToLpAmount(eigenLayerShares);
+    _addStake(eigenLayerShares, lpAmount);
 
     emit Stake(stakeId, amount, eigenLayerShares);
   }
@@ -87,10 +87,9 @@ contract EthYield is
   function unstake(uint64 unstakeId, uint256 lpAmount) external virtual {
     require(msg.sender == address(this));
 
-    //TODO: add lpAmount calculation
     uint256 eigenLayerSharesAmount = _lpAmountToShares(lpAmount);
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
-    _removeStake(eigenLayerSharesAmount);
+    _removeStake(eigenLayerSharesAmount, lpAmount);
   }
 
   /// @inheritdoc IEthYield

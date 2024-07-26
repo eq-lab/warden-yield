@@ -60,10 +60,8 @@ contract AaveYield is
   function stake(uint64 stakeId, uint256 amount) external returns (uint256 lpAmount) {
     require(msg.sender == address(this));
     uint256 shares = _aaveStake(amount);
-    _addStake(shares);
-
-    // TODO: add lpAmount calculation
     lpAmount = _sharesToLpAmount(shares);
+    _addStake(shares, lpAmount);
 
     emit Stake(stakeId, amount, lpAmount);
   }
@@ -74,7 +72,7 @@ contract AaveYield is
     uint256 sharesAmount = _lpAmountToShares(lpAmount);
     uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount);
     withdrawn = _aaveWithdraw(withdrawAmount);
-    _removeStake(sharesAmount);
+    _removeStake(sharesAmount, lpAmount);
 
     emit Unstake(unstakeId, withdrawn);
   }
