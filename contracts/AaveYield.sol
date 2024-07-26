@@ -43,16 +43,28 @@ contract AaveYield is
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+  /// @dev Convert shares (Aave shares) to lp amount
+  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return sharesAmount;
+  }
+
+  /// @dev Convert lp amount to shares (Aave shares)
+  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return lpAmount;
+  }
+
   /// @inheritdoc IAaveYield
-  function stake(uint64 stakeId, uint256 amount) external returns (uint256 shares) {
+  function stake(uint64 stakeId, uint256 amount) external returns (uint256 lpAmount) {
     require(msg.sender == address(this));
 
     address token = getUnderlyingToken();
-    shares = _aaveStake(token, amount);
+    uint256 shares = _aaveStake(token, amount);
     _addStake(msg.sender, token, amount, shares);
 
     // TODO: add lpAmount calculation
-    uint256 lpAmount = shares;
+    lpAmount = _sharesToLpAmount(shares);
 
     emit Stake(stakeId, token, amount, lpAmount);
   }
@@ -61,7 +73,7 @@ contract AaveYield is
     require(msg.sender == address(this));
 
     address token = getUnderlyingToken();
-    uint256 sharesAmount = lpAmount; // TODO: convert lpAmount to sharesAmount
+    uint256 sharesAmount = _lpAmountToShares(lpAmount);
     uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount, token);
     withdrawn = _aaveWithdraw(token, withdrawAmount);
     // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
