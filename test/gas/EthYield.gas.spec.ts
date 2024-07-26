@@ -1,267 +1,265 @@
 import { loadFixture, mine } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from 'chai';
 import snapshotGasCost from '@uniswap/snapshot-gas-cost';
 import { createEthYieldFork } from '../shared/fixtures';
 import { ethers } from 'hardhat';
-import { parseEther } from 'ethers';
-import { USER_WARDEN_ADDRESS, finalizeLidoWithdraw, setTokenBalance } from '../shared/utils';
+import { ContractTransactionReceipt, parseEther } from 'ethers';
+import {
+  WardenChain,
+  WardenContractAddress,
+  encodeReinitAction,
+  encodeStakeAction,
+  encodeUnstakeAction,
+  finalizeLidoWithdraw,
+} from '../shared/utils';
+import { CommandId } from '../shared/warden-handler-fixtures';
+import { EthYield, IWETH9 } from '../../typechain-types';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
+
+async function stake(
+  ethYield: EthYield,
+  weth9: IWETH9,
+  user: HardhatEthersSigner,
+  amount = parseEther('1'),
+  stakeId: number = 1
+): Promise<ContractTransactionReceipt> {
+  await weth9.connect(user).deposit({ value: amount });
+  await weth9.connect(user).transfer(ethYield.target, amount);
+  const stakePayload = encodeStakeAction(stakeId);
+  const txReceipt = await (
+    await ethYield
+      .connect(user)
+      .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', amount)
+  ).wait();
+
+  const [reqFailed] = await ethYield.queryFilter(ethYield.filters.RequestFailed, -1);
+  expect(reqFailed).to.be.undefined;
+
+  return txReceipt!;
+}
+
+async function unstake(
+  ethYield: EthYield,
+  user: HardhatEthersSigner,
+  lpAmount: bigint,
+  unstakeId: number = 1
+): Promise<ContractTransactionReceipt> {
+  const unstakePayload = encodeUnstakeAction(unstakeId, lpAmount);
+  const txResponse = await ethYield
+    .connect(user)
+    .execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
+  const txReceipt = await txResponse.wait();
+
+  const [reqFailed] = await ethYield.queryFilter(ethYield.filters.RequestFailed, -1);
+  expect(reqFailed).to.be.undefined;
+
+  return txReceipt!;
+}
+
+async function reinitFromAxelar(ethYield: EthYield): Promise<ContractTransactionReceipt> {
+  const reinitPayload = encodeReinitAction();
+  const txReceipt = await (await ethYield.execute(CommandId, WardenChain, WardenContractAddress, reinitPayload)).wait();
+  return txReceipt!;
+}
+
+async function reinit(ethYield: EthYield): Promise<ContractTransactionReceipt> {
+  const txResponse = await ethYield.executeReinit();
+  const txReceipt = await txResponse.wait();
+
+  const [reqFailed] = await ethYield.queryFilter(ethYield.filters.RequestFailed, -1);
+  expect(reqFailed).to.be.undefined;
+
+  return txReceipt!;
+}
 
 describe('EthYield gas', () => {
-  it('user stake, native', async () => {
-    const { ethYield } = await loadFixture(createEthYieldFork);
+  it('stake', async () => {
+    const { ethYield, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await snapshotGasCost(
-      Number(await ethYield.connect(user).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
-    );
+    const txReceipt = await stake(ethYield, weth9, user);
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
-  it('user stake, weth', async () => {
-    const { weth9, ethYield } = await loadFixture(createEthYieldFork);
+  it('unstake', async () => {
+    const { ethYield, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await setTokenBalance(await weth9.getAddress(), user.address, input);
-    await weth9.connect(user).approve(ethYield.target, input);
+    await stake(ethYield, weth9, user);
 
-    await snapshotGasCost(Number(await ethYield.connect(user).stake.estimateGas(input, USER_WARDEN_ADDRESS)));
+    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const txReceipt = await unstake(ethYield, user, lpAmount);
+
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
-  it('user unstake', async () => {
-    const { ethYield } = await loadFixture(createEthYieldFork);
+  it('reinit from evm, complete eigenLayer withdraw', async () => {
+    const { ethYield, eigenLayerDelegationManager, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user);
 
-    const shares = await ethYield.userShares(user.address, await ethYield.getWeth());
-
-    await snapshotGasCost(Number(await ethYield.connect(user).unstake.estimateGas(shares)));
-  });
-
-  it('reinit, complete eigenLayer withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager } = await loadFixture(createEthYieldFork);
-    const [_, user] = await ethers.getSigners();
-
-    const input = parseEther('1');
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
-
-    const shares = await ethYield.userShares(user.address, await ethYield.getWeth());
-    await ethYield.connect(user).unstake(shares);
+    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
 
-    await snapshotGasCost(Number(await ethYield.connect(user).reinit.estimateGas()));
+    const txReceipt = await reinit(ethYield);
+    await snapshotGasCost(Number(txReceipt.gasUsed));
+  });
+
+  it('reinit from Axelar, complete eigenLayer withdraw', async () => {
+    const { ethYield, eigenLayerDelegationManager, weth9 } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    await stake(ethYield, weth9, user);
+
+    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    await unstake(ethYield, user, lpAmount);
+
+    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
+    await mine(blocksToAwait);
+
+    const txReceipt = await reinitFromAxelar(ethYield);
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
   it('reinit, complete lido withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user);
 
-    const shares = await ethYield.userShares(user.address, await ethYield.getWeth());
-    await ethYield.connect(user).unstake(shares);
+    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
-    await ethYield.connect(user).reinit();
+
+    await reinit(ethYield);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    await snapshotGasCost(Number(await ethYield.connect(user).reinit.estimateGas()));
+    const txReceipt = await reinit(ethYield);
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
-  it('stake native, complete eigenLayer withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager } = await loadFixture(createEthYieldFork);
+  it('stake with reinit', async () => {
+    const { ethYield, eigenLayerDelegationManager, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user, user2] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user);
 
-    const shares = await ethYield.userShares(user.address, await ethYield.getWeth());
-    await ethYield.connect(user).unstake(shares);
+    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
 
-    await snapshotGasCost(
-      Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
-    );
+    const txReceipt = await stake(ethYield, weth9, user);
+
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
-  it('stake native, complete lido withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+  it('stake, complete lido withdraw', async () => {
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user, user2] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user);
 
-    const shares = await ethYield.userShares(user.address, await ethYield.getWeth());
-    await ethYield.connect(user).unstake(shares);
+    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
-    await ethYield.connect(user).reinit();
+    await reinit(ethYield);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    await snapshotGasCost(
-      Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
-    );
+    const txReceipt = await stake(ethYield, weth9, user);
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
   it('stake native, complete one eigenLayer and one lido withdraws', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user1, user2, user3] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-    await ethYield.connect(user2).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user1);
+    await stake(ethYield, weth9, user2);
 
-    const user1Shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(user1Shares);
+    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 2n;
+    await unstake(ethYield, user1, lpAmount);
 
-    const user2Shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(user2Shares);
+    await unstake(ethYield, user2, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
-    await ethYield.connect(user1).reinit();
+    await reinit(ethYield);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    await snapshotGasCost(
-      Number(await ethYield.connect(user3).stake.estimateGas(input, USER_WARDEN_ADDRESS, { value: input }))
-    );
-  });
-
-  it('stake weth, complete eigenLayer withdraw', async () => {
-    const { weth9, ethYield, eigenLayerDelegationManager } = await loadFixture(createEthYieldFork);
-    const [_, user1, user2] = await ethers.getSigners();
-
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-
-    const shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(shares);
-
-    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
-    await mine(blocksToAwait);
-
-    await setTokenBalance(await weth9.getAddress(), user2.address, input);
-    await weth9.connect(user2).approve(ethYield.target, input);
-
-    await snapshotGasCost(Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS)));
-  });
-
-  it('stake weth, complete lido withdraw', async () => {
-    const { weth9, ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
-    const [_, user1, user2] = await ethers.getSigners();
-
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-
-    const shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(shares);
-
-    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
-    await mine(blocksToAwait);
-    await ethYield.connect(user1).reinit();
-    await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
-
-    await setTokenBalance(await weth9.getAddress(), user2.address, input);
-    await weth9.connect(user2).approve(ethYield.target, input);
-
-    await snapshotGasCost(Number(await ethYield.connect(user2).stake.estimateGas(input, USER_WARDEN_ADDRESS)));
-  });
-
-  it('stake weth, complete one eigenLayer and one lido withdraws', async () => {
-    const { weth9, ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
-    const [_, user1, user2, user3] = await ethers.getSigners();
-
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-    await ethYield.connect(user2).stake(input, USER_WARDEN_ADDRESS, { value: input });
-
-    const user1Shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(user1Shares);
-
-    const user2Shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(user2Shares);
-
-    const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
-    await mine(blocksToAwait);
-    await ethYield.connect(user1).reinit();
-    await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
-
-    await setTokenBalance(await weth9.getAddress(), user3.address, input);
-    await weth9.connect(user3).approve(ethYield.target, input);
-
-    await snapshotGasCost(Number(await ethYield.connect(user3).stake.estimateGas(input, USER_WARDEN_ADDRESS)));
+    const txReceipt = await stake(ethYield, weth9, user3);
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
   it('unstake, complete eigenLayer withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user1, user2] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-    await ethYield.connect(user2).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user1);
+    await stake(ethYield, weth9, user2);
 
-    const shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(shares);
+    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 2n;
+    await unstake(ethYield, user1, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
 
-    const user2Shares = await ethYield.userShares(user2.address, await ethYield.getWeth());
+    const txReceipt = await unstake(ethYield, user2, lpAmount);
 
-    await snapshotGasCost(Number(await ethYield.connect(user2).unstake.estimateGas(user2Shares)));
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
   it('unstake, complete lido withdraw', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user1, user2] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-    await ethYield.connect(user2).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user1);
+    await stake(ethYield, weth9, user2);
 
-    const shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(shares);
+    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 2n;
+    await unstake(ethYield, user1, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
-    await ethYield.connect(user1).reinit();
+    await reinit(ethYield);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    const user2Shares = await ethYield.userShares(user2.address, await ethYield.getWeth());
+    const txReceipt = await unstake(ethYield, user2, lpAmount);
 
-    await snapshotGasCost(Number(await ethYield.connect(user2).unstake.estimateGas(user2Shares)));
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 
   it('unstake, complete one eigenLayer and one lido withdraws', async () => {
-    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue } = await loadFixture(createEthYieldFork);
+    const { ethYield, eigenLayerDelegationManager, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user1, user2, user3] = await ethers.getSigners();
 
-    const input = parseEther('1');
-    await ethYield.connect(user1).stake(input, USER_WARDEN_ADDRESS, { value: input });
-    await ethYield.connect(user2).stake(input, USER_WARDEN_ADDRESS, { value: input });
-    await ethYield.connect(user3).stake(input, USER_WARDEN_ADDRESS, { value: input });
+    await stake(ethYield, weth9, user1);
+    await stake(ethYield, weth9, user2);
+    await stake(ethYield, weth9, user3);
 
-    const user1Shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(user1Shares);
+    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 3n;
+    await unstake(ethYield, user1, lpAmount);
 
-    const user2Shares = await ethYield.userShares(user1.address, await ethYield.getWeth());
-    await ethYield.connect(user1).unstake(user2Shares);
+    await unstake(ethYield, user2, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
     await mine(blocksToAwait);
-    await ethYield.connect(user1).reinit();
+    await reinit(ethYield);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
     const user3Shares = await ethYield.userShares(user3.address, await ethYield.getWeth());
 
-    await snapshotGasCost(Number(await ethYield.connect(user3).unstake.estimateGas(user3Shares)));
+    const txReceipt = await unstake(ethYield, user2, lpAmount);
+
+    await snapshotGasCost(Number(txReceipt.gasUsed));
   });
 });

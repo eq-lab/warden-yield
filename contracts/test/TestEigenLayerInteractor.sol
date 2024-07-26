@@ -29,7 +29,6 @@ contract TestEigenLayerInteractor is EigenLayerInteractor, LidoInteractor {
 
   function stake(uint256 amount) external payable {
     require(msg.value == amount);
-    IWETH9(getWeth()).deposit{value: msg.value}();
 
     _eigenLayerReinit();
     uint256 stEthAmount = _lidoStake(amount);

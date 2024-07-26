@@ -1,7 +1,7 @@
-use crate::state::{ContractConfigState, TokenStats};
-use crate::types::{StakeStatus, TokenConfig, TokenDenom};
+use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
+use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Uint256};
+use cosmwasm_std::{Addr, Binary};
 use serde::{Deserialize, Serialize};
 
 #[cw_serde]
@@ -13,32 +13,24 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Stake,
-    Unstake {
+    Unstake,
+    Reinit {
         token_denom: TokenDenom,
     },
 
     AddToken {
-        token_denom: String,
+        token_denom: TokenDenom,
         config: TokenConfig,
     },
     UpdateTokenConfig {
-        token_denom: String,
+        token_denom: TokenDenom,
         config: TokenConfig,
     },
 
-    HandleStakeResponse {
-        account: Addr,
-        token_evm: String,
-        token_amount: Uint256,
-        shares_amount: Uint256,
-        status: StakeStatus,
-    },
-    HandleUnstakeResponse {
-        account: Addr,
-        token_evm: String,
-        token_amount: Uint256,
-        shares_amount: Uint256,
-        status: StakeStatus,
+    HandleResponse {
+        source_chain: String,
+        source_address: String,
+        payload: Binary,
     },
 }
 
@@ -49,13 +41,16 @@ pub enum QueryMsg {
     ContractConfig,
     #[returns(GetTokensConfigsResponse)]
     TokensConfigs,
-    #[returns(GetTokensStatsResponse)]
-    TokensStats,
-    #[returns(GetUserStatsResponse)]
-    UserStats {
-        account: Addr,
-        token_denom: TokenDenom,
-    },
+    #[returns(GetStakeStatsResponse)]
+    StakeStats,
+    #[returns(GetQueueParamsResponse)]
+    StakeParams { token_denom: TokenDenom },
+    #[returns(GetQueueParamsResponse)]
+    UnstakeParams { token_denom: TokenDenom },
+    #[returns(GetStakeItemResponse)]
+    StakeElem { token_denom: TokenDenom, id: u64 },
+    #[returns(GetUnstakeItemResponse)]
+    UnstakeElem { token_denom: TokenDenom, id: u64 },
 }
 
 #[cw_serde]
@@ -69,13 +64,23 @@ pub struct GetTokensConfigsResponse {
 }
 
 #[cw_serde]
-pub struct GetTokensStatsResponse {
-    pub stats: Vec<(TokenDenom, TokenStats)>,
+pub struct GetStakeStatsResponse {
+    pub stats: Vec<(TokenDenom, StakeStatsItem)>,
 }
 
 #[cw_serde]
-pub struct GetUserStatsResponse {
-    pub stats: TokenStats,
+pub struct GetStakeItemResponse {
+    pub item: StakeItem,
+}
+
+#[cw_serde]
+pub struct GetUnstakeItemResponse {
+    pub item: UnstakeItem,
+}
+
+#[cw_serde]
+pub struct GetQueueParamsResponse {
+    pub params: QueueParams,
 }
 
 #[cw_serde]

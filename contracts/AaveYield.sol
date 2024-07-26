@@ -44,15 +44,26 @@ contract AaveYield is
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-  /// @inheritdoc IAaveYield
-  function stake(uint64 stakeId, uint256 amount) external returns (uint256 shares) {
-    require(msg.sender == address(this));
+  /// @dev Convert shares (Aave shares) to lp amount
+  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return sharesAmount;
+  }
 
-    shares = _aaveStake(amount);
+  /// @dev Convert lp amount to shares (Aave shares)
+  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return lpAmount;
+  }
+
+  /// @inheritdoc IAaveYield
+  function stake(uint64 stakeId, uint256 amount) external returns (uint256 lpAmount) {
+    require(msg.sender == address(this));
+    uint256 shares = _aaveStake(amount);
     _addStake(shares);
 
     // TODO: add lpAmount calculation
-    uint256 lpAmount = shares;
+    lpAmount = _sharesToLpAmount(shares);
 
     emit Stake(stakeId, amount, lpAmount);
   }
@@ -60,7 +71,7 @@ contract AaveYield is
   function unstake(uint64 unstakeId, uint256 lpAmount) external returns (uint256 withdrawn) {
     require(msg.sender == address(this));
 
-    uint256 sharesAmount = lpAmount; // TODO: convert lpAmount to sharesAmount
+    uint256 sharesAmount = _lpAmountToShares(lpAmount);
     uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount);
     withdrawn = _aaveWithdraw(withdrawAmount);
     _removeStake(sharesAmount);

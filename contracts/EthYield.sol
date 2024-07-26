@@ -58,15 +58,28 @@ contract EthYield is
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+  /// @dev Convert shares (EigenLayer shares) to lp amount
+  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return sharesAmount;
+  }
+
+  /// @dev Convert lpAmount to shares (EigenLayer shares)
+  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return lpAmount;
+  }
+
   /// @inheritdoc IEthYield
-  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 eigenLayerShares) {
+  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 lpAmount) {
     require(msg.sender == address(this));
 
+    IWETH9(getWeth()).withdraw(amount);
     uint256 stEthAmount = _lidoStake(amount);
-    eigenLayerShares = _eigenLayerRestake(stEthAmount);
+    uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
     _addStake(eigenLayerShares);
+    lpAmount = _sharesToLpAmount(eigenLayerShares);
 
-    //TODO: add lpAmount calculation
     emit Stake(stakeId, amount, eigenLayerShares);
   }
 
@@ -75,8 +88,7 @@ contract EthYield is
     require(msg.sender == address(this));
 
     //TODO: add lpAmount calculation
-    //TODO: change signature to accept lpAmount
-    uint256 eigenLayerSharesAmount = lpAmount; //TODO: convert lpAmount to elShares
+    uint256 eigenLayerSharesAmount = _lpAmountToShares(lpAmount);
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
     _removeStake(eigenLayerSharesAmount);
   }
@@ -94,6 +106,8 @@ contract EthYield is
 
     (reinitUnstakeId, withdrawnAmount) = _lidoReinit();
     if (withdrawnAmount != 0) {
+      // Wraps ETH back to WETH
+      IWETH9(getWeth()).deposit{value: withdrawnAmount}();
       emit Unstake(reinitUnstakeId, withdrawnAmount);
     }
   }
