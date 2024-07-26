@@ -124,8 +124,8 @@ async function withdraw(
   expect(await tokenToWithdraw.balanceOf(axelarGateway.target)).to.be.eq(underlyingBalance + tokenBalanceBefore);
   expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aTokenScaledBalanceBefore - lpAmount);
 
-   // check YieldStorage data
-   await assertYieldStorage();
+  // check YieldStorage data
+  await assertYieldStorage();
 }
 
 async function initBalance(account: string, token: IERC20 | IWETH9, balanceStr: string): Promise<bigint> {
