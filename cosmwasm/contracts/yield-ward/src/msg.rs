@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     pub tokens: Vec<(TokenDenom, TokenConfig)>,
     pub axelar: Addr,
+    pub lp_token_code_id: u64,
 }
 
 #[cw_serde]
@@ -20,7 +21,14 @@ pub enum ExecuteMsg {
 
     AddToken {
         token_denom: TokenDenom,
-        config: TokenConfig,
+        is_stake_enabled: bool,
+        is_unstake_enabled: bool,
+        chain: String,
+        symbol: String,
+        name: String,
+        evm_yield_contract: String,
+        evm_address: String,
+        lp_token_denom: String,
     },
     UpdateTokenConfig {
         token_denom: TokenDenom,

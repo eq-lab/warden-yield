@@ -18,7 +18,8 @@ fn test_instantiate() {
         GetContractConfigResponse {
             config: ContractConfigState {
                 owner: ctx.admin,
-                axelar: ctx.axelar
+                axelar: ctx.axelar,
+                lp_token_code_id: 1
             }
         }
     );

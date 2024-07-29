@@ -1130,6 +1130,8 @@ dependencies = [
  "cw-multi-test",
  "cw-storage-plus",
  "cw2",
+ "cw20",
+ "lp-token",
  "protobuf",
  "schemars",
  "serde",

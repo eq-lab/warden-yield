@@ -21,4 +21,11 @@ mod error;
 pub mod msg;
 pub mod state;
 
+mod execute;
+mod instantiate;
+mod logo;
+mod query;
+#[cfg(test)]
+mod tests;
+
 pub use crate::error::ContractError;

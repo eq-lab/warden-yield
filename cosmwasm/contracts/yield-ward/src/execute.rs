@@ -8,17 +8,21 @@ use crate::helpers::{
     find_token_by_message_source,
 };
 use crate::state::{
-    QueueParams, StakeItem, StakeStatsItem, UnstakeItem, STAKES, STAKE_PARAMS, STAKE_STATS,
-    TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
+    QueueParams, StakeItem, StakeStatsItem, UnstakeItem, CONTRACT_CONFIG, STAKES, STAKE_PARAMS,
+    STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
 use crate::types::{
     ActionType, StakeActionStage, StakeResponseData, Status, TokenConfig, TokenDenom,
     UnstakeActionStage, UnstakeResponseData,
 };
 use crate::ContractError;
+use cosmwasm_std::QueryRequest::Wasm;
 use cosmwasm_std::{
-    Attribute, BankMsg, Binary, Coin, DepsMut, Env, Event, MessageInfo, Response, StdError, Uint256,
+    instantiate2_address, to_json_binary, Addr, Attribute, BankMsg, Binary, CodeInfoResponse, Coin,
+    Deps, DepsMut, Env, Event, HexBinary, MessageInfo, Response, StdError, StdResult, Uint256,
+    WasmMsg, WasmQuery,
 };
+use lp_token::msg::{InstantiateMarketingInfo, InstantiateMsg as LpInstantiateMsg};
 
 pub fn try_init_stake(
     deps: DepsMut,
@@ -520,10 +524,17 @@ fn handle_reinit(
 
 pub fn try_add_token(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     token_denom: String,
-    config: TokenConfig,
+    is_stake_enabled: bool,
+    is_unstake_enabled: bool,
+    chain: String,
+    symbol: String,
+    name: String,
+    evm_yield_contract: String,
+    evm_address: String,
+    lp_token_denom: String,
 ) -> Result<Response, ContractError> {
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
@@ -531,14 +542,74 @@ pub fn try_add_token(
         return Err(ContractError::TokenAlreadyExist(token_denom));
     }
 
-    TOKEN_CONFIG.save(deps.storage, &token_denom, &config)?;
+    let contract_config = CONTRACT_CONFIG.load(deps.storage)?;
 
     STAKE_STATS.save(deps.storage, &token_denom, &StakeStatsItem::default())?;
 
     // todo: instantiate LP token
-    Ok(Response::default())
+
+    let msg = to_json_binary(&LpInstantiateMsg {
+        name,
+        symbol: symbol.clone(),
+        decimals: 6,
+        initial_balances: vec![],
+        mint: Some(cw20::MinterResponse {
+            minter: env.contract.address.to_string(),
+            cap: None,
+        }),
+        marketing: Some(InstantiateMarketingInfo {
+            project: Some("YieldWard".to_string()),
+            description: Some("LP token".to_string()),
+            marketing: None,
+            logo: None,
+        }),
+    })?;
+
+    let salt: Vec<u8> = 777_u64.to_be_bytes().into_iter().collect();
+
+    let inst2_msg = WasmMsg::Instantiate2 {
+        admin: Some(env.contract.address.to_string()),
+        code_id: contract_config.lp_token_code_id,
+        label: "LP token".to_string(),
+        msg,
+        funds: vec![],
+        salt: Binary::new(salt),
+    };
+
+    let lp_token_address =
+        calculate_token_address(deps.as_ref(), env, contract_config.lp_token_code_id)?;
+
+    TOKEN_CONFIG.save(
+        deps.storage,
+        &token_denom,
+        &TokenConfig {
+            is_stake_enabled,
+            is_unstake_enabled,
+            symbol,
+            chain,
+            evm_yield_contract,
+            evm_address,
+            lp_token_denom,
+            lp_token_address,
+        },
+    )?;
+
+    Ok(Response::new().add_message(inst2_msg))
 }
 
+pub fn calculate_token_address(deps: Deps, env: Env, code_id: u64) -> StdResult<Addr> {
+    let canonical_creator = deps.api.addr_canonicalize(env.contract.address.as_str())?;
+
+    let code_info: CodeInfoResponse = deps.querier.query(&Wasm(WasmQuery::CodeInfo { code_id }))?;
+    // let checksum =
+    //     HexBinary::from_hex("9af782a3a1bcbcd22dbb6a45c751551d9af782a3a1bcbcd22dbb6a45c751551d")?;
+    let salt = b"instance 1231";
+    let canonical_addr =
+        instantiate2_address(code_info.checksum.as_slice(), &canonical_creator, salt)
+            .map_err(|_| StdError::generic_err("Could not calculate addr"))?;
+
+    deps.api.addr_humanize(&canonical_addr)
+}
 pub fn try_update_token_config(
     deps: DepsMut,
     _env: Env,
