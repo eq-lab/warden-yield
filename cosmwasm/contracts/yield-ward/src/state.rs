@@ -10,6 +10,7 @@ pub const CONTRACT_CONFIG: Item<ContractConfigState> = Item::new("contract_confi
 pub struct ContractConfigState {
     pub owner: Addr,
     pub axelar: Addr,
+    pub lp_token_code_id: u64,
 }
 
 // Map<> doc - https://book.cosmwasm.com/cross-contract/map-storage.html

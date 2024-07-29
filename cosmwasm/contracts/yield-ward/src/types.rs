@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Addr, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +14,7 @@ pub struct TokenConfig {
     pub evm_yield_contract: String,
     pub evm_address: String,
     pub lp_token_denom: String,
+    pub lp_token_address: Addr,
 }
 
 pub enum ReplyType {

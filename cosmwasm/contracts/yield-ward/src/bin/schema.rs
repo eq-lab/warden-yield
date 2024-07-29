@@ -1,6 +1,6 @@
 use cosmwasm_schema::write_api;
 
-use warden_yield::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use yield_ward::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {

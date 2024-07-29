@@ -1,7 +1,7 @@
 use crate::contract::{execute, instantiate, query};
 use crate::msg::{
     ExecuteMsg, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
-    GetUnstakeItemResponse, InstantiateMsg, QueryMsg,
+    GetTokensConfigsResponse, GetUnstakeItemResponse, InstantiateMsg, QueryMsg,
 };
 use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::types::{
@@ -40,6 +40,7 @@ pub fn instantiate_contract() -> TestContext {
         InstantiateMsg {
             tokens: tokens.clone(),
             axelar: axelar.clone(),
+            lp_token_code_id: 1,
         },
     )
     .unwrap();
@@ -64,6 +65,7 @@ fn create_tokens_config() -> Vec<(TokenDenom, TokenConfig)> {
                 is_unstake_enabled: false,
                 symbol: "TOKEN1".to_string(),
                 lp_token_denom: "TOKEN1_LP".to_string(),
+                lp_token_address: Addr::unchecked("TOKEN1_LP_ADDRESS".to_string()),
                 evm_address: "0x0000000000000000000000000000000000000001".to_string(),
                 evm_yield_contract: "0x0000000000000000000000000000000000000011".to_string(),
                 chain: "Ethereum".to_string(),
@@ -76,6 +78,7 @@ fn create_tokens_config() -> Vec<(TokenDenom, TokenConfig)> {
                 is_unstake_enabled: false,
                 symbol: "TOKEN2".to_string(),
                 lp_token_denom: "TOKEN2_LP".to_string(),
+                lp_token_address: Addr::unchecked("TOKEN2_LP_ADDRESS".to_string()),
                 evm_address: "0x0000000000000000000000000000000000000002".to_string(),
                 evm_yield_contract: "0x0000000000000000000000000000000000000022".to_string(),
                 chain: "Ethereum".to_string(),
@@ -192,6 +195,20 @@ pub fn get_stake_stats(deps: Deps, env: Env, token_denom: &TokenDenom) -> StakeS
     let stake_stats = get_all_stake_stats(deps, env);
 
     stake_stats[token_denom].clone()
+}
+
+pub fn get_all_tokens_configs(deps: Deps, env: Env) -> HashMap<TokenDenom, TokenConfig> {
+    let tokens_configs: GetTokensConfigsResponse =
+        from_json(query(deps, env, QueryMsg::TokensConfigs).unwrap()).unwrap();
+
+    let configs: HashMap<_, _> = tokens_configs.tokens.into_iter().collect();
+    configs
+}
+
+pub fn get_token_config(deps: Deps, env: Env, token_denom: &String) -> TokenConfig {
+    let token_config = get_all_tokens_configs(deps, env);
+
+    token_config[token_denom].clone()
 }
 
 pub struct UnstakeDetails {

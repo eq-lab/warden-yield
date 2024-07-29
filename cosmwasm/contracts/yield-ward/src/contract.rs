@@ -39,6 +39,7 @@ pub fn instantiate(
     let contract_config = ContractConfigState {
         owner: info.sender.clone(),
         axelar: msg.axelar,
+        lp_token_code_id: msg.lp_token_code_id,
     };
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
 
@@ -87,8 +88,28 @@ pub fn execute(
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
         ExecuteMsg::AddToken {
             token_denom,
-            config,
-        } => try_add_token(deps, env, info, token_denom, config),
+            is_stake_enabled,
+            is_unstake_enabled,
+            chain,
+            symbol,
+            name,
+            evm_yield_contract,
+            evm_address,
+            lp_token_denom,
+        } => try_add_token(
+            deps,
+            env,
+            info,
+            token_denom,
+            is_stake_enabled,
+            is_unstake_enabled,
+            chain,
+            symbol,
+            name,
+            evm_yield_contract,
+            evm_address,
+            lp_token_denom,
+        ),
         ExecuteMsg::UpdateTokenConfig {
             token_denom,
             config,
