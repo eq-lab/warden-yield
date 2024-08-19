@@ -12,21 +12,23 @@ abstract contract YieldStorage is Initializable {
 
   /// @custom:storage-location erc7201:eq-lab.storage.StakingData
   struct StakingData {
-    /// @dev total amount of 'token' locked by users via this contract
+    /// @dev not used since v2
     mapping(address /* token */ => uint256) _totalStakedAmount;
-    /// @dev total amount shares received by users after locking 'token'
+    /// @dev not used since v2
     mapping(address /* token */ => uint256) _totalShares;
-    /// @dev total amount of 'token' locked by the 'user' via this contract
+    /// @dev not used since v2
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _stakedAmount;
-    /// @dev total amount shares received by 'user' after locking the 'token'
+    /// @dev not used since v2
     mapping(address /* token */ => mapping(address /* user */ => uint256)) _shares;
+    /// @dev total amount of shares received from underlying protocol
     uint256 totalShares;
+    /// @dev total amount of lp tokens minted
     uint256 totalLpt;
   }
 
   /// @custom:storage-location erc7201:eq-lab.storage.UserWardenData
+  /// @dev not used since v2
   struct UserWardenData {
-    /// @dev mapping of evm -> warden user addresses
     mapping(address /* evmAddress */ => string) _wardenAddress;
   }
 

@@ -2,9 +2,8 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import snapshotGasCost from '@uniswap/snapshot-gas-cost';
 import { createAaveEthFork } from '../shared/fixtures';
 import { ethers } from 'hardhat';
-import { parseEther, TransactionReceipt } from 'ethers';
+import { parseEther } from 'ethers';
 import {
-  USER_WARDEN_ADDRESS,
   WardenChain,
   WardenContractAddress,
   encodeStakeAction,

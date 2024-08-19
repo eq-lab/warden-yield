@@ -18,9 +18,9 @@ abstract contract AaveInteractor is Initializable {
   struct AaveInteractorData {
     /// @dev address of Aave pool
     address aavePool;
-    /// @dev flag showing if users can call a 'withdraw' method of this contract
+    /// @dev not used since v2
     bool areWithdrawalsEnabled;
-    /// @dev Not used in V2, mapping showing if the token can be supplied to Aave pool via this contract
+    /// @dev not used since v2
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
     /// @dev token address used in stake/unstake operations
     address underlyingToken;
@@ -89,7 +89,7 @@ abstract contract AaveInteractor is Initializable {
 
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
 
-    withdrawn = IPool($.aavePool).withdraw($.underlyingToken, amount, msg.sender);
+    withdrawn = IPool($.aavePool).withdraw($.underlyingToken, amount, address(this));
     if (withdrawn < amount) revert Errors.InvalidAmount(amount, withdrawn);
   }
 
