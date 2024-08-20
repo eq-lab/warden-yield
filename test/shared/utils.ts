@@ -26,6 +26,9 @@ export enum EthAddressData {
   eigenLayerOperator = '0x71C6F7Ed8C2d4925d0bAf16f6A85BB1736D412eb',
   axelarGateway = '0x4F4495243837681061C4743b74B3eEdf548D56A5',
   axelarGasService = '0x2d5d7d31F671F86C782533cc367F14109a082712',
+  ethYield = '0x4DF66BCA96319C6A033cfd86c38BCDb9B3c11a72',
+  aaveYieldUsdc = '0x0259044395FE54d8aFe28354Ac737EB216064cF9',
+  aaveYieldUsdt = '0x0F9d2C03AD21a30746A4b4f07919e1C5F3641F35',
 }
 
 export const TokenBalanceStorage: Map<string, string> = new Map([

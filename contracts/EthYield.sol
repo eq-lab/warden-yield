@@ -48,6 +48,7 @@ contract EthYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
+    __YieldStorage_initV2(getWeth());
     __LidoInteractor_initV2(lidoWithdrawQueue);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
 
@@ -73,26 +74,22 @@ contract EthYield is
   function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 lpAmount) {
     require(msg.sender == address(this));
 
-    address weth = getWeth();
-    // Axelar sends WETH to this contract, Lido needs ETH to stake
-    IWETH9(weth).withdraw(amount);
-
+    IWETH9(getWeth()).withdraw(amount);
     uint256 stEthAmount = _lidoStake(amount);
     uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
-    _addStake(msg.sender, weth, amount, eigenLayerShares);
-
     lpAmount = _sharesToLpAmount(eigenLayerShares);
-    emit Stake(stakeId, weth, amount, lpAmount);
+    _addStake(eigenLayerShares, lpAmount);
+
+    emit Stake(stakeId, amount, eigenLayerShares);
   }
 
   /// @inheritdoc IEthYield
   function unstake(uint64 unstakeId, uint256 lpAmount) external virtual {
     require(msg.sender == address(this));
 
-    //TODO: add lpAmount calculation
     uint256 eigenLayerSharesAmount = _lpAmountToShares(lpAmount);
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
-    // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
+    _removeStake(eigenLayerSharesAmount, lpAmount);
   }
 
   /// @inheritdoc IEthYield
@@ -110,7 +107,7 @@ contract EthYield is
     if (withdrawnAmount != 0) {
       // Wraps ETH back to WETH
       IWETH9(getWeth()).deposit{value: withdrawnAmount}();
-      emit Unstake(reinitUnstakeId, getWeth(), withdrawnAmount);
+      emit Unstake(reinitUnstakeId, withdrawnAmount);
     }
   }
 

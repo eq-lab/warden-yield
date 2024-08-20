@@ -225,12 +225,12 @@ describe('Lido withdraw', () => {
 
     const queueElement = await testLidoInteractor.getQueueElement(0);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, queueElement.requestId);
-    const wethalanceBefore = await user.provider.getBalance(testLidoInteractor.target);
+    const wethBalanceBefore = await user.provider.getBalance(testLidoInteractor.target);
 
     await testLidoInteractor.connect(user).reinit();
 
     const wethBalanceAfter = await user.provider.getBalance(testLidoInteractor.target);
-    expect(wethBalanceAfter).to.be.eq(amount + wethalanceBefore);
+    expect(wethBalanceAfter).to.be.eq(amount + wethBalanceBefore);
     expect(await testLidoInteractor.getQueueStart()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueEnd()).to.be.eq(1);
     expect(await testLidoInteractor.getQueueLength()).to.be.eq(0);

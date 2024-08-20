@@ -9,7 +9,7 @@ const config = {
       forking: {
         enabled: true,
         url: 'https://rpc.ankr.com/eth',
-        blockNumber: 20090225,
+        blockNumber: 20370155,
       },
       initialBaseFeePerGas: 0,
     },

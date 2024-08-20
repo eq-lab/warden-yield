@@ -8,6 +8,7 @@ import '../YieldStorage.sol';
 
 contract TestYieldStorage is UUPSUpgradeable, Ownable2StepUpgradeable, YieldStorage {
   uint256 constant STAKING_RATIO = 75;
+  uint256 constant LPT_RATIO = 50;
   uint256 constant ONE = 100;
   address WETH9;
 
@@ -20,15 +21,16 @@ contract TestYieldStorage is UUPSUpgradeable, Ownable2StepUpgradeable, YieldStor
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
   function stake(uint256 amount) external {
-    uint256 stakedAmount = getStakedAmount(amount);
-    _addStake(msg.sender, WETH9, amount, stakedAmount);
-  }
-
-  function addWardenAddress(string calldata userWardenAddress) external {
-    _addWardenAddress(msg.sender, userWardenAddress);
+    uint256 shares = getStakedAmount(amount);
+    uint256 lptAmount = getLptAmount(shares);
+    _addStake(shares, lptAmount);
   }
 
   function getStakedAmount(uint256 amount) public pure returns (uint256) {
     return (amount * STAKING_RATIO) / ONE;
+  }
+
+  function getLptAmount(uint256 shares) public pure returns (uint256) {
+    return (shares * LPT_RATIO) / ONE;
   }
 }
