@@ -66,16 +66,6 @@ contract AaveYield is
   }
 
   /// @notice converts amount of passed token to the shares
-  function underlyingToShares(uint256 amount) external view returns (uint256) {
-    return _getScaledFromBalance(amount, getUnderlyingToken());
-  }
-
-  /// @notice converts shares of passed token to its amount
-  function sharesToUnderlying(uint256 shares) external view returns (uint256) {
-    return _getBalanceFromScaled(shares, getUnderlyingToken());
-  }
-
-  /// @notice converts amount of passed token to the shares
   function underlyingToLp(uint256 amount) external view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $.totalShares == 0 ? amount : _sharesToLpAmount(_getScaledFromBalance(amount, getUnderlyingToken()));
