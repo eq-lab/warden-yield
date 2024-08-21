@@ -115,7 +115,7 @@ async function withdraw(
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken);
   const tokenBalanceBefore = await tokenToWithdraw.balanceOf(axelarGateway.target);
 
-  // adding some blocks and resetting the next block timestamp 
+  // adding some blocks and resetting the next block timestamp
   // so the aave shares to underlying conversion occurred with the same timestamp in both view query and tx
   await mine(1000);
   const currentBlockTimestamp = (await signer.provider.getBlock(await signer.provider.getBlockNumber()))?.timestamp!;
