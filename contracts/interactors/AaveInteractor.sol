@@ -95,12 +95,12 @@ abstract contract AaveInteractor is Initializable {
 
   /// @dev returns current balance of token supplied to Aave pool by this contract
   /// @param scaledAmount amount of the withdrawn token
-  function _getBalanceFromScaled(uint256 scaledAmount, address token) internal view returns (uint256) {
-    return scaledAmount.rayMul(IPool(getAavePool()).getReserveNormalizedIncome(token));
+  function _getBalanceFromScaled(uint256 scaledAmount) internal view returns (uint256) {
+    return scaledAmount.rayMul(IPool(getAavePool()).getReserveNormalizedIncome(getUnderlyingToken()));
   }
 
-  function _getScaledFromBalance(uint256 balanceAmount, address token) internal view returns (uint256) {
-    return balanceAmount.rayDiv(IPool(getAavePool()).getReserveNormalizedIncome(token));
+  function _getScaledFromBalance(uint256 balanceAmount) internal view returns (uint256) {
+    return balanceAmount.rayDiv(IPool(getAavePool()).getReserveNormalizedIncome(getUnderlyingToken()));
   }
 
   /// @notice returns address of Aave pool this contract interacts with
