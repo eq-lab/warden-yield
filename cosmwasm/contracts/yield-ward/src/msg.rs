@@ -1,7 +1,7 @@
 use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Binary};
+use cosmwasm_std::{Addr, Binary, Uint128};
 use serde::{Deserialize, Serialize};
 
 #[cw_serde]
@@ -18,7 +18,12 @@ pub enum ExecuteMsg {
     Reinit {
         token_denom: TokenDenom,
     },
-
+    MintLpToken {
+        recipient: Addr,
+        lp_token_address: Addr,
+        amount: Uint128,
+    },
+    // todo: add method to disable MintLpToken method
     AddToken {
         token_denom: TokenDenom,
         is_stake_enabled: bool,
@@ -28,7 +33,7 @@ pub enum ExecuteMsg {
         name: String,
         evm_yield_contract: String,
         evm_address: String,
-        lp_token_denom: String,
+        lp_token_denom: String, // todo: remove it, redundant
     },
     UpdateTokenConfig {
         token_denom: TokenDenom,
@@ -40,6 +45,8 @@ pub enum ExecuteMsg {
         source_address: String,
         payload: Binary,
     },
+
+    DisallowMint,
 }
 
 #[cw_serde]

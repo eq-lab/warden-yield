@@ -18,10 +18,11 @@ use crate::types::{
 use crate::ContractError;
 use cosmwasm_std::QueryRequest::Wasm;
 use cosmwasm_std::{
-    instantiate2_address, to_json_binary, Addr, Attribute, BankMsg, Binary, CodeInfoResponse, Coin,
-    Deps, DepsMut, Env, Event, HexBinary, MessageInfo, Response, StdError, StdResult, Uint256,
-    WasmMsg, WasmQuery,
+    instantiate2_address, to_hex, to_json_binary, Addr, Attribute, BankMsg, Binary,
+    CodeInfoResponse, Coin, Deps, DepsMut, Env, Event, MessageInfo, Order, Response, StdError,
+    StdResult, Uint128, Uint256, WasmMsg, WasmQuery,
 };
+use cw20::Cw20ExecuteMsg;
 use lp_token::msg::{InstantiateMarketingInfo, InstantiateMsg as LpInstantiateMsg};
 
 pub fn try_init_stake(
@@ -76,10 +77,18 @@ pub fn try_init_stake(
     stake_stats.pending_stake += Uint256::from(coin.amount);
     STAKE_STATS.save(deps.storage, &coin.denom, &stake_stats)?;
 
-    let _payload = encode_stake_payload(&stake_id);
+    let payload = encode_stake_payload(&stake_id);
     // todo: send tokens to Axelar
+    let payload_hex_str = to_hex(payload);
 
-    Ok(Response::default())
+    Ok(Response::new().add_event(
+        Event::new("stake")
+            .add_attribute("token_symbol", token_config.symbol)
+            .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
+            .add_attribute("dest_chain", token_config.chain)
+            .add_attribute("token_amount", coin.amount)
+            .add_attribute("payload", "0x".to_owned() + &payload_hex_str),
+    ))
 }
 
 pub fn try_init_unstake(
@@ -95,7 +104,7 @@ pub fn try_init_unstake(
 
     let coin = info.funds.first().unwrap();
 
-    let (token_denom, _token_config) = find_token_by_lp_token_denom(deps.as_ref(), &coin.denom)?;
+    let (token_denom, token_config) = find_token_by_lp_token_denom(deps.as_ref(), &coin.denom)?;
 
     // update unstake params
     let mut unstake_params = UNSTAKE_PARAMS.load(deps.storage, &token_denom)?;
@@ -120,10 +129,19 @@ pub fn try_init_unstake(
     stake_stats.pending_unstake_lp_token_amount += Uint256::from(coin.amount);
     STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-    let _unstake_payload = encode_unstake_payload(&unstake_id, &coin.amount);
+    let unstake_payload = encode_unstake_payload(&unstake_id, &coin.amount);
     // todo: send message to Axelar
 
-    Ok(Response::default())
+    let payload_hex_str = to_hex(unstake_payload);
+
+    Ok(Response::new().add_event(
+        Event::new("unstake")
+            .add_attribute("token_symbol", token_config.symbol)
+            .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
+            .add_attribute("dest_chain", token_config.chain)
+            .add_attribute("token_amount", coin.amount)
+            .add_attribute("payload", "0x".to_owned() + &payload_hex_str),
+    ))
 }
 
 pub fn try_reinit(
@@ -565,19 +583,21 @@ pub fn try_add_token(
         }),
     })?;
 
-    let salt: Vec<u8> = 777_u64.to_be_bytes().into_iter().collect();
-
+    let tokens = TOKEN_CONFIG
+        .keys(deps.storage, None, None, Order::Ascending)
+        .count();
+    let salt = Binary::new(Vec::from(tokens.to_be_bytes()));
     let inst2_msg = WasmMsg::Instantiate2 {
         admin: Some(env.contract.address.to_string()),
         code_id: contract_config.lp_token_code_id,
         label: "LP token".to_string(),
         msg,
         funds: vec![],
-        salt: Binary::new(salt),
+        salt: salt.clone(),
     };
 
     let lp_token_address =
-        calculate_token_address(deps.as_ref(), env, contract_config.lp_token_code_id)?;
+        calculate_token_address(deps.as_ref(), env, contract_config.lp_token_code_id, salt)?;
 
     TOKEN_CONFIG.save(
         deps.storage,
@@ -597,19 +617,22 @@ pub fn try_add_token(
     Ok(Response::new().add_message(inst2_msg))
 }
 
-pub fn calculate_token_address(deps: Deps, env: Env, code_id: u64) -> StdResult<Addr> {
+pub fn calculate_token_address(
+    deps: Deps,
+    env: Env,
+    code_id: u64,
+    salt: Binary,
+) -> StdResult<Addr> {
     let canonical_creator = deps.api.addr_canonicalize(env.contract.address.as_str())?;
 
     let code_info: CodeInfoResponse = deps.querier.query(&Wasm(WasmQuery::CodeInfo { code_id }))?;
-    // let checksum =
-    //     HexBinary::from_hex("9af782a3a1bcbcd22dbb6a45c751551d9af782a3a1bcbcd22dbb6a45c751551d")?;
-    let salt = b"instance 1231";
     let canonical_addr =
-        instantiate2_address(code_info.checksum.as_slice(), &canonical_creator, salt)
+        instantiate2_address(code_info.checksum.as_slice(), &canonical_creator, &salt)
             .map_err(|_| StdError::generic_err("Could not calculate addr"))?;
 
     deps.api.addr_humanize(&canonical_addr)
 }
+
 pub fn try_update_token_config(
     deps: DepsMut,
     _env: Env,
@@ -625,4 +648,47 @@ pub fn try_update_token_config(
     TOKEN_CONFIG.save(deps.storage, &token_denom, &config)?;
 
     Ok(Response::default())
+}
+
+pub fn try_mint_lp_token(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    recipient: Addr,
+    lp_token_address: Addr,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    assert_msg_sender_is_admin(deps.as_ref(), &info)?;
+
+    if !CONTRACT_CONFIG.load(deps.storage)?.is_mint_allowed {
+        return Err(ContractError::MintIsNowAllowed);
+    }
+
+    let msg = to_json_binary(&Cw20ExecuteMsg::Mint {
+        recipient: recipient.to_string(),
+        amount,
+    })
+    .unwrap();
+
+    let mint_msg = WasmMsg::Execute {
+        contract_addr: lp_token_address.to_string(),
+        msg,
+        funds: vec![],
+    };
+
+    Ok(Response::new().add_message(mint_msg))
+}
+
+pub fn try_disallow_mint(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    assert_msg_sender_is_admin(deps.as_ref(), &info)?;
+
+    let mut contract_config = CONTRACT_CONFIG.load(deps.storage)?;
+    contract_config.is_mint_allowed = false;
+    CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
+
+    Ok(Response::new())
 }

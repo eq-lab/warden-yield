@@ -19,7 +19,8 @@ fn test_instantiate() {
             config: ContractConfigState {
                 owner: ctx.admin,
                 axelar: ctx.axelar,
-                lp_token_code_id: 1
+                lp_token_code_id: 1,
+                is_mint_allowed: true,
             }
         }
     );

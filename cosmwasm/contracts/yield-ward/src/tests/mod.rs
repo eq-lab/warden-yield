@@ -1,7 +1,7 @@
 mod encoding;
 mod instantiate;
+mod lpt;
 mod reinit;
 mod stake;
-mod token;
 mod unstake;
 mod utils;

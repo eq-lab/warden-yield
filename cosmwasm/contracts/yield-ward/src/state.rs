@@ -11,6 +11,7 @@ pub struct ContractConfigState {
     pub owner: Addr,
     pub axelar: Addr,
     pub lp_token_code_id: u64,
+    pub is_mint_allowed: bool,
 }
 
 // Map<> doc - https://book.cosmwasm.com/cross-contract/map-storage.html

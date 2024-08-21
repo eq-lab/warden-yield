@@ -23,6 +23,9 @@ pub enum ContractError {
     #[error("Unknown LP token: {0}")]
     UnknownLpToken(String),
 
+    #[error("Mint is not allowed")]
+    MintIsNowAllowed,
+
     #[error("Message has invalid action type")]
     InvalidActionType,
 

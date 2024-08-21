@@ -7,8 +7,8 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::execute::{
-    try_add_token, try_handle_response, try_init_stake, try_init_unstake, try_reinit,
-    try_update_token_config,
+    try_add_token, try_disallow_mint, try_handle_response, try_init_stake, try_init_unstake,
+    try_mint_lp_token, try_reinit, try_update_token_config,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
@@ -40,6 +40,7 @@ pub fn instantiate(
         owner: info.sender.clone(),
         axelar: msg.axelar,
         lp_token_code_id: msg.lp_token_code_id,
+        is_mint_allowed: true,
     };
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
 
@@ -86,6 +87,11 @@ pub fn execute(
         ExecuteMsg::Stake => try_init_stake(deps, env, info),
         ExecuteMsg::Unstake => try_init_unstake(deps, env, info),
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
+        ExecuteMsg::MintLpToken {
+            recipient,
+            lp_token_address,
+            amount,
+        } => try_mint_lp_token(deps, env, info, recipient, lp_token_address, amount),
         ExecuteMsg::AddToken {
             token_denom,
             is_stake_enabled,
@@ -119,6 +125,7 @@ pub fn execute(
             source_address,
             payload,
         } => try_handle_response(deps, env, info, source_chain, source_address, payload),
+        ExecuteMsg::DisallowMint => try_disallow_mint(deps, env, info),
     }
 }
 
