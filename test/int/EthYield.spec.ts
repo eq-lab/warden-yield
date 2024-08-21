@@ -148,9 +148,7 @@ describe('EthYield withdraw', () => {
       .connect(user)
       .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
 
-    const minLp = await ethYield.underlyingToLp(
-      await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()
-    );
+    const minLp = await ethYield.underlyingToLp(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT());
     const unstakeId = 1;
     const unstakePayload = encodeUnstakeAction(unstakeId, minLp);
     await ethYield.connect(user).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
@@ -177,7 +175,6 @@ describe('EthYield withdraw', () => {
       .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
     await ensureSuccessCall(ethYield);
 
-    // TODO convert to lp tokens
     const minAllowedLp = (await ethYield.underlyingToLp(await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT())) + 2n;
 
     const unstakeId = 1;

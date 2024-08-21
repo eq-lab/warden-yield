@@ -36,7 +36,7 @@ contract AaveYield is
   ) external reinitializer(2) {
     __YieldStorage_initV2(
       underlyingToken,
-      _getBalanceFromScaled(_getStakingDataStorage()._totalShares[underlyingToken])
+      _getBalanceFromScaled(_getStakingDataStorage()._totalShares[underlyingToken], underlyingToken)
     );
     __AaveInteractor_initV2(underlyingToken);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
@@ -58,7 +58,7 @@ contract AaveYield is
     require(msg.sender == address(this));
 
     uint256 sharesAmount = _lpAmountToShares(lpAmount);
-    uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount);
+    uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount, getUnderlyingToken());
     withdrawn = _aaveWithdraw(withdrawAmount);
     _removeStake(lpAmount);
 
@@ -67,24 +67,24 @@ contract AaveYield is
 
   /// @notice converts amount of passed token to the shares
   function underlyingToShares(uint256 amount) external view returns (uint256) {
-    return _getScaledFromBalance(amount);
+    return _getScaledFromBalance(amount, getUnderlyingToken());
   }
 
   /// @notice converts shares of passed token to its amount
   function sharesToUnderlying(uint256 shares) external view returns (uint256) {
-    return _getBalanceFromScaled(shares);
+    return _getBalanceFromScaled(shares, getUnderlyingToken());
   }
 
   /// @notice converts amount of passed token to the shares
   function underlyingToLp(uint256 amount) external view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
-    return $.totalShares == 0 ? amount : _sharesToLpAmount(_getScaledFromBalance(amount));
+    return $.totalShares == 0 ? amount : _sharesToLpAmount(_getScaledFromBalance(amount, getUnderlyingToken()));
   }
 
   /// @notice converts shares of passed token to its amount
   function lpToUnderlying(uint256 lpAmount) external view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
-    return $.totalLpt == 0 ? 0 : _getBalanceFromScaled(_lpAmountToShares(lpAmount));
+    return $.totalLpt == 0 ? 0 : _getBalanceFromScaled(_lpAmountToShares(lpAmount), getUnderlyingToken());
   }
 
   /*** WardenHandler ***/
