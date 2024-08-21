@@ -37,11 +37,11 @@ abstract contract YieldStorage is Initializable {
   bytes32 private constant StakingDataStorageLocation =
     0x69b3bfac4ac6bf246ceef7427e431f481bd6bde26467dffa51aa8b49ac672600;
 
-  function __YieldStorage_initV2(address token) internal onlyInitializing {
+  function __YieldStorage_initV2(address token, uint256 initialLpAmount) internal onlyInitializing {
     StakingData storage $ = _getStakingDataStorage();
 
     $.totalShares = $._totalShares[token];
-    $.totalLpt = $._totalStakedAmount[token];
+    $.totalLpt = initialLpAmount;
   }
 
   /// @notice returns pointer to the storage slot of StakingData struct

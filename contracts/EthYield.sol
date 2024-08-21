@@ -48,11 +48,11 @@ contract EthYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
-    __YieldStorage_initV2(getWeth());
+    address weth = getWeth();
+    IStrategy strategy = IStrategy(_getEigenLayerInteractorDataStorage().strategy);
+    __YieldStorage_initV2(weth, strategy.sharesToUnderlyingView(_getStakingDataStorage()._totalShares[weth]));
     __LidoInteractor_initV2(lidoWithdrawQueue);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
-
-    // TODO: add lpAmount totalSupply initial value
   }
 
   /// @dev method called during the contract upgrade
