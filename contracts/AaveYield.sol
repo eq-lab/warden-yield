@@ -40,8 +40,6 @@ contract AaveYield is
     );
     __AaveInteractor_initV2(underlyingToken);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
-
-    // TODO: add lpAmount totalSupply initial value
   }
 
   /// @dev method called during the contract upgrade

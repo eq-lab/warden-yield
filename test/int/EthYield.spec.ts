@@ -62,7 +62,6 @@ describe('EthYield stake', () => {
     const { eigenLayerDelegationManager, eigenLayerOperator, ethYield } = await loadFixture(createEthYieldFork);
     // set up during EthYield contract init
     expect(await eigenLayerDelegationManager.delegatedTo(ethYield.target)).to.be.eq(eigenLayerOperator);
-    const [_, user] = await ethers.getSigners();
 
     const stakeId = 1;
     const stakePayload = encodeStakeAction(stakeId);
@@ -132,13 +131,12 @@ describe('EthYield withdraw', () => {
     const balanceAfter = await weth9.balanceOf(axelarGateway.target);
     expect(balanceAfter).to.be.eq(balanceBefore + lidoElement.requested);
 
-    const sharesDelta = lpToUnstake;
     expect(await ethYield.totalShares()).to.be.lt(totalSharesBefore);
     expect(await ethYield.totalLpTokens()).to.be.eq(totalLpBefore - lpToUnstake);
   });
 
   it('too low withdraw', async () => {
-    const { ethYield, lidoWithdrawalQueue, eigenLayerStrategy, weth9 } = await loadFixture(createEthYieldFork);
+    const { ethYield, lidoWithdrawalQueue, weth9 } = await loadFixture(createEthYieldFork);
     const [_, user] = await ethers.getSigners();
 
     const stakeAmount = parseEther('1');
@@ -150,8 +148,7 @@ describe('EthYield withdraw', () => {
       .connect(user)
       .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
 
-    //TODO: use lpAmount when implemented
-    const minLp = await eigenLayerStrategy.underlyingToSharesView(
+    const minLp = await ethYield.underlyingToLp(
       await lidoWithdrawalQueue.MIN_STETH_WITHDRAWAL_AMOUNT()
     );
     const unstakeId = 1;
@@ -163,7 +160,6 @@ describe('EthYield withdraw', () => {
     expect(requestFailed.args[1]).to.be.eq(unstakeId);
     // cast sig "LowWithdrawalAmount(uint256)" = 0x9d7ecf5d
     expect(requestFailed.args[2].startsWith('0x9d7ecf5d')).to.be.true;
-    // expect(requestFailed.args[2].endsWith(ethers.toBeHex(minLp).replace('0x', ''))).to.be.true;
   });
 
   it('lowest allowed unstake passes', async () => {
