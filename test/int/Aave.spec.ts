@@ -69,6 +69,15 @@ async function stake(
   // state before stake
   const aEthScaledBalanceBefore = await aToken.scaledBalanceOf(aaveYieldAddress);
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken);
+
+  // adding some blocks and resetting the next block timestamp
+  // so the aave shares to underlying conversion occurred with the same timestamp in both view query and tx
+  await mine(1000);
+  const currentBlockTimestamp = (await signer.provider.getBlock(await signer.provider.getBlockNumber()))?.timestamp!;
+  await time.setNextBlockTimestamp(currentBlockTimestamp);
+
+  const expectedLpAmount = await aaveYield.underlyingToLp(amount);
+  const lpBefore = await aaveYield.totalLpTokens();
   const availableToWithdrawBefore = await aaveYield.lpToUnderlying(await aaveYield.totalLpTokens());
 
   // approve WETH before stake
@@ -86,6 +95,7 @@ async function stake(
   expect(await stakeToken.balanceOf(signer.address)).to.be.eq(0);
   expect(await stakeToken.balanceOf(aaveYieldAddress)).to.be.eq(0);
   expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.greaterThan(aEthScaledBalanceBefore);
+  expect(await aaveYield.totalLpTokens()).to.be.eq(expectedLpAmount + lpBefore);
 
   let availableToWithdraw = await aaveYield.lpToUnderlying(await aaveYield.totalLpTokens());
   expect(availableToWithdraw).to.be.closeTo(availableToWithdrawBefore + amount, 1);
