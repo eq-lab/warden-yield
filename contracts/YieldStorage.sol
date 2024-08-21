@@ -41,6 +41,7 @@ abstract contract YieldStorage is Initializable {
     StakingData storage $ = _getStakingDataStorage();
 
     $.totalShares = $._totalShares[token];
+    $.totalLpt = $._totalStakedAmount[token];
   }
 
   /// @notice returns pointer to the storage slot of StakingData struct
@@ -52,18 +53,31 @@ abstract contract YieldStorage is Initializable {
 
   /// @notice adds new staking amounts to storage
   /// @param shares amount of shares that were received from the staking protocol
-  function _addStake(uint256 shares, uint256 lpTokenAmount) internal {
+  function _addStake(uint256 shares, uint256 underlyingAmount) internal returns (uint256 lpAmount) {
     StakingData storage $ = _getStakingDataStorage();
+    lpAmount = $.totalShares == 0 ? underlyingAmount : _sharesToLpAmount(shares);
+    $.totalLpt += lpAmount;
     $.totalShares += shares;
-    $.totalLpt += lpTokenAmount;
   }
 
   /// @notice sets user staking data to zero and decreases total values
-  /// @param shares amount of shares that were released from the staking protocol
-  function _removeStake(uint256 shares, uint256 lpTokenAmount) internal {
+  function _removeStake(uint256 lpTokenAmount) internal returns (uint256 sharesAmount) {
     StakingData storage $ = _getStakingDataStorage();
-    $.totalShares -= shares;
+    sharesAmount = _lpAmountToShares(lpTokenAmount);
+    $.totalShares -= sharesAmount;
     $.totalLpt -= lpTokenAmount;
+  }
+
+  /// @dev Convert shares to lp amount
+  function _sharesToLpAmount(uint256 sharesAmount) internal view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return ($.totalLpt * sharesAmount) / $.totalShares;
+  }
+
+  /// @dev Convert lp amount to shares
+  function _lpAmountToShares(uint256 lpAmount) internal view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return ($.totalShares * lpAmount) / $.totalLpt;
   }
 
   /// @notice returns total shares received in all stake calls

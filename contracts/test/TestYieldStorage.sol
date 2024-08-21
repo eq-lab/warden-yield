@@ -22,15 +22,15 @@ contract TestYieldStorage is UUPSUpgradeable, Ownable2StepUpgradeable, YieldStor
 
   function stake(uint256 amount) external {
     uint256 shares = getStakedAmount(amount);
-    uint256 lptAmount = getLptAmount(shares);
-    _addStake(shares, lptAmount);
+    _addStake(shares, amount);
   }
 
   function getStakedAmount(uint256 amount) public pure returns (uint256) {
     return (amount * STAKING_RATIO) / ONE;
   }
 
-  function getLptAmount(uint256 shares) public pure returns (uint256) {
-    return (shares * LPT_RATIO) / ONE;
+  function getLptAmount(uint256 shares, uint256 amount) public view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return $.totalShares == 0 ? amount : _sharesToLpAmount(shares);
   }
 }
