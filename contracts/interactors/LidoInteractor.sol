@@ -99,9 +99,6 @@ abstract contract LidoInteractor is Initializable {
     if (ethAmount == 0) revert Errors.ZeroAmount();
     LidoInteractorData memory data = _getLidoInteractorDataStorage();
 
-    // Axelar sends WETH to this contract
-    IWETH9(data.wETH9).withdraw(ethAmount);
-
     uint256 lidoShares = IStETH(data.stETH).submit{value: ethAmount}(address(0));
     stEthAmount = IStETH(data.stETH).getPooledEthByShares(lidoShares);
   }
@@ -150,9 +147,6 @@ abstract contract LidoInteractor is Initializable {
       ethReceived = withdrawElement.requested;
       unstakeId = withdrawElement.unstakeId;
       _dequeue(withdrawQueue);
-
-      // Wraps ETH back to WETH
-      IWETH9(getWeth()).deposit{value: ethReceived}();
 
       emit LidoWithdrawComplete(withdrawElement.unstakeId, ethReceived);
     } catch {

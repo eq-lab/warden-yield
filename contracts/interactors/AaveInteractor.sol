@@ -18,9 +18,9 @@ abstract contract AaveInteractor is Initializable {
   struct AaveInteractorData {
     /// @dev address of Aave pool
     address aavePool;
-    /// @dev flag showing if users can call a 'withdraw' method of this contract
+    /// @dev not used since v2
     bool areWithdrawalsEnabled;
-    /// @dev Not used in V2, mapping showing if the token can be supplied to Aave pool via this contract
+    /// @dev not used since v2
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
     /// @dev token address used in stake/unstake operations
     address underlyingToken;
@@ -64,15 +64,14 @@ abstract contract AaveInteractor is Initializable {
   }
 
   /// @dev method implementing 'stake' interaction with Aave pool
-  /// @param token address of a token to be supplied to Aave pool
   /// @param amount amount of the supplied token
   /// @return scaledDepositAmount amount of Aave aToken received in staking process
-  function _aaveStake(address token, uint256 amount) internal returns (uint256 scaledDepositAmount) {
-    if (token == address(0)) revert Errors.ZeroAddress();
+  function _aaveStake(uint256 amount) internal returns (uint256 scaledDepositAmount) {
     if (amount == 0) revert Errors.ZeroAmount();
-    if (!getTokenAllowance(token)) revert Errors.NotAllowedToken(token);
 
-    address aavePool = getAavePool();
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    address aavePool = $.aavePool;
+    address token = $.underlyingToken;
     address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
 
     uint256 totalBalanceScaledBefore = IAToken(aToken).scaledBalanceOf(address(this));
@@ -84,48 +83,36 @@ abstract contract AaveInteractor is Initializable {
   }
 
   /// @dev method implementing 'withdraw' interaction with Aave pool
-  /// @param token address of a token to be withdrawn to Aave pool
   /// @param amount amount of the withdrawn token
-  function _aaveWithdraw(address token, uint256 amount) internal returns (uint256 withdrawn) {
+  function _aaveWithdraw(uint256 amount) internal returns (uint256 withdrawn) {
     if (amount == 0) revert Errors.ZeroAmount();
-    if (token == address(0)) revert Errors.ZeroAddress();
-    if (!getTokenAllowance(token)) revert Errors.NotAllowedToken(token);
 
-    address aavePool = getAavePool();
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
 
-    withdrawn = IPool(aavePool).withdraw(token, amount, msg.sender);
+    withdrawn = IPool($.aavePool).withdraw($.underlyingToken, amount, address(this));
     if (withdrawn < amount) revert Errors.InvalidAmount(amount, withdrawn);
   }
 
   /// @dev returns current balance of token supplied to Aave pool by this contract
   /// @param scaledAmount amount of the withdrawn token
-  /// @param token address of a token
-  function _getBalanceFromScaled(uint256 scaledAmount, address token) internal view returns (uint256) {
-    return scaledAmount.rayMul(IPool(getAavePool()).getReserveNormalizedIncome(token));
+  function _getBalanceFromScaled(uint256 scaledAmount) internal view returns (uint256) {
+    return
+      scaledAmount.rayMul(
+        IPool(getAavePool()).getReserveNormalizedIncome(_getAaveInteractorDataStorage().underlyingToken)
+      );
   }
 
-  function _getScaledFromBalance(uint256 balanceAmount, address token) internal view returns (uint256) {
-    return balanceAmount.rayDiv(IPool(getAavePool()).getReserveNormalizedIncome(token));
+  function _getScaledFromBalance(uint256 balanceAmount) internal view returns (uint256) {
+    return
+      balanceAmount.rayDiv(
+        IPool(getAavePool()).getReserveNormalizedIncome(_getAaveInteractorDataStorage().underlyingToken)
+      );
   }
 
   /// @notice returns address of Aave pool this contract interacts with
   function getAavePool() public view returns (address) {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     return $.aavePool;
-  }
-
-  /// @notice returns if the passed token can be used in 'stake' call
-  function getTokenAllowance(address token) public view returns (bool) {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    return $.allowedTokens[token];
-  }
-
-  /// @dev changes token allowance status
-  /// @param token address of a token which status will be changed
-  /// @param enabled new status
-  function _setTokenAllowance(address token, bool enabled) internal {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    $.allowedTokens[token] = enabled;
   }
 
   /// @notice returns address of the underlying token

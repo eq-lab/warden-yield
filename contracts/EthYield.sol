@@ -48,6 +48,7 @@ contract EthYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
+    __YieldStorage_initV2(getWeth());
     __LidoInteractor_initV2(lidoWithdrawQueue);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
 
@@ -57,28 +58,38 @@ contract EthYield is
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+  /// @dev Convert shares (EigenLayer shares) to lp amount
+  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return sharesAmount;
+  }
+
+  /// @dev Convert lpAmount to shares (EigenLayer shares)
+  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
+    //TODO: implement
+    return lpAmount;
+  }
+
   /// @inheritdoc IEthYield
-  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 eigenLayerShares) {
+  function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 lpAmount) {
     require(msg.sender == address(this));
 
+    IWETH9(getWeth()).withdraw(amount);
     uint256 stEthAmount = _lidoStake(amount);
-    eigenLayerShares = _eigenLayerRestake(stEthAmount);
-    address weth = getWeth();
-    _addStake(msg.sender, weth, amount, eigenLayerShares);
+    uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
+    lpAmount = _sharesToLpAmount(eigenLayerShares);
+    _addStake(eigenLayerShares, lpAmount);
 
-    //TODO: add lpAmount calculation
-    emit Stake(stakeId, weth, amount, eigenLayerShares);
+    emit Stake(stakeId, amount, eigenLayerShares);
   }
 
   /// @inheritdoc IEthYield
   function unstake(uint64 unstakeId, uint256 lpAmount) external virtual {
     require(msg.sender == address(this));
 
-    //TODO: add lpAmount calculation
-    //TODO: change signature to accept lpAmount
-    uint256 eigenLayerSharesAmount = lpAmount; //TODO: convert lpAmount to elShares
+    uint256 eigenLayerSharesAmount = _lpAmountToShares(lpAmount);
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
-    // TODO: remove `eigenLayerSharesAmount` from `YieldStorage`
+    _removeStake(eigenLayerSharesAmount, lpAmount);
   }
 
   /// @inheritdoc IEthYield
@@ -94,7 +105,9 @@ contract EthYield is
 
     (reinitUnstakeId, withdrawnAmount) = _lidoReinit();
     if (withdrawnAmount != 0) {
-      emit Unstake(reinitUnstakeId, getWeth(), withdrawnAmount);
+      // Wraps ETH back to WETH
+      IWETH9(getWeth()).deposit{value: withdrawnAmount}();
+      emit Unstake(reinitUnstakeId, withdrawnAmount);
     }
   }
 
