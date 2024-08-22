@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { loadFixture, mine } from '@nomicfoundation/hardhat-network-helpers';
 import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers, upgrades } from 'hardhat';
-import { parseEther } from 'ethers';
+import { parseEther, parseUnits } from 'ethers';
 import {
   EthAddressData,
   WardenChain,
@@ -298,6 +298,49 @@ describe('EthYield withdraw', () => {
   });
 });
 
+describe('lp calculations', () => {
+  it('empty pool', async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork);
+
+    // checks to ensure that pool is empty
+    expect(await ethYield.totalLpTokens()).to.be.eq(0);
+    expect(await ethYield.totalShares()).to.be.eq(0);
+
+    const underlyingAmount = parseUnits('1', 18);
+    expect(await ethYield.lpToUnderlying(underlyingAmount)).to.be.eq(0);
+    expect(await ethYield.underlyingToLp(underlyingAmount)).to.be.eq(underlyingAmount);
+  });
+
+  it('not empty pool', async () => {
+    const { ethYield, weth9, eigenLayerStrategy } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+
+    const stakeAmount = parseEther('1');
+    await weth9.connect(user).deposit({ value: stakeAmount });
+    await weth9.connect(user).transfer(ethYield.target, stakeAmount);
+    const stakeId = 1;
+    const stakePayload = encodeStakeAction(stakeId);
+    await ethYield
+      .connect(user)
+      .executeWithToken(CommandId, WardenChain, WardenContractAddress, stakePayload, 'WETH', stakeAmount);
+    await ensureSuccessCall(ethYield);
+
+    const totalShares = await ethYield.totalShares();
+    const totalLp = await ethYield.totalLpTokens();
+    await mine(1000);
+    const totalUnderlying = await eigenLayerStrategy.sharesToUnderlyingView(totalShares);
+
+    const lpAmount = totalLp / 2n;
+    const expectedUnderlyingForLp = lpAmount * totalUnderlying / totalLp;
+
+    expect(await ethYield.lpToUnderlying(lpAmount)).to.be.closeTo(expectedUnderlyingForLp, 1);
+
+    const underlyingAmount = totalUnderlying / 4n;
+    const expectedLp = totalLp * underlyingAmount / totalUnderlying;
+    expect(await ethYield.underlyingToLp(underlyingAmount)).to.be.closeTo(expectedLp, 1);
+  });
+});
+
 describe('EthYield onlyOwner actions', () => {
   it('authorizeUpgrade', async () => {
     const { owner, ethYield } = await loadFixture(createEthYieldFork);
@@ -367,5 +410,62 @@ describe('EthYield init errors', () => {
         EthAddressData.eigenLayerOperator
       )
     ).to.be.revertedWithCustomError({ interface: TestEthYield__factory.createInterface() }, 'UnknownToken');
+  });
+
+  it('weth zero address', async () => {
+    const [owner] = await ethers.getSigners();
+    await expect(
+      deployEthYieldContract(
+        owner,
+        EthAddressData.stEth,
+        ethers.ZeroAddress,
+        EthAddressData.elStrategy,
+        EthAddressData.elStrategyManager,
+        EthAddressData.elDelegationManager,
+        EthAddressData.eigenLayerOperator
+      )
+    ).to.be.revertedWithCustomError({ interface: TestEthYield__factory.createInterface() }, 'ZeroAddress');
+  });
+});
+
+describe('EthYield errors', () => {
+  it("Can't receive native eth from random address", async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork);
+    const [_, user] = await ethers.getSigners();
+    await expect(user.sendTransaction({ to: ethYield.target, value: parseEther('1') })).to.be.revertedWithCustomError(
+      ethYield,
+      'ReceiveValueFail'
+    );
+  });
+
+  it('no element in eigenLayer queue', async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork)
+    await expect(ethYield.getEigenLayerWithdrawalQueueElement(0)).to.be.revertedWithCustomError(
+      ethYield,
+      'NoElementWithIndex'
+    );
+  });
+
+  it('no element in lido queue', async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork);
+    await expect(ethYield.getLidoWithdrawalQueueElement(0)).to.be.revertedWithCustomError(
+      ethYield,
+      'NoElementWithIndex'
+    );
+  });
+
+  it('stake can be called by axelar only', async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork);
+    await expect(ethYield.stake(1, parseEther('1'))).to.be.revertedWithoutReason();
+  });
+
+  it('unstake can be called by axelar only', async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork);
+    await expect(ethYield.unstake(1, parseEther('1'))).to.be.revertedWithoutReason();
+  });
+
+  it('reinit can be called by axelar only', async () => {
+    const { ethYield } = await loadFixture(createEthYieldFork);
+    await expect(ethYield.reinit()).to.be.revertedWithoutReason();
   });
 });

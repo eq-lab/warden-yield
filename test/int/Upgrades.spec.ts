@@ -40,6 +40,46 @@ async function getImpersonatedOwner(contractAddress: string): Promise<HardhatEth
   return owner;
 }
 
+describe('Upgrade errors', () => {
+  it('EthYield lido queue zero address', async () => {
+    const ethYield = EthAddressData.ethYield;
+    const owner = await getImpersonatedOwner(ethYield);
+
+    const axelarGateway = EthAddressData.axelarGateway;
+    const axelarGasService = EthAddressData.axelarGasService;
+    const wardenChain = WardenChain;
+    const wardenContractAddress = WardenContractAddress;
+
+    await expect(
+      upgrades.upgradeProxy(ethYield, new EthYield__factory().connect(owner), {
+        call: {
+          fn: 'initializeV2',
+          args: [ethers.ZeroAddress, axelarGateway, axelarGasService, wardenChain, wardenContractAddress],
+        },
+      })
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'ZeroAddress');
+  });
+
+  it('EthYield axelar service zero address', async () => {
+    const ethYield = EthAddressData.ethYield;
+    const owner = await getImpersonatedOwner(ethYield);
+
+    const lidoQueue = EthAddressData.lidoWithdrawalQueue;
+    const axelarGateway = EthAddressData.axelarGateway;
+    const wardenChain = WardenChain;
+    const wardenContractAddress = WardenContractAddress;
+
+    await expect(
+      upgrades.upgradeProxy(ethYield, new EthYield__factory().connect(owner), {
+        call: {
+          fn: 'initializeV2',
+          args: [lidoQueue, axelarGateway, ethers.ZeroAddress, wardenChain, wardenContractAddress],
+        },
+      })
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'InvalidAddress');
+  });
+});
+
 describe('Upgrades', () => {
   it('EthYield upgrade', async () => {
     const ethYield = EthAddressData.ethYield;

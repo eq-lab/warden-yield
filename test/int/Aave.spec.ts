@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { loadFixture, mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
-import { parseUnits } from 'ethers';
+import { parseEther, parseUnits } from 'ethers';
 import {
   createAaveEthFork,
   createAaveForkWithUsdcUnderlying,
@@ -184,7 +184,7 @@ async function initBalance(account: string, token: IERC20 | IWETH9, balanceStr: 
   return balance;
 }
 
-describe('AaveYield, deposit', () => {
+describe('AaveYield', () => {
   before(async () => {
     await helpers.mine();
   });
@@ -244,6 +244,64 @@ describe('AaveYield, deposit', () => {
     expect(requestFailedEvent.args[0]).to.be.eq(ActionType.Stake);
     expect(requestFailedEvent.args[1]).to.be.eq(stakeId);
     expect(requestFailedEvent.args[2]).to.be.eq(aaveYield.interface.encodeErrorResult('ZeroAmount')); // cast sig 'ZeroAmount()' = 0x1f2a2005
+  });
+
+  it('user unstake, zero amount', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield, weth9, aEthWETH, axelarGateway } = await loadFixture(createAaveEthFork);
+
+    // init balances
+    const userInput = await initBalance(user.address, weth9, '1');
+
+    const stakeId = 1;
+    await stake(aaveYield, axelarGateway, user, aEthWETH, weth9, userInput, stakeId);
+
+    const unstakeId = 1;
+    const unstakePayload = encodeUnstakeAction(unstakeId, 0n);
+    await aaveYield.connect(user).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
+
+    const [requestFailedEvent] = await aaveYield.queryFilter(aaveYield.filters.RequestFailed, -1);
+    expect(requestFailedEvent.args[0]).to.be.eq(ActionType.Unstake);
+    expect(requestFailedEvent.args[1]).to.be.eq(stakeId);
+    expect(requestFailedEvent.args[2]).to.be.eq(aaveYield.interface.encodeErrorResult('ZeroAmount')); // cast sig 'ZeroAmount()' = 0x1f2a2005
+  });
+});
+
+describe('lp calculations', () => {
+  it('empty pool', async () => {
+    const { aaveYield } = await loadFixture(createAaveEthFork);
+
+    // checks to ensure that pool is empty
+    expect(await aaveYield.totalLpTokens()).to.be.eq(0);
+    expect(await aaveYield.totalShares()).to.be.eq(0);
+
+    const underlyingAmount = parseUnits('1', 18);
+    expect(await aaveYield.lpToUnderlying(underlyingAmount)).to.be.eq(0);
+    expect(await aaveYield.underlyingToLp(underlyingAmount)).to.be.eq(underlyingAmount);
+  });
+
+  it('not empty pool', async () => {
+    
+    const { aaveYield, weth9, aEthWETH, axelarGateway } = await loadFixture(createAaveEthFork);
+    const [_, user] = await ethers.getSigners();
+
+    // init balances
+    const userInput = await initBalance(user.address, weth9, '1');
+
+    const stakeId = 1;
+    await stake(aaveYield, axelarGateway, user, aEthWETH, weth9, userInput, stakeId);
+
+    const totalLp = await aaveYield.totalLpTokens();
+    await mine(1000);
+    const totalUnderlying = await aEthWETH.balanceOf(aaveYield.target);
+
+    const lpAmount = totalLp / 2n;
+    const expectedUnderlyingForLp = lpAmount * totalUnderlying / totalLp;
+    expect(await aaveYield.lpToUnderlying(lpAmount)).to.be.closeTo(expectedUnderlyingForLp, 1);
+
+    const underlyingAmount = totalUnderlying / 4n;
+    const expectedLp = totalLp * underlyingAmount / totalUnderlying;
+    expect(await aaveYield.underlyingToLp(underlyingAmount)).to.be.closeTo(expectedLp, 1);
   });
 });
 
@@ -408,11 +466,23 @@ describe('Aave Yield tokens', () => {
   });
 });
 
-describe('Aave reinit', () => {
-  it('forbidden', async () => {
+describe('Aave errors', () => {
+  it('reinit forbidden', async () => {
     const [, user] = await ethers.getSigners();
     const { aaveYield } = await loadFixture(createAaveForkWithUsdtUnderlying);
 
     await expect(aaveYield.connect(user).executeReinit()).to.be.revertedWith('Not supported');
+  });
+
+  it('stake can be called by axelar only', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield } = await loadFixture(createAaveForkWithUsdtUnderlying);
+    await expect(aaveYield.connect(user).stake(1, parseUnits('100', 6))).to.be.revertedWithoutReason();
+  });
+
+  it('unstake can be called by axelar only', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield } = await loadFixture(createAaveForkWithUsdtUnderlying);
+    await expect(aaveYield.connect(user).unstake(1, parseUnits('100', 6))).to.be.revertedWithoutReason();
   });
 });

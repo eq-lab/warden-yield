@@ -76,6 +76,20 @@ describe('WardenHandler', () => {
       ).to.be.revertedWithCustomError(wardenHandler, 'InvalidActionType');
     });
 
+    it('Should fail when amount is too big', async () => {
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
+
+      const sourceChain = WardenChain;
+      const sourceContractAddress = WardenContractAddress;
+      const payload = encodeWardenPayload(ActionType.Unstake, 0, 0n);
+      const tokenSymbol = await testToken.symbol();
+      const tokenAmount = 2n ** 128n ;
+
+      await expect(
+        wardenHandler.executeWithToken(CommandId, sourceChain, sourceContractAddress, payload, tokenSymbol, tokenAmount)
+      ).to.be.revertedWithCustomError(wardenHandler, 'AmountTooBig');
+    });
+
     it('Should call staking and reply success', async () => {
       const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardenHandlerFixture);
 
