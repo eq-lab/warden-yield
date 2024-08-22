@@ -7,7 +7,7 @@ import { finalizeLidoWithdraw } from './shared/utils';
 
 describe('EigenLayer withdraw', () => {
   it('withdraw call', async () => {
-    const { testEigenLayerInteractor, strategy } = await loadFixture(testEigenLayerInteractorFixture);
+    const { testEigenLayerInteractor } = await loadFixture(testEigenLayerInteractorFixture);
     const [_, user] = await ethers.getSigners();
 
     const amount = parseEther('1');

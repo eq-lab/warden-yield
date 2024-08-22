@@ -22,7 +22,7 @@ export enum Status {
   Failed = 1,
 }
 
-export async function testWardentHandlerFixture() {
+export async function testWardenHandlerFixture() {
   const [owner] = await ethers.getSigners();
 
   const testToken = await new MintableERC20__factory().connect(owner).deploy('test token', 'TT');

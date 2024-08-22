@@ -11,6 +11,8 @@ import {
   upgradeAaveYieldContractToV2,
 } from '../shared/fixtures';
 import {
+  decodeWardenStakeResponse,
+  decodeWardenUnstakeResponse,
   encodeStakeAction,
   encodeUnstakeAction,
   EthAddressData,
@@ -18,7 +20,7 @@ import {
   WardenChain,
   WardenContractAddress,
 } from '../shared/utils';
-import { ActionType, CommandId } from '../shared/warden-handler-fixtures';
+import { ActionType, CommandId, Status } from '../shared/warden-handler-fixtures';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import {
   AaveYield,
@@ -57,6 +59,7 @@ async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken) {
 
 async function stake(
   aaveYield: AaveYield,
+  axelarGateway: TestAxelarGateway,
   signer: HardhatEthersSigner,
   aToken: IAToken,
   stakeToken: IERC20 | IWETH9,
@@ -106,6 +109,17 @@ async function stake(
   // check YieldStorage data
   await assertYieldStorage(lpAmount);
 
+  const [axelarGatewayEvent] = await axelarGateway.queryFilter(axelarGateway.filters.ContractCall, -1);
+  expect(axelarGatewayEvent.args[0]).to.be.eq(aaveYield.target);
+  expect(axelarGatewayEvent.args[1]).to.be.eq(WardenChain);
+  expect(axelarGatewayEvent.args[2]).to.be.eq(WardenContractAddress);
+
+  const stakeResponse = decodeWardenStakeResponse(axelarGatewayEvent.args[4]);
+  expect(stakeResponse.actionType).to.be.eq(ActionType.Stake);
+  expect(stakeResponse.status).to.be.eq(Status.Success);
+  expect(stakeResponse.lpAmount).to.be.closeTo(lpAmount, 1);
+  expect(stakeResponse.actionId).to.be.eq(stakeId);
+
   return lpAmount;
 }
 
@@ -145,6 +159,19 @@ async function withdraw(
 
   // check YieldStorage data
   await assertYieldStorage(-lpAmount);
+
+  const [axelarGatewayEvent] = await axelarGateway.queryFilter(axelarGateway.filters.ContractCallWithToken, -1);
+  expect(axelarGatewayEvent.args[0]).to.be.eq(aaveYield.target);
+  expect(axelarGatewayEvent.args[1]).to.be.eq(WardenChain);
+  expect(axelarGatewayEvent.args[2]).to.be.eq(WardenContractAddress);
+  expect(axelarGatewayEvent.args[5]).to.be.eq('symbol' in tokenToWithdraw ? await tokenToWithdraw.symbol() : 'WETH');
+  expect(axelarGatewayEvent.args[6]).to.be.eq(lpUnderlyingBalance);
+
+  const unstakeResponse = decodeWardenUnstakeResponse(axelarGatewayEvent.args[4]);
+  expect(unstakeResponse.actionType).to.be.eq(ActionType.Unstake);
+  expect(unstakeResponse.status).to.be.eq(Status.Success);
+  expect(unstakeResponse.reinitUnstakeId).to.be.eq(unstakeId);
+  expect(unstakeResponse.actionId).to.be.eq(unstakeId);
 }
 
 async function initBalance(account: string, token: IERC20 | IWETH9, balanceStr: string): Promise<bigint> {
@@ -170,7 +197,7 @@ describe('AaveYield, deposit', () => {
     const userInput = await initBalance(user.address, weth9, '1');
 
     const stakeId = 1;
-    const lpAmount = await stake(aaveYield, user, aEthWETH, weth9, userInput, stakeId);
+    const lpAmount = await stake(aaveYield, axelarGateway, user, aEthWETH, weth9, userInput, stakeId);
 
     const unstakeId = 1;
     await withdraw(aaveYield, axelarGateway, user, aEthWETH, weth9, lpAmount, unstakeId);
@@ -190,7 +217,7 @@ describe('AaveYield, deposit', () => {
       const userInput = await initBalance(user.address, weth9, '1');
 
       const stakeId = index;
-      const lpAmount = await stake(aaveYield, user, aEthWETH, weth9, userInput, stakeId);
+      const lpAmount = await stake(aaveYield, axelarGateway, user, aEthWETH, weth9, userInput, stakeId);
       lpAmounts[index] = lpAmount;
     }
 
@@ -361,7 +388,7 @@ describe('Aave Yield tokens', () => {
     expect(await usdt.balanceOf(user.address)).to.be.eq(userInput);
 
     const stakeId = 1;
-    const lpAmount = await stake(aaveYield, user, aEthUsdt, usdt, userInput, stakeId);
+    const lpAmount = await stake(aaveYield, axelarGateway, user, aEthUsdt, usdt, userInput, stakeId);
     const unstakeId = 1;
     await withdraw(aaveYield, axelarGateway, user, aEthUsdt, usdt, lpAmount, unstakeId);
   });
@@ -374,9 +401,18 @@ describe('Aave Yield tokens', () => {
     const userInput = await initBalance(user.address, usdc, '1000');
 
     const stakeId = 1;
-    const lpAmount = await stake(aaveYield, user, aEthUsdc, usdc, userInput, stakeId);
+    const lpAmount = await stake(aaveYield, axelarGateway, user, aEthUsdc, usdc, userInput, stakeId);
 
     const unstakeId = 1;
     await withdraw(aaveYield, axelarGateway, user, aEthUsdc, usdc, lpAmount, unstakeId);
+  });
+});
+
+describe('Aave reinit', () => {
+  it('forbidden', async () => {
+    const [, user] = await ethers.getSigners();
+    const { aaveYield } = await loadFixture(createAaveForkWithUsdtUnderlying);
+
+    await expect(aaveYield.connect(user).executeReinit()).to.be.revertedWith('Not supported');
   });
 });
