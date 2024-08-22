@@ -36,9 +36,9 @@ pub fn assert_msg_sender_is_admin(deps: Deps, info: &MessageInfo) -> Result<(), 
     Ok(())
 }
 
-pub fn assert_msg_sender_is_axelar(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
+pub fn assert_msg_sender_is_axelar(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
     let contract_config = CONTRACT_CONFIG.load(deps.storage)?;
-    if contract_config.axelar != info.sender {
+    if contract_config.axelar != sender {
         return Err(ContractError::Unauthorized);
     }
     Ok(())

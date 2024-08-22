@@ -2,11 +2,11 @@ use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, 
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Uint128};
+use cw20::Cw20ReceiveMsg;
 use serde::{Deserialize, Serialize};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub tokens: Vec<(TokenDenom, TokenConfig)>,
     pub axelar: Addr,
     pub lp_token_code_id: u64,
 }
@@ -14,7 +14,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Stake,
-    Unstake,
+    Receive(Cw20ReceiveMsg),
     Reinit {
         token_denom: TokenDenom,
     },
@@ -23,9 +23,9 @@ pub enum ExecuteMsg {
         lp_token_address: Addr,
         amount: Uint128,
     },
-    // todo: add method to disable MintLpToken method
     AddToken {
         token_denom: TokenDenom,
+        cw20_address: Addr,
         is_stake_enabled: bool,
         is_unstake_enabled: bool,
         chain: String,
@@ -40,12 +40,11 @@ pub enum ExecuteMsg {
         config: TokenConfig,
     },
 
-    HandleResponse {
-        source_chain: String,
-        source_address: String,
-        payload: Binary,
-    },
-
+    // HandleResponse {
+    //     source_chain: String,
+    //     source_address: String,
+    //     payload: Binary,
+    // },
     DisallowMint,
 }
 
@@ -103,3 +102,19 @@ pub enum MigrateMsg {}
 
 #[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct MsgLpTokenMintResponse {}
+
+#[cw_serde]
+pub enum Cw20ActionMsg {
+    Stake {
+        deposit_token_denom: TokenDenom,
+    },
+    Unstake {
+        deposit_token_denom: TokenDenom,
+    },
+    HandleResponse {
+        deposit_token_denom: TokenDenom,
+        source_chain: String,
+        source_address: String,
+        payload: Binary,
+    },
+}

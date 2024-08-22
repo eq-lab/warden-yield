@@ -7,6 +7,7 @@ pub type TokenDenom = String;
 
 #[cw_serde]
 pub struct TokenConfig {
+    pub cw20_address: Addr,
     pub is_stake_enabled: bool,
     pub is_unstake_enabled: bool,
     pub symbol: String,

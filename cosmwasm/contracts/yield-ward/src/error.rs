@@ -23,6 +23,9 @@ pub enum ContractError {
     #[error("Unknown LP token: {0}")]
     UnknownLpToken(String),
 
+    #[error("Mismatch CW20 token: {actual}, expected: {expected}")]
+    MismatchCw20Token { actual: String, expected: String },
+
     #[error("Mint is not allowed")]
     MintIsNowAllowed,
 
@@ -58,6 +61,9 @@ pub enum ContractError {
 
     #[error("Zero token amount")]
     ZeroTokenAmount,
+
+    #[error("Invalid CW-20 message")]
+    InvalidCw20Message,
 
     #[error("Custom Error: {0}")]
     CustomError(String),

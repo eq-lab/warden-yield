@@ -16,7 +16,7 @@ use crate::execute::{
     execute_update_minter, execute_upload_logo,
 };
 use crate::instantiate::{_instantiate, CONTRACT_NAME, CONTRACT_VERSION};
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+pub use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
     query_balance, query_download_logo, query_marketing_info, query_minter, query_token_info,
 };

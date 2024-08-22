@@ -1,165 +1,24 @@
-use crate::contract::{
-    execute as yield_ward_execute, instantiate as yield_ward_instantiate, query as yield_ward_query,
-};
-use crate::msg::{ExecuteMsg, GetTokensConfigsResponse, InstantiateMsg, QueryMsg};
+use crate::msg::ExecuteMsg;
 use cosmwasm_std::CosmosMsg::Wasm;
 use cosmwasm_std::{to_json_binary, Addr, Uint128, WasmMsg};
-use cw_multi_test::{App, AppResponse, BasicApp, ContractWrapper, Executor};
-use lp_token::contract::{
-    execute as lp_token_execute, instantiate as lp_token_instantiate, query as lp_token_query,
+use cw_multi_test::{BasicApp, Executor};
+
+use crate::tests::utils::call::call_add_token;
+use crate::tests::utils::init::{
+    get_lp_contract_address_from_response, get_tokens_info, instantiate_cw20,
+    instantiate_yield_ward_contract_without_tokens,
 };
+use crate::tests::utils::query::get_token_config;
+use crate::tests::utils::types::{TestInfo, TokenTestInfo};
 use lp_token::msg::QueryMsg as lp_token_query_msg;
-
-struct TestInfo {
-    pub lp_token_code_id: u64,
-    pub yield_ward_code_id: u64,
-    pub yield_ward_address: Addr,
-    pub owner: Addr,
-    pub user: Addr,
-    pub axelar: Addr,
-}
-
-struct LptInfo {
-    pub deposit_token_denom: String,
-    pub lp_token_denom: String,
-    pub is_stake_enabled: bool,
-    pub is_unstake_enabled: bool,
-    pub symbol: String,
-    pub name: String,
-    pub chain: String,
-    pub evm_yield_contract: String,
-    pub evm_address: String,
-}
-
-fn get_lpt_0_info() -> LptInfo {
-    LptInfo {
-        deposit_token_denom: "deposit_token_denom_0".to_string(),
-        lp_token_denom: "lp_token_denom_0".to_string(),
-        is_stake_enabled: true,
-        is_unstake_enabled: true,
-        symbol: "LPT-zero".to_string(),
-        name: "LP token 0".to_string(),
-        chain: "Ethereum".to_string(),
-        evm_yield_contract: "0x0000000000000000000000000000000000000077".to_string(),
-        evm_address: "0x0000000000000000000000000000000000000007".to_string(),
-    }
-}
-
-fn get_lpt_1_info() -> LptInfo {
-    LptInfo {
-        deposit_token_denom: "deposit_token_denom_1".to_string(),
-        lp_token_denom: "lp_token_denom_1".to_string(),
-        is_stake_enabled: true,
-        is_unstake_enabled: true,
-        symbol: "LPT-one".to_string(),
-        name: "LP token 1".to_string(),
-        chain: "Ethereum".to_string(),
-        evm_yield_contract: "0x0000000000000000000000000000000000010077".to_string(),
-        evm_address: "0x0000000000000000000000000000000000010007".to_string(),
-    }
-}
-
-fn store_lp_token_code(app: &mut App) -> u64 {
-    let lp_token_code =
-        ContractWrapper::new(lp_token_execute, lp_token_instantiate, lp_token_query);
-    app.store_code(Box::new(lp_token_code))
-}
-
-fn store_yield_ward_code(app: &mut App) -> u64 {
-    let yield_ward_code =
-        ContractWrapper::new(yield_ward_execute, yield_ward_instantiate, yield_ward_query);
-    app.store_code(Box::new(yield_ward_code))
-}
-
-fn instantiate_yield_ward_contract(app: &mut App) -> TestInfo {
-    let lp_token_code_id = store_lp_token_code(app);
-    let yield_ward_code_id = store_yield_ward_code(app);
-
-    let owner = app.api().addr_make("owner");
-    let user = app.api().addr_make("user");
-    let axelar = app.api().addr_make("axelar");
-
-    let yield_ward_address = app
-        .instantiate_contract(
-            yield_ward_code_id,
-            owner.clone(),
-            &InstantiateMsg {
-                tokens: vec![],
-                axelar: axelar.clone(),
-                lp_token_code_id,
-            },
-            &[],
-            "YieldWard",
-            Some(owner.to_string()),
-        )
-        .unwrap();
-
-    TestInfo {
-        lp_token_code_id,
-        yield_ward_code_id,
-        yield_ward_address,
-        owner,
-        user,
-        axelar,
-    }
-}
-
-fn call_add_token(app: &mut BasicApp, test_info: &TestInfo, lpt: &LptInfo) -> AppResponse {
-    app.execute(
-        test_info.owner.clone(),
-        Wasm(WasmMsg::Execute {
-            contract_addr: test_info.yield_ward_address.to_string(),
-            msg: to_json_binary(&ExecuteMsg::AddToken {
-                token_denom: lpt.deposit_token_denom.clone(),
-                is_stake_enabled: lpt.is_stake_enabled,
-                is_unstake_enabled: lpt.is_unstake_enabled,
-                symbol: lpt.symbol.clone(),
-                name: lpt.name.clone(),
-                chain: lpt.chain.clone(),
-                evm_yield_contract: lpt.evm_yield_contract.clone(),
-                evm_address: lpt.evm_address.clone(),
-                lp_token_denom: lpt.lp_token_denom.clone(),
-            })
-            .unwrap(),
-            funds: vec![],
-        }),
-    )
-    .unwrap()
-}
-
-fn get_lp_contract_address_from_response(resp: &AppResponse) -> Addr {
-    let instantiate_event = resp.events.iter().find(|x| x.ty == "instantiate").unwrap();
-    Addr::unchecked(
-        instantiate_event
-            .attributes
-            .iter()
-            .find(|x| x.key == "_contract_address")
-            .unwrap()
-            .value
-            .to_owned(),
-    )
-}
 
 fn assert_token_config(
     app: &BasicApp,
     test_info: &TestInfo,
-    lpt: &LptInfo,
+    lpt: &TokenTestInfo,
     actual_lpt_address: &Addr,
 ) {
-    let tokens_configs: GetTokensConfigsResponse = app
-        .wrap()
-        .query_wasm_smart(
-            test_info.yield_ward_address.to_string(),
-            &QueryMsg::TokensConfigs,
-        )
-        .unwrap();
-
-    let (_, token_config) = tokens_configs
-        .tokens
-        .iter()
-        .find(|(x, _)| x.to_string() == lpt.deposit_token_denom)
-        .unwrap()
-        .clone();
+    let token_config = get_token_config(app, test_info, &lpt.deposit_token_denom);
 
     assert_eq!(token_config.is_stake_enabled, lpt.is_stake_enabled);
     assert_eq!(token_config.is_unstake_enabled, lpt.is_unstake_enabled);
@@ -173,12 +32,18 @@ fn assert_token_config(
 
 #[test]
 fn test_add_one_lpt() {
-    let mut app = App::default();
-    let test_info = instantiate_yield_ward_contract(&mut app);
+    let (mut app, test_info) = instantiate_yield_ward_contract_without_tokens();
 
-    let lpt0 = get_lpt_0_info();
-    let resp = call_add_token(&mut app, &test_info, &lpt0);
-    // println!("Events: {:?}", resp.events);
+    let tokens = get_tokens_info();
+    let lpt0 = tokens.get(0).unwrap();
+    let cw20_deposit_token = instantiate_cw20(
+        &mut app,
+        &test_info,
+        test_info.lp_token_code_id,
+        &"TestTok".to_owned(),
+        &"TestT".to_owned(),
+    );
+    let resp = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token);
 
     let actual_lpt_address = get_lp_contract_address_from_response(&resp);
     println!("LP token address from event: {}", actual_lpt_address);
@@ -193,14 +58,28 @@ fn test_add_one_lpt() {
 
 #[test]
 fn test_add_two_lpt() {
-    let mut app = App::default();
-    let test_info = instantiate_yield_ward_contract(&mut app);
+    let (mut app, test_info) = instantiate_yield_ward_contract_without_tokens();
 
-    let lpt0 = get_lpt_0_info();
-    let lpt1 = get_lpt_1_info();
+    let tokens = get_tokens_info();
+    let lpt0 = tokens.get(0).unwrap();
+    let lpt1 = tokens.get(1).unwrap();
 
-    let resp0 = call_add_token(&mut app, &test_info, &lpt0);
-    let resp1 = call_add_token(&mut app, &test_info, &lpt1);
+    let cw20_deposit_token_0 = instantiate_cw20(
+        &mut app,
+        &test_info,
+        test_info.lp_token_code_id,
+        &"TestTokZero".to_owned(),
+        &"TestTZ".to_owned(),
+    );
+    let cw20_deposit_token_1 = instantiate_cw20(
+        &mut app,
+        &test_info,
+        test_info.lp_token_code_id,
+        &"TestTokOne".to_owned(),
+        &"TestTO".to_owned(),
+    );
+    let resp0 = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token_0);
+    let resp1 = call_add_token(&mut app, &test_info, &lpt1, &cw20_deposit_token_1);
 
     let actual_lpt_0_address = get_lp_contract_address_from_response(&resp0);
     let actual_lpt_1_address = get_lp_contract_address_from_response(&resp1);
@@ -220,11 +99,18 @@ fn test_add_two_lpt() {
 
 #[test]
 fn test_mint_lpt() {
-    let mut app = App::default();
-    let test_info = instantiate_yield_ward_contract(&mut app);
+    let (mut app, test_info) = instantiate_yield_ward_contract_without_tokens();
 
-    let lpt0 = get_lpt_0_info();
-    let resp = call_add_token(&mut app, &test_info, &lpt0);
+    let tokens = get_tokens_info();
+    let lpt0 = tokens.get(0).unwrap();
+    let cw20_deposit_token = instantiate_cw20(
+        &mut app,
+        &test_info,
+        test_info.lp_token_code_id,
+        &"TestTok".to_owned(),
+        &"TestT".to_owned(),
+    );
+    let resp = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token);
     let mint_amount = Uint128::new(12345);
 
     let actual_lpt_address = get_lp_contract_address_from_response(&resp);
@@ -240,7 +126,7 @@ fn test_mint_lpt() {
         .unwrap(),
         funds: vec![],
     });
-    app.execute(test_info.owner.clone(), msg).unwrap();
+    app.execute(test_info.admin.clone(), msg).unwrap();
 
     let balance_after: cw20::BalanceResponse = app
         .wrap()
@@ -257,11 +143,18 @@ fn test_mint_lpt() {
 
 #[test]
 fn test_disallow_mint() {
-    let mut app = App::default();
-    let test_info = instantiate_yield_ward_contract(&mut app);
+    let (mut app, test_info) = instantiate_yield_ward_contract_without_tokens();
 
-    let lpt0 = get_lpt_0_info();
-    let resp = call_add_token(&mut app, &test_info, &lpt0);
+    let tokens = get_tokens_info();
+    let lpt0 = tokens.get(0).unwrap();
+    let cw20_deposit_token = instantiate_cw20(
+        &mut app,
+        &test_info,
+        test_info.lp_token_code_id,
+        &"TestTok".to_owned(),
+        &"TestT".to_owned(),
+    );
+    let resp = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token);
     let mint_amount = Uint128::new(12345);
 
     let actual_lpt_address = get_lp_contract_address_from_response(&resp);
@@ -272,7 +165,7 @@ fn test_disallow_mint() {
         msg: to_json_binary(&ExecuteMsg::DisallowMint).unwrap(),
         funds: vec![],
     });
-    app.execute(test_info.owner.clone(), disallow_mint_msg)
+    app.execute(test_info.admin.clone(), disallow_mint_msg)
         .unwrap();
 
     let mint_msg = Wasm(WasmMsg::Execute {
@@ -285,7 +178,7 @@ fn test_disallow_mint() {
         .unwrap(),
         funds: vec![],
     });
-    let resp = app.execute(test_info.owner.clone(), mint_msg);
+    let resp = app.execute(test_info.admin.clone(), mint_msg);
 
     assert!(resp.is_err());
 }

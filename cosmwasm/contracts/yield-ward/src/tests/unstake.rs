@@ -1,61 +1,44 @@
-use crate::contract::execute;
-use crate::msg::ExecuteMsg;
 use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
-use crate::tests::utils::{
-    create_stake_response_payload, create_unstake_response_payload, get_stake_item,
-    get_stake_params, get_stake_stats, get_unstake_item, get_unstake_params, instantiate_contract,
-    stake_and_unstake, TestContext,
+use crate::tests::utils::call::{
+    call_stake, call_stake_and_unstake, call_stake_response, call_unstake, call_unstake_response,
 };
-use crate::types::{
-    StakeActionStage, StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage,
-    UnstakeResponseData,
+use crate::tests::utils::init::instantiate_yield_ward_contract_with_tokens;
+use crate::tests::utils::query::{
+    get_stake_item, get_stake_params, get_stake_stats, get_unstake_item, get_unstake_params,
 };
-use cosmwasm_std::testing::message_info;
-use cosmwasm_std::{coins, Uint128, Uint256};
+use crate::tests::utils::types::{TestInfo, TokenTestInfo};
+use crate::types::{StakeActionStage, Status, UnstakeActionStage};
+use cosmwasm_std::{Uint128, Uint256};
+use cw_multi_test::BasicApp;
 
 fn stake_and_response(
-    ctx: &mut TestContext,
+    app: &mut BasicApp,
+    ctx: &TestInfo,
     stake_amount: Uint128,
-    token_denom: &TokenDenom,
-    token_config: &TokenConfig,
+    token_info: &TokenTestInfo,
 ) -> Uint128 {
-    let stake_params_before =
-        get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
-    let token_stats_before = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), token_denom);
+    let stake_params_before = get_stake_params(app, ctx, &token_info.deposit_token_denom);
+    let token_stats_before = get_stake_stats(app, ctx, &token_info.deposit_token_denom);
     let stake_id = stake_params_before.next_id.clone();
 
     // init stake
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(&ctx.user, &coins(stake_amount.u128(), token_denom.clone())),
-        ExecuteMsg::Stake,
-    )
-    .unwrap();
+    call_stake(app, ctx, &ctx.user, token_info, stake_amount);
 
     // response for stake action
     let reinit_unstake_id = 0_u64;
     let lp_token_amount = Uint128::from(1001_u128);
-    let response_payload = create_stake_response_payload(StakeResponseData {
-        status: Status::Success,
+    call_stake_response(
+        app,
+        &ctx,
+        token_info,
+        Status::Success,
         stake_id,
         reinit_unstake_id,
         lp_token_amount,
-    });
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(&ctx.axelar.clone(), &vec![]),
-        ExecuteMsg::HandleResponse {
-            source_chain: token_config.chain.clone(),
-            source_address: token_config.evm_yield_contract.clone(),
-            payload: response_payload,
-        },
-    )
-    .unwrap();
+    );
 
     // check stake states
-    let stake_params = get_stake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let stake_params = get_stake_params(app, ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_params,
         QueueParams {
@@ -63,13 +46,7 @@ fn stake_and_response(
             next_id: stake_params_before.next_id + 1
         }
     );
-    let stake_item = get_stake_item(
-        ctx.deps.as_ref(),
-        ctx.env.clone(),
-        token_denom.clone(),
-        stake_id.clone(),
-    )
-    .unwrap();
+    let stake_item = get_stake_item(app, ctx, &token_info.deposit_token_denom, stake_id).unwrap();
     assert_eq!(
         stake_item,
         StakeItem {
@@ -80,7 +57,7 @@ fn stake_and_response(
     );
 
     // check token stats
-    let token_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), token_denom);
+    let token_stats = get_stake_stats(app, ctx, &token_info.deposit_token_denom);
     assert_eq!(
         token_stats,
         StakeStatsItem {
@@ -95,28 +72,18 @@ fn stake_and_response(
 
 #[test]
 fn test_init_unstake_one_coin() {
-    let mut ctx = instantiate_contract();
-    let stake_amount = Uint128::from(1000_u32);
-    let (token_denom, token_config) = ctx.tokens.first().unwrap().clone();
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
 
-    let lp_token_amount = stake_and_response(&mut ctx, stake_amount, &token_denom, &token_config);
+    let stake_amount = Uint128::from(1000_u32);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
 
     // init unstake
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.user,
-            &coins(lp_token_amount.u128(), token_config.lp_token_denom),
-        ),
-        ExecuteMsg::Unstake,
-    )
-    .unwrap();
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
     // check unstake states
     let unstake_id = 1_u64;
-    let unstake_params =
-        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let unstake_params = get_unstake_params(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         unstake_params,
         QueueParams {
@@ -126,9 +93,9 @@ fn test_init_unstake_one_coin() {
     );
 
     let unstake_item = get_unstake_item(
-        ctx.deps.as_ref(),
-        ctx.env.clone(),
-        token_denom.clone(),
+        &app,
+        &ctx,
+        &token_info.deposit_token_denom,
         unstake_id.clone(),
     )
     .unwrap();
@@ -142,7 +109,7 @@ fn test_init_unstake_one_coin() {
     );
 
     // check stake stats
-    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_stats,
         StakeStatsItem {
@@ -157,44 +124,29 @@ fn test_init_unstake_one_coin() {
 
 #[test]
 fn test_unstake_response_successful() {
-    let mut ctx = instantiate_contract();
-    let (token_denom, token_config) = ctx.tokens.first().unwrap().clone();
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
     let stake_amount = Uint128::from(1000_u32);
-    let lp_token_amount = stake_and_response(&mut ctx, stake_amount, &token_denom, &token_config);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
 
     // init unstake
     let unstake_id = 1_u64;
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.user,
-            &coins(lp_token_amount.u128(), token_config.lp_token_denom.clone()),
-        ),
-        ExecuteMsg::Unstake,
-    )
-    .unwrap();
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
     // response for unstake action
-    let response_payload = create_unstake_response_payload(UnstakeResponseData {
-        status: Status::Success,
+    call_unstake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Success,
         unstake_id,
-        reinit_unstake_id: 0_u64,
-    });
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(&ctx.axelar.clone(), &vec![]),
-        ExecuteMsg::HandleResponse {
-            source_chain: token_config.chain.clone(),
-            source_address: token_config.evm_yield_contract.clone(),
-            payload: response_payload,
-        },
-    )
-    .unwrap();
+        0,
+        Uint128::zero(),
+    );
 
     // check stats
-    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_stats,
         StakeStatsItem {
@@ -209,48 +161,30 @@ fn test_unstake_response_successful() {
 
 #[test]
 fn test_unstake_response_successful_instant_reinit() {
-    let mut ctx = instantiate_contract();
-    let (token_denom, token_config) = ctx.tokens.first().unwrap().clone();
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
     let stake_amount = Uint128::from(1000_u32);
     let unstake_amount = stake_amount + Uint128::one();
-    let lp_token_amount = stake_and_response(&mut ctx, stake_amount, &token_denom, &token_config);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
 
     // init unstake
     let unstake_id = 1_u64;
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.user,
-            &coins(lp_token_amount.u128(), token_config.lp_token_denom.clone()),
-        ),
-        ExecuteMsg::Unstake,
-    )
-    .unwrap();
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
     // response for unstake action
-    let response_payload = create_unstake_response_payload(UnstakeResponseData {
-        status: Status::Success,
+    call_unstake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Success,
         unstake_id,
-        reinit_unstake_id: unstake_id,
-    });
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.axelar.clone(),
-            &coins(unstake_amount.u128(), token_denom.clone()),
-        ),
-        ExecuteMsg::HandleResponse {
-            source_chain: token_config.chain.clone(),
-            source_address: token_config.evm_yield_contract.clone(),
-            payload: response_payload,
-        },
-    )
-    .unwrap();
+        unstake_id,
+        unstake_amount,
+    );
 
     // check stats
-    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_stats,
         StakeStatsItem {
@@ -260,8 +194,7 @@ fn test_unstake_response_successful_instant_reinit() {
         }
     );
 
-    let unstake_params =
-        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let unstake_params = get_unstake_params(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         unstake_params,
         QueueParams {
@@ -270,13 +203,8 @@ fn test_unstake_response_successful_instant_reinit() {
         }
     );
 
-    let unstake_item = get_unstake_item(
-        ctx.deps.as_ref(),
-        ctx.env.clone(),
-        token_denom.clone(),
-        unstake_id,
-    )
-    .unwrap();
+    let unstake_item =
+        get_unstake_item(&app, &ctx, &token_info.deposit_token_denom, unstake_id).unwrap();
     assert_eq!(
         unstake_item,
         UnstakeItem {
@@ -292,51 +220,33 @@ fn test_unstake_response_successful_instant_reinit() {
 
 #[test]
 fn test_unstake_response_successful_with_reinit() {
-    let mut ctx = instantiate_contract();
-    let (token_denom, token_config) = ctx.tokens.first().unwrap().clone();
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
     let stake_amount = Uint128::from(1000_u32);
     let unstake_amount = stake_amount + Uint128::one();
     let unstake_user = ctx.unstake_user.clone();
 
-    let unstake_details = stake_and_unstake(&mut ctx, &unstake_user, &token_denom, &token_config);
-    let lp_token_amount = stake_and_response(&mut ctx, stake_amount, &token_denom, &token_config);
+    let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
 
     // init unstake
     let unstake_id = unstake_details.unstake_id + 1;
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.user,
-            &coins(lp_token_amount.u128(), token_config.lp_token_denom.clone()),
-        ),
-        ExecuteMsg::Unstake,
-    )
-    .unwrap();
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
     // response for unstake action
-    let response_payload = create_unstake_response_payload(UnstakeResponseData {
-        status: Status::Success,
+    call_unstake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Success,
         unstake_id,
-        reinit_unstake_id: unstake_id,
-    });
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.axelar.clone(),
-            &coins(unstake_amount.u128(), token_denom.clone()),
-        ),
-        ExecuteMsg::HandleResponse {
-            source_chain: token_config.chain.clone(),
-            source_address: token_config.evm_yield_contract.clone(),
-            payload: response_payload,
-        },
-    )
-    .unwrap();
+        unstake_id,
+        unstake_amount,
+    );
 
     // check stats
-    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_stats,
         StakeStatsItem {
@@ -346,8 +256,7 @@ fn test_unstake_response_successful_with_reinit() {
         }
     );
 
-    let unstake_params =
-        get_unstake_params(ctx.deps.as_ref(), ctx.env.clone(), token_denom.clone());
+    let unstake_params = get_unstake_params(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         unstake_params,
         QueueParams {
@@ -356,13 +265,8 @@ fn test_unstake_response_successful_with_reinit() {
         }
     );
 
-    let unstake_item = get_unstake_item(
-        ctx.deps.as_ref(),
-        ctx.env.clone(),
-        token_denom.clone(),
-        unstake_id,
-    )
-    .unwrap();
+    let unstake_item =
+        get_unstake_item(&app, &ctx, &token_info.deposit_token_denom, unstake_id).unwrap();
     assert_eq!(
         unstake_item,
         UnstakeItem {
@@ -378,44 +282,29 @@ fn test_unstake_response_successful_with_reinit() {
 
 #[test]
 fn test_unstake_response_fail() {
-    let mut ctx = instantiate_contract();
-    let (token_denom, token_config) = ctx.tokens.first().unwrap().clone();
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
     let stake_amount = Uint128::from(1000_u32);
-    let lp_token_amount = stake_and_response(&mut ctx, stake_amount, &token_denom, &token_config);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
 
     // init unstake
     let unstake_id = 1_u64;
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.user,
-            &coins(lp_token_amount.u128(), token_config.lp_token_denom.clone()),
-        ),
-        ExecuteMsg::Unstake,
-    )
-    .unwrap();
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
     // response for unstake action
-    let response_payload = create_unstake_response_payload(UnstakeResponseData {
-        status: Status::Fail,
+    call_unstake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Fail,
         unstake_id,
-        reinit_unstake_id: 0_u64,
-    });
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(&ctx.axelar.clone(), &vec![]),
-        ExecuteMsg::HandleResponse {
-            source_chain: token_config.chain.clone(),
-            source_address: token_config.evm_yield_contract.clone(),
-            payload: response_payload,
-        },
-    )
-    .unwrap();
+        0,
+        Uint128::zero(),
+    );
 
     // check stats
-    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_stats,
         StakeStatsItem {
@@ -430,53 +319,32 @@ fn test_unstake_response_fail() {
 
 #[test]
 fn test_unstake_response_fail_with_reinit() {
-    let mut ctx = instantiate_contract();
-    let (token_denom, token_config) = ctx.tokens.first().unwrap().clone();
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
     let stake_amount = Uint128::from(1000_u32);
     let unstake_user = ctx.unstake_user.clone();
 
-    let unstake_details = stake_and_unstake(&mut ctx, &unstake_user, &token_denom, &token_config);
-    let lp_token_amount = stake_and_response(&mut ctx, stake_amount, &token_denom, &token_config);
+    let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
 
     // init unstake
     let unstake_id = unstake_details.unstake_id + 1;
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.user,
-            &coins(lp_token_amount.u128(), token_config.lp_token_denom.clone()),
-        ),
-        ExecuteMsg::Unstake,
-    )
-    .unwrap();
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
     // response for unstake action
-    let response_payload = create_unstake_response_payload(UnstakeResponseData {
-        status: Status::Fail,
+    call_unstake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Fail,
         unstake_id,
-        reinit_unstake_id: unstake_details.unstake_id,
-    });
-    execute(
-        ctx.deps.as_mut(),
-        ctx.env.clone(),
-        message_info(
-            &ctx.axelar.clone(),
-            &coins(
-                unstake_details.unstake_token_amount.u128(),
-                token_denom.clone(),
-            ),
-        ),
-        ExecuteMsg::HandleResponse {
-            source_chain: token_config.chain.clone(),
-            source_address: token_config.evm_yield_contract.clone(),
-            payload: response_payload,
-        },
-    )
-    .unwrap();
+        unstake_details.unstake_id,
+        unstake_details.unstake_token_amount,
+    );
 
     // check stats
-    let stake_stats = get_stake_stats(ctx.deps.as_ref(), ctx.env.clone(), &token_denom);
+    let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
     assert_eq!(
         stake_stats,
         StakeStatsItem {

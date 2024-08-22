@@ -7,8 +7,8 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::execute::{
-    try_add_token, try_disallow_mint, try_handle_response, try_init_stake, try_init_unstake,
-    try_mint_lp_token, try_reinit, try_update_token_config,
+    try_add_token, try_disallow_mint, try_mint_lp_token, try_receive_cw_20, try_reinit,
+    try_update_token_config,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
@@ -16,10 +16,7 @@ use crate::query::{
     query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
-use crate::state::{
-    ContractConfigState, QueueParams, StakeStatsItem, CONTRACT_CONFIG, STAKE_PARAMS, STAKE_STATS,
-    TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE, UNSTAKE_PARAMS,
-};
+use crate::state::{ContractConfigState, CONTRACT_CONFIG};
 use crate::types::ReplyType;
 
 // version info for migration info
@@ -44,33 +41,6 @@ pub fn instantiate(
     };
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
 
-    for (token_denom, config) in &msg.tokens {
-        TOKEN_CONFIG.save(deps.storage, token_denom, config)?;
-        STAKE_STATS.save(deps.storage, token_denom, &StakeStatsItem::default())?;
-        STAKE_PARAMS.save(
-            deps.storage,
-            token_denom,
-            &QueueParams {
-                pending_count: 0,
-                next_id: 1,
-            },
-        )?;
-        UNSTAKE_PARAMS.save(
-            deps.storage,
-            token_denom,
-            &QueueParams {
-                pending_count: 0,
-                next_id: 1,
-            },
-        )?;
-
-        TOKEN_DENOM_BY_SOURCE.save(
-            deps.storage,
-            (&config.chain, &config.evm_yield_contract),
-            token_denom,
-        )?;
-    }
-
     Ok(Response::new()
         .add_attribute("method", "instantiate")
         .add_attribute("owner", info.sender))
@@ -84,8 +54,10 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Stake => try_init_stake(deps, env, info),
-        ExecuteMsg::Unstake => try_init_unstake(deps, env, info),
+        ExecuteMsg::Stake => {
+            unimplemented!() // todo: return after finish CW20 deposit tests: try_init_stake(deps, env, info),
+        }
+        ExecuteMsg::Receive(msg) => try_receive_cw_20(deps, env, info, msg),
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
         ExecuteMsg::MintLpToken {
             recipient,
@@ -94,6 +66,7 @@ pub fn execute(
         } => try_mint_lp_token(deps, env, info, recipient, lp_token_address, amount),
         ExecuteMsg::AddToken {
             token_denom,
+            cw20_address,
             is_stake_enabled,
             is_unstake_enabled,
             chain,
@@ -107,6 +80,7 @@ pub fn execute(
             env,
             info,
             token_denom,
+            cw20_address,
             is_stake_enabled,
             is_unstake_enabled,
             chain,
@@ -120,11 +94,11 @@ pub fn execute(
             token_denom,
             config,
         } => try_update_token_config(deps, env, info, token_denom, config),
-        ExecuteMsg::HandleResponse {
-            source_chain,
-            source_address,
-            payload,
-        } => try_handle_response(deps, env, info, source_chain, source_address, payload),
+        // ExecuteMsg::HandleResponse {
+        //     source_chain,
+        //     source_address,
+        //     payload,
+        // } => try_handle_response(deps, env, info, source_chain, source_address, payload),
         ExecuteMsg::DisallowMint => try_disallow_mint(deps, env, info),
     }
 }
