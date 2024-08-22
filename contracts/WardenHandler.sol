@@ -158,13 +158,13 @@ abstract contract WardenHandler is Initializable {
 
   ///@notice Handle stake request, should be implemented in Yield contract
   ///@param amountToStake Amount of tokens to stake
-  /// @return Stake reesult
+  /// @return Stake result
   function _handleStakeRequest(uint64 stakeId, uint256 amountToStake) internal virtual returns (StakeResult memory);
 
   /// @notice Handle unstake request, should be implemented in Yield contract
   /// @param unstakeId Unstake identifier
   /// @param lpAmount Amount of lp token to unstake
-  /// @return ustake result
+  /// @return unstake result
   function _handleUnstakeRequest(uint64 unstakeId, uint128 lpAmount) internal virtual returns (UnstakeResult memory);
 
   ///@notice Handle reinit request, should be implemented in Yield contract
@@ -270,6 +270,7 @@ abstract contract WardenHandler is Initializable {
     bytes memory response = _createStakeResponse(request.actionId, stakeResult);
 
     // amount to return could contain withdrawn amount and stake amount when stake failed
+    // TODO can be moved to `_handleStakeRequest`
     if (stakeResult.status != Status.Success) {
       stakeResult.unstakeTokenAmount += uint128(amount); // safe cast, checked above
     }
