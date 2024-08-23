@@ -52,11 +52,11 @@ pub enum ExecuteMsg {
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(GetContractConfigResponse)]
-    ContractConfig,
+    ContractConfig {},
     #[returns(GetTokensConfigsResponse)]
-    TokensConfigs,
+    TokensConfigs {},
     #[returns(GetStakeStatsResponse)]
-    StakeStats,
+    StakeStats {},
     #[returns(GetQueueParamsResponse)]
     StakeParams { token_denom: TokenDenom },
     #[returns(GetQueueParamsResponse)]

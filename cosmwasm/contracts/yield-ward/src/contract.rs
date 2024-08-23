@@ -106,9 +106,9 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::ContractConfig => to_json_binary(&query_contract_config(deps)?),
-        QueryMsg::TokensConfigs => to_json_binary(&query_tokens_configs(deps)?),
-        QueryMsg::StakeStats => to_json_binary(&query_stake_stats(deps)?),
+        QueryMsg::ContractConfig {} => to_json_binary(&query_contract_config(deps)?),
+        QueryMsg::TokensConfigs {} => to_json_binary(&query_tokens_configs(deps)?),
+        QueryMsg::StakeStats {} => to_json_binary(&query_stake_stats(deps)?),
         QueryMsg::StakeParams { token_denom } => {
             to_json_binary(&query_stake_params(deps, token_denom)?)
         }

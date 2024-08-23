@@ -1,5 +1,14 @@
 # CosmWasm contracts
 
+## Deploy demo steps
+
+1. Store CW20 token code
+2. Store YieldWard code
+3. Instantiate CW20 deposit token contracts: ETH, USDT, USDC
+4. Instantiate YieldWard contract
+5. Call YieldWard::AddToken
+6. Mint CW20 deposit tokens to Axelar account
+
 ## Store CW20 token code
 
 ```bash
@@ -100,5 +109,14 @@ wardend query wasm contract-state smart \
 wardend query wasm contract-state smart \
   warden1unyuj8qnmygvzuex3dwmg9yzt9alhvyeat0uu0jedg2wj33efl5qvhthj6 \
   '{"token_info":{}}' \
+  --node "https://rpc.buenavista.wardenprotocol.org:443"
+```
+
+## Read YieldWard config
+
+```bash
+wardend query wasm contract-state smart \
+  warden1w27ekqvvtzfanfxnkw4jx2f8gdfeqwd3drkee3e64xat6phwjg0say3p32 \
+  '{"contract_config":{}}' \
   --node "https://rpc.buenavista.wardenprotocol.org:443"
 ```
