@@ -63,6 +63,7 @@ export class DeploymentFile<TDeployment extends BaseDeployment> {
         return deployment[id];
       },
       setById: (id: string, deploymentState: DeploymentState) => {
+        // @ts-ignore `Type 'TDeployment' is generic and can only be indexed for reading`
         deployment[id] = deploymentState;
 
         if (this.writeToFile) {
