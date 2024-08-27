@@ -1,15 +1,18 @@
 import { task } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { upgradeWardenYield, loadUpgradeConfig } from '../deploy/src';
+import { Signer } from 'ethers';
 
 interface UpgradeArgs {
   networkName: string;
-  creatorPrivateKey: string;
+  creatorKey: string;
+  isPrivateKey: boolean;
 }
 
 task('task:upgrade', 'Deploy Yield proxies and implementations')
   .addParam<string>('networkName', 'Network name')
-  .addParam<string>('creatorPrivateKey', 'Private key of contracts creator')
+  .addParam<string>('creatorKey', 'Private or public key of contracts creator')
+  .addFlag('isPrivateKey', 'If passed `creatorKey` is the private one')
   .setAction(async (taskArgs: UpgradeArgs, hre: HardhatRuntimeEnvironment) => {
     const dryRun =
       hre.config.networks.hardhat.forking !== undefined ? hre.config.networks.hardhat.forking.enabled : false;
@@ -27,7 +30,17 @@ task('task:upgrade', 'Deploy Yield proxies and implementations')
       console.log(`Fork block number: ${blockNumber}`);
     }
 
-    const signer = new hre.ethers.Wallet(taskArgs.creatorPrivateKey, provider);
+    let signer: Signer;
+    if (taskArgs.isPrivateKey) {
+      signer = new hre.ethers.Wallet(taskArgs.creatorKey, provider);
+      console.log(`Signer from private key: ${await signer.getAddress()}`)
+    } else if (dryRun) {
+      console.log(`Impersonating signer: ${taskArgs.creatorKey}`);
+      signer = await hre.ethers.getImpersonatedSigner(taskArgs.creatorKey);
+    } else {
+      throw new Error("Can't impersonate signer while not dry-running");
+    }
+
     const config = await loadUpgradeConfig(network, provider, dryRun);
 
     await upgradeWardenYield(signer, config, network, dryRun, hre);
