@@ -1,0 +1,605 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x6a2b548CF4566471378F16235375959b74b1b5e4",
+      "txHash": "0x79fe53a0476d769548a46d7ff848a6a9579e8347672e7421e3c9d86daecaef81",
+      "kind": "uups"
+    },
+    {
+      "address": "0x1812f1629229d682aEc43445EA1fc23990C3Cd68",
+      "txHash": "0xed2f2fef08199c058830003a5703848d23c1b6bc94739c1493181255fdaefcbe",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "adbbd9d82a1a43935b8b35fbfbbefa2eeb93b4c848dcf8a32ede98b72264a61c": {
+      "address": "0xFc5A5D48a090Ec786a536a88FDbf58e24f67EeF6",
+      "txHash": "0xaba2a6a4879562063467d015e226550c30ea21738c469ffcf537a038228edddc",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_string_storage)": {
+            "label": "mapping(address => string)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AaveInteractorData)1683_storage": {
+            "label": "struct AaveInteractor.AaveInteractorData",
+            "members": [
+              {
+                "label": "aavePool",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "areWithdrawalsEnabled",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "allowedTokens",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(InitializableStorage)778_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Ownable2StepStorage)685_storage": {
+            "label": "struct Ownable2StepUpgradeable.Ownable2StepStorage",
+            "members": [
+              {
+                "label": "_pendingOwner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)727_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(StakingData)1600_storage": {
+            "label": "struct YieldStorage.StakingData",
+            "members": [
+              {
+                "label": "_totalStakedAmount",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_totalShares",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "_stakedAmount",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "_shares",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(UserWardenData)1610_storage": {
+            "label": "struct YieldStorage.UserWardenData",
+            "members": [
+              {
+                "label": "_wardenAddress",
+                "type": "t_mapping(t_address,t_string_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          }
+        },
+        "namespaces": {
+          "erc7201:eq-lab.storage.StakingData": [
+            {
+              "contract": "YieldStorage",
+              "label": "_totalStakedAmount",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "contracts/YieldStorage.sol:15",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_totalShares",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "contracts/YieldStorage.sol:17",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_stakedAmount",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "contracts/YieldStorage.sol:19",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_shares",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "contracts/YieldStorage.sol:21",
+              "offset": 0,
+              "slot": "3"
+            }
+          ],
+          "erc7201:eq-lab.storage.UserWardenData": [
+            {
+              "contract": "YieldStorage",
+              "label": "_wardenAddress",
+              "type": "t_mapping(t_address,t_string_storage)",
+              "src": "contracts/YieldStorage.sol:27",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:eq-lab.storage.AaveInteractor": [
+            {
+              "contract": "AaveInteractor",
+              "label": "aavePool",
+              "type": "t_address",
+              "src": "contracts/interactors/AaveInteractor.sol:20",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "AaveInteractor",
+              "label": "areWithdrawalsEnabled",
+              "type": "t_bool",
+              "src": "contracts/interactors/AaveInteractor.sol:22",
+              "offset": 20,
+              "slot": "0"
+            },
+            {
+              "contract": "AaveInteractor",
+              "label": "allowedTokens",
+              "type": "t_mapping(t_address,t_bool)",
+              "src": "contracts/interactors/AaveInteractor.sol:24",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable2Step": [
+            {
+              "contract": "Ownable2StepUpgradeable",
+              "label": "_pendingOwner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:23",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "fa33764a786c9977a09de55ede485e02986f4aa6a75eab7d60754badb2869e27": {
+      "address": "0xAFDeA0Dd218a7c2475BF1254CBC70574bC221158",
+      "txHash": "0x85186928eada6bb6501a6172c076087d89dba347b6e02fa61a7c8c07f3cc9dd8",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_string_storage)": {
+            "label": "mapping(address => string)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(EigenLayerInteractorData)1755_storage": {
+            "label": "struct EigenLayerInteractor.EigenLayerInteractorData",
+            "members": [
+              {
+                "label": "underlyingToken",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "strategy",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "strategyManager",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "delegationManager",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(InitializableStorage)778_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(LidoInteractorData)1792_storage": {
+            "label": "struct LidoInteractor.LidoInteractorData",
+            "members": [
+              {
+                "label": "stETH",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "wETH9",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Ownable2StepStorage)685_storage": {
+            "label": "struct Ownable2StepUpgradeable.Ownable2StepStorage",
+            "members": [
+              {
+                "label": "_pendingOwner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)727_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(StakingData)1600_storage": {
+            "label": "struct YieldStorage.StakingData",
+            "members": [
+              {
+                "label": "_totalStakedAmount",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_totalShares",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "_stakedAmount",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "_shares",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(UserWardenData)1610_storage": {
+            "label": "struct YieldStorage.UserWardenData",
+            "members": [
+              {
+                "label": "_wardenAddress",
+                "type": "t_mapping(t_address,t_string_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          }
+        },
+        "namespaces": {
+          "erc7201:eq-lab.storage.StakingData": [
+            {
+              "contract": "YieldStorage",
+              "label": "_totalStakedAmount",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "contracts/YieldStorage.sol:15",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_totalShares",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "contracts/YieldStorage.sol:17",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_stakedAmount",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "contracts/YieldStorage.sol:19",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_shares",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "contracts/YieldStorage.sol:21",
+              "offset": 0,
+              "slot": "3"
+            }
+          ],
+          "erc7201:eq-lab.storage.UserWardenData": [
+            {
+              "contract": "YieldStorage",
+              "label": "_wardenAddress",
+              "type": "t_mapping(t_address,t_string_storage)",
+              "src": "contracts/YieldStorage.sol:27",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:eq-lab.storage.LidoInteractor": [
+            {
+              "contract": "LidoInteractor",
+              "label": "stETH",
+              "type": "t_address",
+              "src": "contracts/interactors/LidoInteractor.sol:18",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "LidoInteractor",
+              "label": "wETH9",
+              "type": "t_address",
+              "src": "contracts/interactors/LidoInteractor.sol:20",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:eq-lab.storage.EigenLayerInteractor": [
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "underlyingToken",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:20",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "strategy",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:22",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "strategyManager",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:24",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "delegationManager",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:26",
+              "offset": 0,
+              "slot": "3"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "operator",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:28",
+              "offset": 0,
+              "slot": "4"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable2Step": [
+            {
+              "contract": "Ownable2StepUpgradeable",
+              "label": "_pendingOwner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:23",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
