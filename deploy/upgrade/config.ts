@@ -35,10 +35,10 @@ export interface WardenHandlerConfig {
 export const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
 
 export async function loadUpgradeConfig(network: string, provider: Provider, dryRun: boolean): Promise<UpgradeConfig> {
-  const configDir = path.join(__dirname, `data`, `configs`, network);
+  const configDir = path.join(path.parse(__dirname).dir, `data`, `configs`, network);
 
   if (!fs.existsSync(configDir)) {
-    throw new Error(`Directory '${configDir}' does not exists`);
+    throw new Error(`Directory '${configDir}' does not exist`);
   }
   if (!fs.statSync(configDir).isDirectory()) {
     throw new Error(`Specified '${configDir}' is not a directory`);

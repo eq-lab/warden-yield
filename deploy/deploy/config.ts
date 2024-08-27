@@ -37,7 +37,7 @@ export interface EigenLayerDeploymentConfig {
 const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
 
 export async function loadDeployConfig(network: string, provider: Provider, dryRun: boolean): Promise<DeployConfig> {
-  const configDir = path.join(__dirname, `data`, `configs`, network);
+  const configDir = path.join(path.parse(__dirname).dir, `data`, `configs`, network);
 
   if (!fs.existsSync(configDir)) {
     throw new Error(`Directory '${configDir}' does not exists`);

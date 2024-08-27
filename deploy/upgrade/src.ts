@@ -17,8 +17,8 @@ export async function upgradeWardenYield(
 ): Promise<void> {
   const statesDirName = 'states';
   const stateFileName = getStateFileName(network, statesDirName);
-  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
-  const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
+  const actualStateFile = path.join(path.parse(__dirname).dir, `data`, `configs`, network, stateFileName);
+  const actualDeploymentFile = path.join(path.parse(__dirname).dir, `data`, `contracts`, `${network}.json`);
 
   const logger = new SimpleLogger((x) => console.error(x));
   const stateStore = new StateFile(
@@ -55,7 +55,7 @@ async function upgradeEthYield(
   stateStore: StateStore,
   deploymentStore: DeploymentStore
 ) {
-  const ethYieldDeployment = deploymentStore.getById('ethYield-proxy');
+  const ethYieldDeployment = deploymentStore.getById('ethYield');
   if (ethYieldDeployment === undefined) {
     throw new Error(`EthYield deployment wasn't found: nothing to upgrade`);
   }
@@ -72,10 +72,10 @@ async function upgradeEthYield(
         ethConfig.wardenHandler.wardenContractAddress,
       ],
     },
-    txOverrides: {
-      gasLimit: ethConnectionConfig.ethOptions.gasLimit,
-      gasPrice: ethConnectionConfig.ethOptions.gasPrice,
-    },
+    // txOverrides: {
+    //   gasLimit: ethConnectionConfig.ethOptions.gasLimit,
+    //   gasPrice: ethConnectionConfig.ethOptions.gasPrice,
+    // },
   });
 
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(ethYieldProxyAddress);
@@ -98,7 +98,7 @@ async function upgradeAaveYield(
   stateStore: StateStore,
   deploymentStore: DeploymentStore
 ) {
-  const aaveYieldDeployment = deploymentStore.getById('aaveYield-proxy');
+  const aaveYieldDeployment = deploymentStore.getById('aaveYield');
   if (aaveYieldDeployment === undefined) {
     throw new Error(`AaveYield deployment wasn't found: nothing to upgrade`);
   }
@@ -115,10 +115,10 @@ async function upgradeAaveYield(
         aaveConfig.wardenHandler.wardenContractAddress,
       ],
     },
-    txOverrides: {
-      gasLimit: ethConnectionConfig.ethOptions.gasLimit,
-      gasPrice: ethConnectionConfig.ethOptions.gasPrice,
-    },
+    // txOverrides: {
+    //   gasLimit: ethConnectionConfig.ethOptions.gasLimit,
+    //   gasPrice: ethConnectionConfig.ethOptions.gasPrice,
+    // },
   });
 
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(aaveYieldProxyAddress);

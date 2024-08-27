@@ -17,8 +17,8 @@ export async function deployWardenYield(
 ): Promise<void> {
   const statesDirName = 'states';
   const stateFileName = getStateFileName(network, statesDirName);
-  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
-  const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
+  const actualStateFile = path.join(path.parse(__dirname).dir, `data`, `configs`, network, stateFileName);
+  const actualDeploymentFile = path.join(path.parse(__dirname).dir, `data`, `contracts`, `${network}.json`);
 
   const logger = new SimpleLogger((x) => console.error(x));
   const stateStore = new StateFile(
