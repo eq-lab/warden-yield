@@ -41,16 +41,6 @@ Encode unstake response message:
     --return-amount 111
 ```
 
-```bash
-wardend tx wasm execute \  
-  warden1unyuj8qnmygvzuex3dwmg9yzt9alhvyeat0uu0jedg2wj33efl5qvhthj6 \  
-  '{"send":{"contract":"warden1w27ekqvvtzfanfxnkw4jx2f8gdfeqwd3drkee3e64xat6phwjg0say3p32","amount":"111","msg":"eyJoYW5kbGVfcmVzcG9uc2UiOnsiZGVwb3NpdF90b2tlbl9kZW5vbSI6ImRlbW9fd2V0aCIsInNvdXJjZV9jaGFpbiI6IkV0aGVyZXVtIiwic291cmNlX2FkZHJlc3MiOiIweDRERjY2QkNBOTYzMTlDNkEwMzNjZmQ4NmMzOEJDRGI5QjNjMTFhNzIiLCJwYXlsb2FkIjoiQVFBQUFBQUFBQUFBQVFBQUFBQUFBQUFCIn19"}}' \  
-  --from "keplr_test2_acc" -y \  
-  --node "https://rpc.buenavista.wardenprotocol.org:443" \  
-  --chain-id "buenavista-1" \
-  --gas auto --gas-adjustment 1.3
-```
-
 ## Stake messages
 
 | Token | Message                                                                                                                                                                           |
