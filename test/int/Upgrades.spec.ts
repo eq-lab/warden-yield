@@ -1,7 +1,14 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { EthAddressData } from '../shared/utils';
-import { AaveYield__factory, EthYield__factory, Ownable2StepUpgradeable__factory } from '../../typechain-types';
+import {
+  AaveYield__factory,
+  ERC20__factory,
+  EthYield__factory,
+  IPool__factory,
+  IStrategy__factory,
+  Ownable2StepUpgradeable__factory,
+} from '../../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import { BaseContract, parseEther } from 'ethers';
@@ -58,7 +65,9 @@ describe('Upgrades', () => {
     const ethYieldV2 = await EthYield__factory.connect(ethYield, ethers.provider);
 
     expect(await ethYieldV2.totalShares()).to.be.eq(totalSharesBefore);
-    // TODO add lpTokens check
+
+    const strategy = await IStrategy__factory.connect(EthAddressData.elStrategy, ethers.provider);
+    expect(await ethYieldV2.totalLpTokens()).to.be.eq(await strategy.sharesToUnderlyingView(totalSharesBefore));
   });
 
   it('AaveYield usdc upgrade', async () => {
@@ -83,7 +92,9 @@ describe('Upgrades', () => {
 
     const aaveYieldV2 = await EthYield__factory.connect(aaveYieldUsdc, ethers.provider);
     expect(await aaveYieldV2.totalShares()).to.be.eq(totalSharesBefore);
-    // TODO add lpTokens check
+
+    const aToken = await ERC20__factory.connect(EthAddressData.aEthUsdc, ethers.provider);
+    expect(await aaveYieldV2.totalLpTokens()).to.be.eq(await aToken.balanceOf(aaveYieldV2));
   });
 
   it('AaveYield usdt upgrade', async () => {
@@ -108,6 +119,8 @@ describe('Upgrades', () => {
 
     const aaveYieldV2 = await EthYield__factory.connect(aaveYieldUsdt, ethers.provider);
     expect(await aaveYieldV2.totalShares()).to.be.eq(totalSharesBefore);
-    // TODO add lpTokens check
+
+    const aToken = await ERC20__factory.connect(EthAddressData.aEthUsdt, ethers.provider);
+    expect(await aaveYieldV2.totalLpTokens()).to.be.eq(await aToken.balanceOf(aaveYieldV2));
   });
 });

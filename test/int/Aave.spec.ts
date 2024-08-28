@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
 import { parseUnits } from 'ethers';
 import {
@@ -43,14 +43,14 @@ async function createYieldStorageAssert(aaveYield: AaveYield, aToken: IAToken) {
   const totalLpBefore = await aaveYield.totalLpTokens();
   const aTokenScaledBalanceBefore = await aToken.scaledBalanceOf(await aaveYield.getAddress());
 
-  return async () => {
+  return async (lpDelta: bigint) => {
     const aTokenScaledBalanceDelta =
       (await aToken.scaledBalanceOf(await aaveYield.getAddress())) - aTokenScaledBalanceBefore;
+
     const totalShares = await aaveYield.totalShares();
     expect(totalShares).to.be.eq(totalSharesBefore + aTokenScaledBalanceDelta);
 
     const totalLp = await aaveYield.totalLpTokens();
-    const lpDelta = aTokenScaledBalanceDelta;
     expect(totalLp).to.be.eq(totalLpBefore + lpDelta);
   };
 }
@@ -69,7 +69,16 @@ async function stake(
   // state before stake
   const aEthScaledBalanceBefore = await aToken.scaledBalanceOf(aaveYieldAddress);
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken);
-  const availableToWithdrawBefore = await aaveYield.totalLpTokens();
+
+  // adding some blocks and resetting the next block timestamp
+  // so the aave shares to underlying conversion occurred with the same timestamp in both view query and tx
+  await mine(1000);
+  const currentBlockTimestamp = (await signer.provider.getBlock(await signer.provider.getBlockNumber()))?.timestamp!;
+  await time.setNextBlockTimestamp(currentBlockTimestamp);
+
+  const expectedLpAmount = await aaveYield.underlyingToLp(amount);
+  const lpBefore = await aaveYield.totalLpTokens();
+  const availableToWithdrawBefore = await aaveYield.lpToUnderlying(await aaveYield.totalLpTokens());
 
   // approve WETH before stake
   await stakeToken.connect(signer).transfer(aaveYield.target, amount);
@@ -86,16 +95,17 @@ async function stake(
   expect(await stakeToken.balanceOf(signer.address)).to.be.eq(0);
   expect(await stakeToken.balanceOf(aaveYieldAddress)).to.be.eq(0);
   expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.greaterThan(aEthScaledBalanceBefore);
+  expect(await aaveYield.totalLpTokens()).to.be.eq(expectedLpAmount + lpBefore);
 
-  // TODO convert from lp
-  let availableToWithdraw = await aaveYield.sharesToUnderlying(await aaveYield.totalShares());
-  expect(availableToWithdraw).to.be.greaterThanOrEqual(availableToWithdrawBefore + amount);
-
-  // check YieldStorage data
-  await assertYieldStorage();
+  let availableToWithdraw = await aaveYield.lpToUnderlying(await aaveYield.totalLpTokens());
+  expect(availableToWithdraw).to.be.closeTo(availableToWithdrawBefore + amount, 1);
 
   const [stakeEvent] = await aaveYield.queryFilter(aaveYield.filters.Stake, -1);
   const lpAmount = stakeEvent.args[2];
+
+  // check YieldStorage data
+  await assertYieldStorage(lpAmount);
+
   return lpAmount;
 }
 
@@ -115,17 +125,26 @@ async function withdraw(
   const assertYieldStorage = await createYieldStorageAssert(aaveYield, aToken);
   const tokenBalanceBefore = await tokenToWithdraw.balanceOf(axelarGateway.target);
 
+  // adding some blocks and resetting the next block timestamp
+  // so the aave shares to underlying conversion occurred with the same timestamp in both view query and tx
+  await mine(1000);
+  const currentBlockTimestamp = (await signer.provider.getBlock(await signer.provider.getBlockNumber()))?.timestamp!;
+  await time.setNextBlockTimestamp(currentBlockTimestamp);
+
+  const lpUnderlyingBalance = await aaveYield.lpToUnderlying(lpAmount);
+
   const unstakePayload = encodeUnstakeAction(unstakeId, lpAmount);
   await aaveYield.connect(signer).execute(CommandId, WardenChain, WardenContractAddress, unstakePayload);
   await ensureSuccessCall(aaveYield);
 
-  const underlyingBalance = await aaveYield.sharesToUnderlying(lpAmount);
+  const expectedBalance = lpUnderlyingBalance + tokenBalanceBefore;
 
-  expect(await tokenToWithdraw.balanceOf(axelarGateway.target)).to.be.eq(underlyingBalance + tokenBalanceBefore);
-  expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.eq(aTokenScaledBalanceBefore - lpAmount);
+  // closeTo is to avoid underlying balance calculation precision issue
+  expect(await tokenToWithdraw.balanceOf(axelarGateway.target)).to.be.closeTo(expectedBalance, 1);
+  expect(await aToken.scaledBalanceOf(aaveYieldAddress)).to.be.lt(aTokenScaledBalanceBefore);
 
   // check YieldStorage data
-  await assertYieldStorage();
+  await assertYieldStorage(-lpAmount);
 }
 
 async function initBalance(account: string, token: IERC20 | IWETH9, balanceStr: string): Promise<bigint> {
@@ -156,6 +175,7 @@ describe('AaveYield, deposit', () => {
     const unstakeId = 1;
     await withdraw(aaveYield, axelarGateway, user, aEthWETH, weth9, lpAmount, unstakeId);
 
+    expect(await aaveYield.totalLpTokens()).to.be.eq(0);
     expect(await aaveYield.totalShares()).to.be.eq(0);
   });
 
@@ -163,16 +183,23 @@ describe('AaveYield, deposit', () => {
     const [, user1, user2, user3] = await ethers.getSigners();
     const { aaveYield, weth9, aEthWETH, axelarGateway } = await loadFixture(createAaveEthFork);
 
-    for (const { user, index } of [user1, user2, user3].map((user, index) => ({ user, index }))) {
+    const users = [user1, user2, user3];
+    const lpAmounts = new Array(users.length);
+
+    for (const { user, index } of users.map((user, index) => ({ user, index }))) {
       const userInput = await initBalance(user.address, weth9, '1');
 
       const stakeId = index;
       const lpAmount = await stake(aaveYield, user, aEthWETH, weth9, userInput, stakeId);
-
-      const unstakeId = index;
-      await withdraw(aaveYield, axelarGateway, user, aEthWETH, weth9, lpAmount, unstakeId);
+      lpAmounts[index] = lpAmount;
     }
 
+    for (const { user, index } of users.map((user, index) => ({ user, index }))) {
+      const unstakeId = index;
+      await withdraw(aaveYield, axelarGateway, user, aEthWETH, weth9, lpAmounts[index], unstakeId);
+    }
+
+    expect(await aaveYield.totalLpTokens()).to.be.eq(0);
     expect(await aaveYield.totalShares()).to.be.eq(0);
   });
 

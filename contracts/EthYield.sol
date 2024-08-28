@@ -48,27 +48,15 @@ contract EthYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
-    __YieldStorage_initV2(getWeth());
+    address weth = getWeth();
+    IStrategy strategy = IStrategy(_getEigenLayerInteractorDataStorage().strategy);
+    __YieldStorage_initV2(weth, strategy.sharesToUnderlyingView(_getStakingDataStorage()._totalShares[weth]));
     __LidoInteractor_initV2(lidoWithdrawQueue);
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
-
-    // TODO: add lpAmount totalSupply initial value
   }
 
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-
-  /// @dev Convert shares (EigenLayer shares) to lp amount
-  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
-    //TODO: implement
-    return sharesAmount;
-  }
-
-  /// @dev Convert lpAmount to shares (EigenLayer shares)
-  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
-    //TODO: implement
-    return lpAmount;
-  }
 
   /// @inheritdoc IEthYield
   function stake(uint64 stakeId, uint256 amount) external virtual returns (uint256 lpAmount) {
@@ -77,8 +65,7 @@ contract EthYield is
     IWETH9(getWeth()).withdraw(amount);
     uint256 stEthAmount = _lidoStake(amount);
     uint256 eigenLayerShares = _eigenLayerRestake(stEthAmount);
-    lpAmount = _sharesToLpAmount(eigenLayerShares);
-    _addStake(eigenLayerShares, lpAmount);
+    lpAmount = _addStake(eigenLayerShares, amount);
 
     emit Stake(stakeId, amount, eigenLayerShares);
   }
@@ -89,7 +76,7 @@ contract EthYield is
 
     uint256 eigenLayerSharesAmount = _lpAmountToShares(lpAmount);
     _eigenLayerWithdraw(unstakeId, eigenLayerSharesAmount);
-    _removeStake(eigenLayerSharesAmount, lpAmount);
+    _removeStake(lpAmount);
   }
 
   /// @inheritdoc IEthYield
@@ -126,6 +113,24 @@ contract EthYield is
   /// @notice returns LidoWithdrawQueue element by index
   function getLidoWithdrawalQueueElement(uint128 index) external view returns (LidoWithdrawQueueElement memory) {
     return _getLidoWithdrawalQueueElement(index);
+  }
+
+  /// @notice converts amount of passed token to the shares
+  function underlyingToLp(uint256 amount) external view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return
+      $.totalShares == 0
+        ? amount
+        : _sharesToLpAmount(IStrategy(_getEigenLayerInteractorDataStorage().strategy).underlyingToSharesView(amount));
+  }
+
+  /// @notice converts shares of passed token to its amount
+  function lpToUnderlying(uint256 lpAmount) external view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return
+      $.totalLpt == 0
+        ? 0
+        : IStrategy(_getEigenLayerInteractorDataStorage().strategy).sharesToUnderlyingView(_lpAmountToShares(lpAmount));
   }
 
   /*** WardenHandler ***/

@@ -11,6 +11,7 @@ const config = {
         url: 'https://rpc.ankr.com/eth',
         blockNumber: 20370155,
       },
+      allowBlocksWithSameTimestamp: true,
       initialBaseFeePerGas: 0,
     },
   },

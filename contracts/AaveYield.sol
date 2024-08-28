@@ -34,34 +34,22 @@ contract AaveYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
-    __YieldStorage_initV2(underlyingToken);
     __AaveInteractor_initV2(underlyingToken);
+    __YieldStorage_initV2(
+      underlyingToken,
+      _getBalanceFromScaled(_getStakingDataStorage()._totalShares[underlyingToken])
+    );
     __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
-
-    // TODO: add lpAmount totalSupply initial value
   }
 
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-  /// @dev Convert shares (Aave shares) to lp amount
-  function _sharesToLpAmount(uint256 sharesAmount) internal pure returns (uint256) {
-    //TODO: implement
-    return sharesAmount;
-  }
-
-  /// @dev Convert lp amount to shares (Aave shares)
-  function _lpAmountToShares(uint256 lpAmount) internal pure returns (uint256) {
-    //TODO: implement
-    return lpAmount;
-  }
-
   /// @inheritdoc IAaveYield
   function stake(uint64 stakeId, uint256 amount) external returns (uint256 lpAmount) {
     require(msg.sender == address(this));
     uint256 shares = _aaveStake(amount);
-    lpAmount = _sharesToLpAmount(shares);
-    _addStake(shares, lpAmount);
+    lpAmount = _addStake(shares, amount);
 
     emit Stake(stakeId, amount, lpAmount);
   }
@@ -72,19 +60,21 @@ contract AaveYield is
     uint256 sharesAmount = _lpAmountToShares(lpAmount);
     uint256 withdrawAmount = _getBalanceFromScaled(sharesAmount);
     withdrawn = _aaveWithdraw(withdrawAmount);
-    _removeStake(sharesAmount, lpAmount);
+    _removeStake(lpAmount);
 
     emit Unstake(unstakeId, withdrawn);
   }
 
   /// @notice converts amount of passed token to the shares
-  function underlyingToShares(uint256 amount) external view returns (uint256) {
-    return _getScaledFromBalance(amount);
+  function underlyingToLp(uint256 amount) external view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return $.totalShares == 0 ? amount : _sharesToLpAmount(_getScaledFromBalance(amount));
   }
 
   /// @notice converts shares of passed token to its amount
-  function sharesToUnderlying(uint256 shares) external view returns (uint256) {
-    return _getBalanceFromScaled(shares);
+  function lpToUnderlying(uint256 lpAmount) external view returns (uint256) {
+    StakingData storage $ = _getStakingDataStorage();
+    return $.totalLpt == 0 ? 0 : _getBalanceFromScaled(_lpAmountToShares(lpAmount));
   }
 
   /*** WardenHandler ***/
