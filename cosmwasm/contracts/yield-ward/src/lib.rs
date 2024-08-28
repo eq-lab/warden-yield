@@ -1,5 +1,5 @@
 pub mod contract;
-mod encoding;
+pub mod encoding;
 mod error;
 mod execute;
 pub mod helpers;
@@ -9,6 +9,6 @@ mod reply;
 pub mod state;
 #[cfg(test)]
 mod tests;
-mod types;
+pub mod types;
 
 pub use crate::error::ContractError;

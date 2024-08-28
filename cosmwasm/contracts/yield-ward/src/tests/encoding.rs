@@ -33,6 +33,28 @@ fn test_decode_stake_response() {
 }
 
 #[test]
+fn test_decode_stake_response_2() {
+    let status = Status::Success; // 1 byte = 8 bit
+    let stake_id = 1_u64; // 8 = 64 bit
+    let reinit_unstake_id = 0_u64; // 8 = 64 bit
+    let lp_token_amount = 101_u128; // 16 = 128 bit
+
+    let payload: Vec<u8> = vec![0_u8]
+        .into_iter()
+        .chain(stake_id.to_be_bytes().into_iter())
+        .chain(reinit_unstake_id.to_be_bytes().into_iter())
+        .chain(lp_token_amount.to_be_bytes().into_iter())
+        .collect();
+
+    let result: Binary = Binary::new(payload);
+
+    let expected = "0x0000000000000000000100000000000000000000000000000065";
+    // 0x000000000000000001000000000000000000000000000000000000000000000065
+    //               0x0000000000000000000100000000000000000000000000000065
+    assert_eq!(binary_to_hex_string(result), expected);
+}
+
+#[test]
 fn test_decode_unstake_response() {
     let status = Status::Success; // 1 byte = 8 bit
     let unstake_id = 1337_u64; // 8 = 64 bit
