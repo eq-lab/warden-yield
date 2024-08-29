@@ -29,7 +29,7 @@ pub fn try_handle_unstake_response(
     // todo: discuss it
     if unstake_item.action_stage != UnstakeActionStage::WaitingRegistration {
         return Err(ContractError::UnstakeRequestInvalidStage {
-            symbol: token_config.symbol,
+            symbol: token_config.deposit_token_symbol,
             unstake_id: unstake_response.unstake_id,
         });
     }
@@ -66,7 +66,7 @@ pub fn try_handle_unstake_response(
         unstake_item.action_stage = UnstakeActionStage::Failed;
 
         let lp_mint_msg = create_cw20_transfer_msg(
-            &token_config.lp_token_address,
+            &token_config.lpt_address,
             &unstake_item.user,
             unstake_item.lp_token_amount,
         )

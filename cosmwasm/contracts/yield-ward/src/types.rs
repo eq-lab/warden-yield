@@ -10,12 +10,13 @@ pub struct TokenConfig {
     pub cw20_address: Addr,
     pub is_stake_enabled: bool,
     pub is_unstake_enabled: bool,
-    pub symbol: String,
+    pub deposit_token_symbol: String,
     pub chain: String,
     pub evm_yield_contract: String,
     pub evm_address: String,
-    pub lp_token_denom: String,
-    pub lp_token_address: Addr,
+    pub lpt_symbol: String,
+    pub lpt_denom: String,
+    pub lpt_address: Addr,
 }
 
 pub enum ReplyType {

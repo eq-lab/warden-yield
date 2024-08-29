@@ -41,6 +41,7 @@ pub struct StakeItem {
     pub user: Addr,
     pub token_amount: Uint128,
     pub action_stage: StakeActionStage,
+    // todo: add optional lp amount
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -48,6 +49,7 @@ pub struct UnstakeItem {
     pub user: Addr,
     pub lp_token_amount: Uint128,
     pub action_stage: UnstakeActionStage,
+    // todo: add optional underlying amount
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

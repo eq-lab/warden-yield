@@ -65,7 +65,7 @@ pub fn assert_cw20_lpt_address(
     let token_config = TOKEN_CONFIG
         .may_load(deps.storage, &token_denom)?
         .ok_or(ContractError::UnknownToken(token_denom.clone()))?;
-    if token_config.lp_token_address != actual_cw20_address {
+    if token_config.lpt_address != actual_cw20_address {
         return Err(ContractError::MismatchCw20Token {
             actual: actual_cw20_address.to_string(),
             expected: token_config.cw20_address.to_string(),

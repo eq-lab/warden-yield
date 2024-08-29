@@ -29,10 +29,10 @@ pub enum ExecuteMsg {
         is_stake_enabled: bool,
         is_unstake_enabled: bool,
         chain: String,
-        symbol: String,
-        name: String,
         evm_yield_contract: String,
         evm_address: String,
+        lpt_symbol: String,
+        lpt_name: String,
         lp_token_denom: String, // todo: remove it, redundant
     },
     UpdateContractConfig {

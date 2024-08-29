@@ -44,7 +44,7 @@ pub fn try_handle_stake_response(
 
         // CW20 LP mint message
         let lp_mint_msg = create_cw20_mint_msg(
-            &token_config.lp_token_address,
+            &token_config.lpt_address,
             &stake_item.user,
             stake_response.lp_token_amount,
         )

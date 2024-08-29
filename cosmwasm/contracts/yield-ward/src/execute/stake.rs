@@ -27,7 +27,7 @@ pub fn try_init_stake(
 
     // check is staking enabled
     if !token_config.is_stake_enabled {
-        return Err(ContractError::StakeDisabled(token_config.symbol));
+        return Err(ContractError::StakeDisabled(token_config.lpt_symbol));
     }
 
     let stake_params = STAKE_PARAMS.load(deps.storage, &token_denom)?;
@@ -66,7 +66,7 @@ pub fn try_init_stake(
     Ok(Response::new().add_event(
         Event::new("stake")
             .add_attribute("stake_id", stake_id.to_string())
-            .add_attribute("token_symbol", token_config.symbol)
+            .add_attribute("token_symbol", token_config.deposit_token_symbol)
             .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
             .add_attribute("dest_chain", token_config.chain)
             .add_attribute("token_amount", token_amount)

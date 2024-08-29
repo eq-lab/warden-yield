@@ -56,7 +56,7 @@ pub fn try_init_unstake(
     Ok(Response::new().add_event(
         Event::new("unstake")
             .add_attribute("unstake_id", unstake_id.to_string())
-            .add_attribute("token_symbol", token_config.symbol)
+            .add_attribute("token_symbol", token_config.deposit_token_symbol)
             .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
             .add_attribute("dest_chain", token_config.chain)
             .add_attribute("lpt_amount", lpt_amount)

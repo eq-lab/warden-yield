@@ -73,7 +73,7 @@ pub fn find_token_by_lp_token_denom(
 
     tokens_configs
         .iter()
-        .find(|(_, config)| &config.lp_token_denom == lp_token_denom)
+        .find(|(_, config)| &config.lpt_denom == lp_token_denom)
         .cloned()
         .ok_or(ContractError::UnknownLpToken(lp_token_denom.clone()))
 }

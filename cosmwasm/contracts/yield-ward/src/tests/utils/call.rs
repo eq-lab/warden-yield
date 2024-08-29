@@ -31,8 +31,8 @@ pub fn call_add_token(
                 cw20_address: cw20_address.clone(),
                 is_stake_enabled: lpt.is_stake_enabled,
                 is_unstake_enabled: lpt.is_unstake_enabled,
-                symbol: lpt.symbol.clone(),
-                name: lpt.name.clone(),
+                lpt_symbol: lpt.symbol.clone(),
+                lpt_name: lpt.name.clone(),
                 chain: lpt.chain.clone(),
                 evm_yield_contract: lpt.evm_yield_contract.clone(),
                 evm_address: lpt.evm_address.clone(),
@@ -110,13 +110,13 @@ pub fn call_unstake(
     lpt_amount: Uint128,
 ) {
     let token_config = get_token_config(&app, &ctx, &token_info.deposit_token_denom);
-    let balance_before = get_cw20_balance(app, &token_config.lp_token_address, &from);
+    let balance_before = get_cw20_balance(app, &token_config.lpt_address, &from);
     assert!(balance_before >= lpt_amount);
 
     app.execute(
         from.clone(),
         Wasm(WasmMsg::Execute {
-            contract_addr: token_config.lp_token_address.to_string(),
+            contract_addr: token_config.lpt_address.to_string(),
             msg: to_json_binary(&Cw20ExecuteMsg::Send {
                 contract: ctx.yield_ward_address.to_string(),
                 amount: lpt_amount,

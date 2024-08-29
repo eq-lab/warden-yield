@@ -10,6 +10,7 @@ use cosmwasm_std::{
     instantiate2_address, to_json_binary, Addr, Binary, CodeInfoResponse, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdError, StdResult, WasmMsg, WasmQuery,
 };
+use lp_token::msg::QueryMsg::TokenInfo;
 use lp_token::msg::{InstantiateMarketingInfo, InstantiateMsg as LpInstantiateMsg};
 
 pub fn try_add_token(
@@ -21,11 +22,11 @@ pub fn try_add_token(
     is_stake_enabled: bool,
     is_unstake_enabled: bool,
     chain: String,
-    symbol: String,
-    name: String,
+    lpt_symbol: String,
+    lpt_name: String,
     evm_yield_contract: String,
     evm_address: String,
-    lp_token_denom: String,
+    lpt_denom: String,
 ) -> Result<Response, ContractError> {
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
@@ -55,10 +56,16 @@ pub fn try_add_token(
 
     TOKEN_DENOM_BY_SOURCE.save(deps.storage, (&chain, &evm_yield_contract), &token_denom)?;
 
+    let deposit_token_info: cw20::TokenInfoResponse =
+        deps.querier.query(&Wasm(WasmQuery::Smart {
+            contract_addr: cw20_address.to_string(),
+            msg: to_json_binary(&TokenInfo {})?,
+        }))?;
+
     let msg = to_json_binary(&LpInstantiateMsg {
-        name,
-        symbol: symbol.clone(),
-        decimals: 6,
+        name: lpt_name,
+        symbol: lpt_symbol.clone(),
+        decimals: deposit_token_info.decimals,
         initial_balances: vec![],
         mint: Some(cw20::MinterResponse {
             minter: env.contract.address.to_string(),
@@ -85,7 +92,7 @@ pub fn try_add_token(
         salt: salt.clone(),
     };
 
-    let lp_token_address =
+    let lpt_address =
         calculate_token_address(deps.as_ref(), env, contract_config.lp_token_code_id, salt)?;
 
     TOKEN_CONFIG.save(
@@ -93,14 +100,15 @@ pub fn try_add_token(
         &token_denom,
         &TokenConfig {
             cw20_address,
+            deposit_token_symbol: deposit_token_info.symbol,
             is_stake_enabled,
             is_unstake_enabled,
-            symbol,
             chain,
             evm_yield_contract,
             evm_address,
-            lp_token_denom,
-            lp_token_address,
+            lpt_symbol,
+            lpt_denom,
+            lpt_address,
         },
     )?;
 

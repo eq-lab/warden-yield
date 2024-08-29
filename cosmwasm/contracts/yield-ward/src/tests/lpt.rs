@@ -22,12 +22,12 @@ fn assert_token_config(
 
     assert_eq!(token_config.is_stake_enabled, lpt.is_stake_enabled);
     assert_eq!(token_config.is_unstake_enabled, lpt.is_unstake_enabled);
-    assert_eq!(token_config.symbol, lpt.symbol);
     assert_eq!(token_config.chain, lpt.chain);
     assert_eq!(token_config.evm_yield_contract, lpt.evm_yield_contract);
     assert_eq!(token_config.evm_address, lpt.evm_address);
-    assert_eq!(token_config.lp_token_denom, lpt.lp_token_denom);
-    assert_eq!(token_config.lp_token_address, actual_lpt_address);
+    assert_eq!(token_config.lpt_symbol, lpt.symbol);
+    assert_eq!(token_config.lpt_denom, lpt.lp_token_denom);
+    assert_eq!(token_config.lpt_address, actual_lpt_address);
 }
 
 #[test]
