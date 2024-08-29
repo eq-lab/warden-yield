@@ -1,19 +1,19 @@
 import { task } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { deployWardenYield, loadDeployConfig } from '../deploy/src';
+import { upgradeWardenYield, loadUpgradeConfig } from '../deploy/src';
 import { Signer } from 'ethers';
 
-interface DeployArgs {
+interface UpgradeArgs {
   networkName: string;
   creatorKey: string;
   isPrivateKey: boolean;
 }
 
-task('task:deploy', 'Deploy Yield proxies and implementations')
+task('task:upgrade', 'Deploy Yield proxies and implementations')
   .addParam<string>('networkName', 'Network name')
   .addParam<string>('creatorKey', 'Private or public key of contracts creator')
   .addFlag('isPrivateKey', 'If passed `creatorKey` is the private one')
-  .setAction(async (taskArgs: DeployArgs, hre: HardhatRuntimeEnvironment) => {
+  .setAction(async (taskArgs: UpgradeArgs, hre: HardhatRuntimeEnvironment) => {
     const dryRun =
       hre.config.networks.hardhat.forking !== undefined ? hre.config.networks.hardhat.forking.enabled : false;
 
@@ -40,10 +40,10 @@ task('task:deploy', 'Deploy Yield proxies and implementations')
     } else {
       throw new Error("Can't impersonate signer while not dry-running");
     }
-  
-    const config = await loadDeployConfig(network, provider, dryRun);
 
-    await deployWardenYield(signer, config, network, dryRun, hre);
+    const config = await loadUpgradeConfig(network, provider, dryRun);
+
+    await upgradeWardenYield(signer, config, network, dryRun, hre);
 
     console.log(`Done!`);
   });

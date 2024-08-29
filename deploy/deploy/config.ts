@@ -2,77 +2,63 @@ import fs from 'fs';
 import path from 'path';
 import { isAddress, Provider } from 'ethers';
 import {
-  ERC20__factory,
   IDelegationManager__factory,
   IPool__factory,
   IStrategy__factory,
   IStrategyManager__factory,
-} from '../typechain-types';
+} from '../../typechain-types';
+import { assertTokenConfig, EthConnectionConfig, TokenConfig } from '../config-common';
 
-export interface Config {
+export interface DeployConfig {
   ethConnection: EthConnectionConfig;
-  aaveYield?: AaveYieldConfig;
-  ethYield?: EthYieldConfig;
+  aaveYield?: AaveYieldDeploymentConfig;
+  ethYield?: EthYieldDeploymentConfig;
 }
 
-export interface AaveYieldConfig {
+export interface AaveYieldDeploymentConfig {
   aavePool: string;
   tokens: TokenConfig[];
   enableWithdrawals: boolean;
 }
 
-export interface EthYieldConfig {
+export interface EthYieldDeploymentConfig {
   stETH: string;
   wETH9: string;
-  eigenLayer: EigenLayerConfig;
+  eigenLayer: EigenLayerDeploymentConfig;
 }
 
-export interface EigenLayerConfig {
+export interface EigenLayerDeploymentConfig {
   strategy: string;
   strategyManager: string;
   delegationManager: string;
   operator: string;
 }
 
-export interface TokenConfig {
-  address: string;
-  symbol: string;
-  decimals: number;
-}
+export const DEPLOY_CONFIG_FILENAME = 'deploy-config.json';
 
-export interface EthConnectionConfig {
-  ethOptions: EthOptions;
-  chainId: number;
-}
+const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
 
-export interface EthOptions {
-  gasLimit: number | null | undefined;
-  gasPrice: number | null | undefined;
-}
-
-export const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
-
-export async function loadDeployConfig(network: string, provider: Provider, dryRun: boolean): Promise<Config> {
-  const configDir = path.join(__dirname, `data`, `configs`, network);
+export async function loadDeployConfig(network: string, provider: Provider, dryRun: boolean): Promise<DeployConfig> {
+  const configDir = path.join(path.parse(__dirname).dir, `data`, `configs`, network);
 
   if (!fs.existsSync(configDir)) {
-    throw new Error(`Directory '${configDir}' does not exists`);
+    throw new Error(`Directory '${configDir}' does not exist`);
   }
   if (!fs.statSync(configDir).isDirectory()) {
     throw new Error(`Specified '${configDir}' is not a directory`);
   }
-  const configFilename = path.join(configDir, 'config.json');
+  const configFilename = path.join(configDir, DEPLOY_CONFIG_FILENAME);
   if (!fs.existsSync(configFilename)) {
-    throw new Error(`Deploy config is not exist! Filename: ${configFilename}`);
+    throw new Error(`Deploy config does not exist! Filename: ${configFilename}`);
   }
-  const config: Config = JSON.parse(fs.readFileSync(configFilename, 'utf-8'));
+  const config: DeployConfig = JSON.parse(fs.readFileSync(configFilename, 'utf-8'));
 
   await assertDeployConfigValidity(config, provider, dryRun);
 
   return config;
 }
 
-async function assertDeployConfigValidity(config: Config, provider: Provider, dryRun: boolean): Promise<void> {
+async function assertDeployConfigValidity(config: DeployConfig, provider: Provider, dryRun: boolean): Promise<void> {
   const assertChainId = config.ethConnection.chainId;
   const network = await provider.getNetwork();
 
@@ -97,7 +83,7 @@ async function assertDeployConfigValidity(config: Config, provider: Provider, dr
   await assertEthYieldDeployConfigValidity(config, provider);
 }
 
-async function assertAaveYieldDeployConfigValidity(config: Config, provider: Provider): Promise<void> {
+async function assertAaveYieldDeployConfigValidity(config: DeployConfig, provider: Provider): Promise<void> {
   const aave = config.aaveYield;
   if (aave === undefined) return;
 
@@ -115,7 +101,7 @@ async function assertAaveYieldDeployConfigValidity(config: Config, provider: Pro
   }
 }
 
-async function assertEthYieldDeployConfigValidity(config: Config, provider: Provider): Promise<void> {
+async function assertEthYieldDeployConfigValidity(config: DeployConfig, provider: Provider): Promise<void> {
   const ethYield = config.ethYield;
   if (ethYield === undefined) return;
 
@@ -155,24 +141,5 @@ async function assertEthYieldDeployConfigValidity(config: Config, provider: Prov
   const isOperator = await delegationManager.isOperator(el.operator);
   if (!isOperator) {
     throw new Error(`EL operator invalid!.`);
-  }
-}
-
-async function assertTokenConfig(token: TokenConfig, provider: Provider): Promise<void> {
-  if (!isAddress(token.address)) {
-    throw new Error(`Invalid token address! Address: "${token.address}", symbol: ${token.symbol}`);
-  }
-  const tokenContract = ERC20__factory.connect(token.address, provider);
-  const symbol = await tokenContract.symbol();
-  if (symbol !== token.symbol) {
-    throw new Error(
-      `Invalid token symbol! Address: ${token.address}, expected symbol: ${token.symbol}, actual: ${symbol}`
-    );
-  }
-  const decimals = await tokenContract.decimals();
-  if (Number(decimals) !== token.decimals) {
-    throw new Error(
-      `Invalid token decimals! Address: ${token.address}, expected decimals: ${token.decimals}, actual: ${decimals}`
-    );
   }
 }

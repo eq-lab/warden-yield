@@ -28,4 +28,11 @@ interface IAxelarGasService {
     uint256 amount,
     address refundAddress
   ) external payable;
+
+   /**
+    * @dev used in deployment script only
+    * @notice Returns the address of the designated gas collector.
+    * @return address of the gas collector
+    */
+  function gasCollector() external view returns (address);
 }

@@ -3,6 +3,7 @@ import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-contract-sizer';
 
 import './tasks/deploy';
+import './tasks/upgrade';
 
 import * as defaultConfig from './hardhat.common';
 
