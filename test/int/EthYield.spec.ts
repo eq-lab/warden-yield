@@ -58,6 +58,7 @@ describe('EthYield stake', () => {
 
     const contractShares = await eigenLayerStrategy.shares(ethYield.target);
     expect(contractShares).to.be.eq(await ethYield.totalShares());
+
     expect(lpTokenAmount).to.be.eq(await ethYield.totalLpTokens());
     expect(await stEth.balanceOf(ethYield.target)).to.be.lessThanOrEqual(1);
 

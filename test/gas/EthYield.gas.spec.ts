@@ -87,7 +87,7 @@ describe('EthYield gas', () => {
 
     await stake(ethYield, weth9, user);
 
-    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const lpAmount = await ethYield.totalLpTokens();
     const txReceipt = await unstake(ethYield, user, lpAmount);
 
     await snapshotGasCost(Number(txReceipt.gasUsed));
@@ -99,7 +99,7 @@ describe('EthYield gas', () => {
 
     await stake(ethYield, weth9, user);
 
-    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const lpAmount = await ethYield.totalLpTokens();
     await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -115,7 +115,7 @@ describe('EthYield gas', () => {
 
     await stake(ethYield, weth9, user);
 
-    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const lpAmount = await ethYield.totalLpTokens();
     await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -131,7 +131,7 @@ describe('EthYield gas', () => {
 
     await stake(ethYield, weth9, user);
 
-    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const lpAmount = await ethYield.totalLpTokens();
     await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -150,7 +150,7 @@ describe('EthYield gas', () => {
 
     await stake(ethYield, weth9, user);
 
-    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const lpAmount = await ethYield.totalLpTokens();
     await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -167,7 +167,7 @@ describe('EthYield gas', () => {
 
     await stake(ethYield, weth9, user);
 
-    const lpAmount = await ethYield.userShares(ethYield.target, await ethYield.getWeth());
+    const lpAmount = await ethYield.totalLpTokens();
     await unstake(ethYield, user, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -186,7 +186,7 @@ describe('EthYield gas', () => {
     await stake(ethYield, weth9, user1);
     await stake(ethYield, weth9, user2);
 
-    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 2n;
+    const lpAmount = (await ethYield.totalLpTokens()) / 2n;
     await unstake(ethYield, user1, lpAmount);
 
     await unstake(ethYield, user2, lpAmount);
@@ -207,7 +207,7 @@ describe('EthYield gas', () => {
     await stake(ethYield, weth9, user1);
     await stake(ethYield, weth9, user2);
 
-    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 2n;
+    const lpAmount = (await ethYield.totalLpTokens()) / 2n;
     await unstake(ethYield, user1, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -225,7 +225,7 @@ describe('EthYield gas', () => {
     await stake(ethYield, weth9, user1);
     await stake(ethYield, weth9, user2);
 
-    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 2n;
+    const lpAmount = (await ethYield.totalLpTokens()) / 2n;
     await unstake(ethYield, user1, lpAmount);
 
     const blocksToAwait = await eigenLayerDelegationManager.MAX_WITHDRAWAL_DELAY_BLOCKS();
@@ -246,7 +246,7 @@ describe('EthYield gas', () => {
     await stake(ethYield, weth9, user2);
     await stake(ethYield, weth9, user3);
 
-    const lpAmount = (await ethYield.userShares(ethYield.target, await ethYield.getWeth())) / 3n;
+    let lpAmount = (await ethYield.totalLpTokens()) / 3n;
     await unstake(ethYield, user1, lpAmount);
 
     await unstake(ethYield, user2, lpAmount);
@@ -256,9 +256,9 @@ describe('EthYield gas', () => {
     await reinit(ethYield);
     await finalizeLidoWithdraw(lidoWithdrawalQueue, (await ethYield.getLidoWithdrawalQueueElement(0)).requestId);
 
-    const user3Shares = await ethYield.userShares(user3.address, await ethYield.getWeth());
+    lpAmount = await ethYield.totalLpTokens();
 
-    const txReceipt = await unstake(ethYield, user2, lpAmount);
+    const txReceipt = await unstake(ethYield, user3, lpAmount);
 
     await snapshotGasCost(Number(txReceipt.gasUsed));
   });
