@@ -83,7 +83,7 @@ describe('WardenHandler', () => {
       const sourceContractAddress = WardenContractAddress;
       const payload = encodeWardenPayload(ActionType.Unstake, 0, 0n);
       const tokenSymbol = await testToken.symbol();
-      const tokenAmount = 2n ** 128n ;
+      const tokenAmount = 2n ** 128n;
 
       await expect(
         wardenHandler.executeWithToken(CommandId, sourceChain, sourceContractAddress, payload, tokenSymbol, tokenAmount)

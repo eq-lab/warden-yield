@@ -332,12 +332,12 @@ describe('lp calculations', () => {
     const totalUnderlying = await eigenLayerStrategy.sharesToUnderlyingView(totalShares);
 
     const lpAmount = totalLp / 2n;
-    const expectedUnderlyingForLp = lpAmount * totalUnderlying / totalLp;
+    const expectedUnderlyingForLp = (lpAmount * totalUnderlying) / totalLp;
 
     expect(await ethYield.lpToUnderlying(lpAmount)).to.be.closeTo(expectedUnderlyingForLp, 1);
 
     const underlyingAmount = totalUnderlying / 4n;
-    const expectedLp = totalLp * underlyingAmount / totalUnderlying;
+    const expectedLp = (totalLp * underlyingAmount) / totalUnderlying;
     expect(await ethYield.underlyingToLp(underlyingAmount)).to.be.closeTo(expectedLp, 1);
   });
 });
@@ -440,7 +440,7 @@ describe('EthYield errors', () => {
   });
 
   it('no element in eigenLayer queue', async () => {
-    const { ethYield } = await loadFixture(createEthYieldFork)
+    const { ethYield } = await loadFixture(createEthYieldFork);
     await expect(ethYield.getEigenLayerWithdrawalQueueElement(0)).to.be.revertedWithCustomError(
       ethYield,
       'NoElementWithIndex'

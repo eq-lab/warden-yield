@@ -281,7 +281,6 @@ describe('lp calculations', () => {
   });
 
   it('not empty pool', async () => {
-    
     const { aaveYield, weth9, aEthWETH, axelarGateway } = await loadFixture(createAaveEthFork);
     const [_, user] = await ethers.getSigners();
 
@@ -296,11 +295,11 @@ describe('lp calculations', () => {
     const totalUnderlying = await aEthWETH.balanceOf(aaveYield.target);
 
     const lpAmount = totalLp / 2n;
-    const expectedUnderlyingForLp = lpAmount * totalUnderlying / totalLp;
+    const expectedUnderlyingForLp = (lpAmount * totalUnderlying) / totalLp;
     expect(await aaveYield.lpToUnderlying(lpAmount)).to.be.closeTo(expectedUnderlyingForLp, 1);
 
     const underlyingAmount = totalUnderlying / 4n;
-    const expectedLp = totalLp * underlyingAmount / totalUnderlying;
+    const expectedLp = (totalLp * underlyingAmount) / totalUnderlying;
     expect(await aaveYield.underlyingToLp(underlyingAmount)).to.be.closeTo(expectedLp, 1);
   });
 });
