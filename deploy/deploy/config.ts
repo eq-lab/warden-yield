@@ -34,20 +34,22 @@ export interface EigenLayerDeploymentConfig {
   operator: string;
 }
 
+export const DEPLOY_CONFIG_FILENAME = 'deploy-config.json';
+
 const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
 
 export async function loadDeployConfig(network: string, provider: Provider, dryRun: boolean): Promise<DeployConfig> {
   const configDir = path.join(path.parse(__dirname).dir, `data`, `configs`, network);
 
   if (!fs.existsSync(configDir)) {
-    throw new Error(`Directory '${configDir}' does not exists`);
+    throw new Error(`Directory '${configDir}' does not exist`);
   }
   if (!fs.statSync(configDir).isDirectory()) {
     throw new Error(`Specified '${configDir}' is not a directory`);
   }
-  const configFilename = path.join(configDir, 'config.json');
+  const configFilename = path.join(configDir, DEPLOY_CONFIG_FILENAME);
   if (!fs.existsSync(configFilename)) {
-    throw new Error(`Deploy config is not exist! Filename: ${configFilename}`);
+    throw new Error(`Deploy config does not exist! Filename: ${configFilename}`);
   }
   const config: DeployConfig = JSON.parse(fs.readFileSync(configFilename, 'utf-8'));
 

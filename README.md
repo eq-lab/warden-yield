@@ -58,7 +58,8 @@ Example of deploy command:
 hardhat --network holesky \
   task:deploy \
   --network-name <network> \
-  --creator-private-key <private_key>
+  --creator-key <private_key> \
+  --is-private-key
 ```
 
 To dry-run deploy on a local fork, you need to create and use a hardhat config with `hardhat.forking` settings:
@@ -66,7 +67,45 @@ To dry-run deploy on a local fork, you need to create and use a hardhat config w
 hardhat --config holesky-fork.config.ts \
   task:deploy \
   --network-name <network> \
-  --creator-private-key <private_key>
+  --creator-key <private_key>
+  --is-private-key
+```
+
+You can use impersonated signer while forking:
+```bash
+hardhat --config holesky-fork.config.ts \
+  task:deploy \
+  --network-name <network> \
+  --creator-key <public_key>
+```
+
+### Upgrading
+For upgrade to work there must be `./openzeppelin/<network>.json` manifest file for `openzeppelin-upgrades` checks and `deploy/data/contracts/<network>.json` file to get contract address from
+
+Example of upgrade command:
+```bash
+hardhat --network holesky \
+  task:upgrade \
+  --network-name <network> \
+  --creator-key <private_key> \
+  --is-private-key
+```
+
+To dry-run upgrade on a local fork, you need to create and use a hardhat config with `hardhat.forking` settings:
+```bash
+hardhat --config holesky-fork.config.ts \
+  task:upgrade \
+  --network-name <network> \
+  --creator-key <private_key>
+  --is-private-key
+```
+
+You can use impersonated signer while forking:
+```bash
+hardhat --config holesky-fork.config.ts \
+  task:upgrade \
+  --network-name <network> \
+  --creator-key <public_key>
 ```
 
 # License

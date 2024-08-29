@@ -1,13 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { isAddress, Provider } from 'ethers';
-import {
-  IDelegationManager__factory,
-  IPool__factory,
-  IStrategy__factory,
-  IStrategyManager__factory,
-} from '../../typechain-types';
-import { assertTokenConfig, EthConnectionConfig, TokenConfig } from '../config-common';
+import { BaseContract, isAddress, Provider } from 'ethers';
+import { assertWardenHandlerConfigValidity, EthConnectionConfig, WardenHandlerConfig } from '../config-common';
 
 export interface UpgradeConfig {
   ethConnection: EthConnectionConfig;
@@ -25,12 +19,7 @@ export interface EthYieldUpgradeConfig {
   wardenHandler: WardenHandlerConfig;
 }
 
-export interface WardenHandlerConfig {
-  axelarGateway: string;
-  axelarGasService: string;
-  wardenChain: string;
-  wardenContractAddress: string;
-}
+export const UPGRADE_CONFIG_FILENAME = 'upgrade-config.json';
 
 export const configAllowedKeys = new Set<string>(['ethConnection', 'aaveYield', 'ethYield']);
 
@@ -43,9 +32,9 @@ export async function loadUpgradeConfig(network: string, provider: Provider, dry
   if (!fs.statSync(configDir).isDirectory()) {
     throw new Error(`Specified '${configDir}' is not a directory`);
   }
-  const configFilename = path.join(configDir, 'config.json');
+  const configFilename = path.join(configDir, UPGRADE_CONFIG_FILENAME);
   if (!fs.existsSync(configFilename)) {
-    throw new Error(`Deploy config is not exist! Filename: ${configFilename}`);
+    throw new Error(`Upgrade config does not exist! Filename: ${configFilename}`);
   }
   const config: UpgradeConfig = JSON.parse(fs.readFileSync(configFilename, 'utf-8'));
 
@@ -87,7 +76,7 @@ async function assertAaveYieldUpgradeConfigValidity(config: UpgradeConfig, provi
     throw new Error(`Invalid Aave underlyingToken: "${aave.underlyingToken}"`);
   }
 
-  // TODO verify underlying token is allowed in AaveYield contract
+  assertWardenHandlerConfigValidity(aave.wardenHandler);
 }
 
 async function assertEthYieldUpgradeConfigValidity(config: UpgradeConfig, provider: Provider): Promise<void> {
@@ -97,4 +86,6 @@ async function assertEthYieldUpgradeConfigValidity(config: UpgradeConfig, provid
   if (!isAddress(ethYield.lidoWithdrawalQueue)) {
     throw new Error(`Invalid Lido withdrawal queue: "${ethYield.lidoWithdrawalQueue}"`);
   }
+
+  assertWardenHandlerConfigValidity(ethYield.wardenHandler);
 }

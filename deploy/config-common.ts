@@ -7,6 +7,13 @@ export interface TokenConfig {
   decimals: number;
 }
 
+export interface WardenHandlerConfig {
+  axelarGateway: string;
+  axelarGasService: string;
+  wardenChain: string;
+  wardenContractAddress: string;
+}
+
 export interface EthConnectionConfig {
   ethOptions: EthOptions;
   chainId: number;
@@ -33,5 +40,15 @@ export async function assertTokenConfig(token: TokenConfig, provider: Provider):
     throw new Error(
       `Invalid token decimals! Address: ${token.address}, expected decimals: ${token.decimals}, actual: ${decimals}`
     );
+  }
+}
+
+export function assertWardenHandlerConfigValidity(config: WardenHandlerConfig) {
+  if (!isAddress(config.axelarGasService)) {
+    throw new Error(`Invalid axelarGasService address: ${config.axelarGasService}`);
+  }
+  
+  if (!isAddress(config.axelarGateway)) {
+    throw new Error(`Invalid axelarGateway address: ${config.axelarGasService}`);
   }
 }
