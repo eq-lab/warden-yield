@@ -19,15 +19,15 @@ pub struct TokenDetails {
 pub fn get_token_details(token: &String) -> TokenDetails {
     let chain = "Ethereum".to_string();
     let yield_ward_address =
-        "warden1w27ekqvvtzfanfxnkw4jx2f8gdfeqwd3drkee3e64xat6phwjg0say3p32".to_string();
+        "warden1vhjnzk9ly03dugffvzfcwgry4dgc8x0sv0nqqtfxj3ajn7rn5ghq6xwfv9".to_string();
 
     match token.to_lowercase().as_str() {
         "weth" => TokenDetails {
             _token: Token::WETH,
             deposit_token_denom: "demo_weth".to_string(),
             _deposit_token_address:
-                "warden1unyuj8qnmygvzuex3dwmg9yzt9alhvyeat0uu0jedg2wj33efl5qvhthj6".to_string(),
-            _lp_token_address: "warden1fhlq0karyxn8jp0ky9rsckdzu6n60uge3cpd6vftj627ffmma5zsjtnr5h"
+                "warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey".to_string(),
+            _lp_token_address: "warden12nnqks893jx3pz34yj4r4uhlvvgw5e6zjkjwxx03pxtd8y89faqseepx4j"
                 .to_string(),
             chain,
             yield_ward_address,
@@ -37,8 +37,8 @@ pub fn get_token_details(token: &String) -> TokenDetails {
             _token: Token::USDT,
             deposit_token_denom: "demo_usdt".to_string(),
             _deposit_token_address:
-                "warden1qwlgtx52gsdu7dtp0cekka5zehdl0uj3fhp9acg325fvgs8jdzkssm2jq5".to_string(),
-            _lp_token_address: "warden1vssdwz32692ph7r6u28l8rjuap8jyce02ng40c37rjwh3vcqal5s32era6"
+                "warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk".to_string(),
+            _lp_token_address: "warden1uyvxsvmjh8j4vnekgdl3rc36pjepaqdqw5999gmkfk05zrs3y03sd6g5wz"
                 .to_string(),
             chain,
             yield_ward_address,
@@ -48,8 +48,8 @@ pub fn get_token_details(token: &String) -> TokenDetails {
             _token: Token::USDC,
             deposit_token_denom: "demo_usdc".to_string(),
             _deposit_token_address:
-                "warden1fzm6gzyccl8jvdv3qq6hp9vs6ylaruervs4m06c7k0ntzn2f8faqnje7c3".to_string(),
-            _lp_token_address: "warden1u8ct0fkqahwe38qe09yqjwcdxajfe2a9cg2tltvk2vhc7hxuz78q6umxq5"
+                "warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc".to_string(),
+            _lp_token_address: "warden1qex8hj0ux0vlrzvvnydztlhlrz4whfreahvf49lgjd6zthaf8zsqlq5x4u"
                 .to_string(),
             chain,
             yield_ward_address,
