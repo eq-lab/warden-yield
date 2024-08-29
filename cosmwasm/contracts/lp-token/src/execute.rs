@@ -40,6 +40,21 @@ pub fn execute_burn(
     info: MessageInfo,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
+    // YieldWard: burn LP tokens allowed only by minter to not break sync with EVM contracts
+    let config = TOKEN_INFO
+        .may_load(deps.storage)?
+        .ok_or(ContractError::Unauthorized {})?;
+
+    if config
+        .mint
+        .as_ref()
+        .ok_or(ContractError::Unauthorized {})?
+        .minter
+        != info.sender
+    {
+        return Err(ContractError::Unauthorized {});
+    }
+
     // lower balance
     BALANCES.update(
         deps.storage,

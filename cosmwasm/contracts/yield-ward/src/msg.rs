@@ -35,6 +35,9 @@ pub enum ExecuteMsg {
         evm_address: String,
         lp_token_denom: String, // todo: remove it, redundant
     },
+    UpdateContractConfig {
+        contract_config: ContractConfigState,
+    },
     UpdateTokenConfig {
         token_denom: TokenDenom,
         config: TokenConfig,

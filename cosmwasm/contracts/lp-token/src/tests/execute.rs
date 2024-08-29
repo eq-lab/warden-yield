@@ -591,14 +591,14 @@ fn transfer() {
 }
 
 #[test]
-fn burn() {
+fn can_burn_by_minter() {
     let mut deps = mock_dependencies_with_balance(&coins(2, "token"));
     let addr1 = deps.api.addr_make("addr0001").to_string();
     let amount1 = Uint128::from(12340000u128);
     let burn = Uint128::from(76543u128);
     let too_much = Uint128::from(12340321u128);
 
-    do_instantiate(deps.as_mut(), &addr1, amount1);
+    do_instantiate_with_minter(deps.as_mut(), &addr1, amount1, &addr1, None);
 
     // Allows burning 0
     let info = message_info(&Addr::unchecked(addr1.clone()), &[]);
@@ -638,6 +638,22 @@ fn burn() {
     );
 }
 
+#[test]
+fn others_cannot_burn() {
+    let mut deps = mock_dependencies();
+
+    let user = deps.api.addr_make("user").to_string();
+
+    do_instantiate(deps.as_mut(), &user, Uint128::new(1234));
+
+    let info = message_info(&Addr::unchecked(user.clone()), &[]);
+    let env = mock_env();
+    let msg = ExecuteMsg::Burn {
+        amount: Uint128::new(1),
+    };
+    let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
+    assert_eq!(err, ContractError::Unauthorized {});
+}
 #[test]
 fn send() {
     let mut deps = mock_dependencies_with_balance(&coins(2, "token"));

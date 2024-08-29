@@ -6,10 +6,11 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::execute::{
-    try_add_token, try_disallow_mint, try_mint_lp_token, try_receive_cw_20, try_reinit,
-    try_update_token_config,
-};
+use crate::execute::add_token::try_add_token;
+use crate::execute::configs::{try_update_contract_config, try_update_token_config};
+use crate::execute::mint_lpt::{try_disallow_mint, try_mint_lp_token};
+use crate::execute::receive_cw20::try_receive_cw20;
+use crate::execute::reinit::try_reinit;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
     query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
@@ -57,7 +58,7 @@ pub fn execute(
         ExecuteMsg::Stake => {
             unimplemented!() // todo: return after finish CW20 deposit tests: try_init_stake(deps, env, info),
         }
-        ExecuteMsg::Receive(msg) => try_receive_cw_20(deps, env, info, msg),
+        ExecuteMsg::Receive(msg) => try_receive_cw20(deps, env, info, msg),
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
         ExecuteMsg::MintLpToken {
             recipient,
@@ -94,6 +95,9 @@ pub fn execute(
             token_denom,
             config,
         } => try_update_token_config(deps, env, info, token_denom, config),
+        ExecuteMsg::UpdateContractConfig { contract_config } => {
+            try_update_contract_config(deps, env, info, contract_config)
+        }
         // ExecuteMsg::HandleResponse {
         //     source_chain,
         //     source_address,
