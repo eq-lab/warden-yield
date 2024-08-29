@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { parseUnits } from 'ethers';
 import {
-  testWardentHandlerFixture,
+  testWardenHandlerFixture,
   WardenContractAddress,
   CommandId,
   WardenChain,
@@ -19,7 +19,7 @@ import {
 describe('WardenHandler', () => {
   describe('stake request', () => {
     it('Should fail when wrong source chain', async () => {
-      const { wardenHandler, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = 'WrongChain';
       const sourceContractAddress = WardenContractAddress;
@@ -33,7 +33,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should fail when wrong source contract address', async () => {
-      const { wardenHandler, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = 'wrong-contract-address';
@@ -47,7 +47,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should fail when not approved by gateway', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardenHandlerFixture);
 
       await axelarGateway.setIsValidCall(false);
 
@@ -63,7 +63,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should fail when wrong action type', async () => {
-      const { wardenHandler, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -76,8 +76,22 @@ describe('WardenHandler', () => {
       ).to.be.revertedWithCustomError(wardenHandler, 'InvalidActionType');
     });
 
+    it('Should fail when amount is too big', async () => {
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
+
+      const sourceChain = WardenChain;
+      const sourceContractAddress = WardenContractAddress;
+      const payload = encodeWardenPayload(ActionType.Unstake, 0, 0n);
+      const tokenSymbol = await testToken.symbol();
+      const tokenAmount = 2n ** 128n;
+
+      await expect(
+        wardenHandler.executeWithToken(CommandId, sourceChain, sourceContractAddress, payload, tokenSymbol, tokenAmount)
+      ).to.be.revertedWithCustomError(wardenHandler, 'AmountTooBig');
+    });
+
     it('Should call staking and reply success', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -104,9 +118,9 @@ describe('WardenHandler', () => {
         tokenAmount
       );
 
-      const wardenRsponse = await axelarGateway.callContractPayload();
+      const wardenResponse = await axelarGateway.callContractPayload();
 
-      const stakeResponse = decodeWardenStakeResponse(wardenRsponse);
+      const stakeResponse = decodeWardenStakeResponse(wardenResponse);
       expect(stakeResponse.status).to.equal(stakeResult.status);
       expect(stakeResponse.actionType).to.equal(stakeResult.actionType);
       expect(stakeResponse.actionId).to.equal(stakeResult.actionId);
@@ -115,7 +129,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should call staking and reply failed', async () => {
-      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -144,9 +158,9 @@ describe('WardenHandler', () => {
         tokenAmount
       );
 
-      const wardenRsponse = await axelarGateway.callContractWithTokenPayload();
+      const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
-      const stakeResponse = decodeWardenStakeResponse(wardenRsponse);
+      const stakeResponse = decodeWardenStakeResponse(wardenResponse);
       expect(stakeResponse.status).to.equal(stakeResult.status);
       expect(stakeResponse.actionType).to.equal(stakeResult.actionType);
       expect(stakeResponse.actionId).to.equal(stakeResult.actionId);
@@ -155,7 +169,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should call staking, reply success with reinitUnstakeId', async () => {
-      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -185,9 +199,9 @@ describe('WardenHandler', () => {
         tokenAmount
       );
 
-      const wardenRsponse = await axelarGateway.callContractWithTokenPayload();
+      const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
-      const stakeResponse = decodeWardenStakeResponse(wardenRsponse);
+      const stakeResponse = decodeWardenStakeResponse(wardenResponse);
       expect(stakeResponse.status).to.equal(stakeResult.status);
       expect(stakeResponse.actionType).to.equal(stakeResult.actionType);
       expect(stakeResponse.actionId).to.equal(stakeResult.actionId);
@@ -198,7 +212,7 @@ describe('WardenHandler', () => {
 
   describe('Unstake and reinit requests', () => {
     it('Should fail when wrong source chain', async () => {
-      const { wardenHandler, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = 'WrongChain';
       const sourceContractAddress = WardenContractAddress;
@@ -210,7 +224,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should fail when wrong source contract address', async () => {
-      const { wardenHandler, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = 'wrong-contract-address';
@@ -222,7 +236,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should fail when not approved by gateway', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardenHandlerFixture);
 
       await axelarGateway.setIsValidCall(false);
 
@@ -236,7 +250,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should fail when wrong action type', async () => {
-      const { wardenHandler, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, testToken } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -248,7 +262,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should call unstake and reply success', async () => {
-      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -269,9 +283,9 @@ describe('WardenHandler', () => {
 
       await wardenHandler.execute(CommandId, sourceChain, sourceContractAddress, payload);
 
-      const wardenRsponse = await axelarGateway.callContractWithTokenPayload();
+      const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
-      const unstakeResponse = decodeWardenUnstakeResponse(wardenRsponse);
+      const unstakeResponse = decodeWardenUnstakeResponse(wardenResponse);
       expect(unstakeResponse.status).to.equal(unstakeResult.status);
       expect(unstakeResponse.actionType).to.equal(ActionType.Unstake);
       expect(unstakeResponse.actionId).to.equal(unstakeId);
@@ -279,7 +293,7 @@ describe('WardenHandler', () => {
     });
 
     it('Should call reinit and reply success', async () => {
-      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardenHandlerFixture);
 
       const sourceChain = WardenChain;
       const sourceContractAddress = WardenContractAddress;
@@ -297,15 +311,15 @@ describe('WardenHandler', () => {
 
       await wardenHandler.execute(CommandId, sourceChain, sourceContractAddress, payload);
 
-      const wardenRsponse = await axelarGateway.callContractWithTokenPayload();
+      const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
-      const reinitResponse = decodeWardenReinitResponse(wardenRsponse);
+      const reinitResponse = decodeWardenReinitResponse(wardenResponse);
       expect(reinitResponse.actionType).to.equal(ActionType.Reinit);
       expect(reinitResponse.reinitUnstakeId).to.equal(reinitResult.reinitUnstakeId);
     });
 
     it('Should call reinit with empty reply', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardenHandlerFixture);
       await axelarGateway.resetPayload();
 
       expect(await axelarGateway.callContractPayload()).to.eq('0x');
@@ -331,7 +345,7 @@ describe('WardenHandler', () => {
 
   describe('Reinit from EVM', () => {
     it('Should reinit and reply to Warden', async () => {
-      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken, owner } = await loadFixture(testWardenHandlerFixture);
       await axelarGateway.resetPayload();
 
       expect(await axelarGateway.callContractPayload()).to.eq('0x');
@@ -349,14 +363,14 @@ describe('WardenHandler', () => {
       await wardenHandler.setReinitResult(reinitResult);
       await wardenHandler.executeReinit();
 
-      const wardenRsponse = await axelarGateway.callContractWithTokenPayload();
-      const reinitResponse = decodeWardenReinitResponse(wardenRsponse);
+      const wardenResponse = await axelarGateway.callContractWithTokenPayload();
+      const reinitResponse = decodeWardenReinitResponse(wardenResponse);
       expect(reinitResponse.actionType).to.equal(ActionType.Reinit);
       expect(reinitResponse.reinitUnstakeId).to.equal(reinitResult.reinitUnstakeId);
     });
 
     it('Should reinit without reply to Warden', async () => {
-      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardentHandlerFixture);
+      const { wardenHandler, axelarGateway, testToken } = await loadFixture(testWardenHandlerFixture);
       await axelarGateway.resetPayload();
 
       expect(await axelarGateway.callContractPayload()).to.eq('0x');
