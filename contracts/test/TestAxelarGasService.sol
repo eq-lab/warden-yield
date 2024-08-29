@@ -13,4 +13,6 @@ contract TestAxelarGasService is IAxelarGasService {
     uint256 amount,
     address refundAddress
   ) external payable override {}
+
+  function gasCollector() external view override returns (address) {}
 }

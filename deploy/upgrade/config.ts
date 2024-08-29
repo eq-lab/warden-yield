@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { BaseContract, isAddress, Provider } from 'ethers';
 import { assertWardenHandlerConfigValidity, EthConnectionConfig, WardenHandlerConfig } from '../config-common';
+import { ILidoWithdrawalQueue__factory } from '../../typechain-types';
 
 export interface UpgradeConfig {
   ethConnection: EthConnectionConfig;
@@ -76,7 +77,7 @@ async function assertAaveYieldUpgradeConfigValidity(config: UpgradeConfig, provi
     throw new Error(`Invalid Aave underlyingToken: "${aave.underlyingToken}"`);
   }
 
-  assertWardenHandlerConfigValidity(aave.wardenHandler);
+  assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
 }
 
 async function assertEthYieldUpgradeConfigValidity(config: UpgradeConfig, provider: Provider): Promise<void> {
@@ -87,5 +88,8 @@ async function assertEthYieldUpgradeConfigValidity(config: UpgradeConfig, provid
     throw new Error(`Invalid Lido withdrawal queue: "${ethYield.lidoWithdrawalQueue}"`);
   }
 
-  assertWardenHandlerConfigValidity(ethYield.wardenHandler);
+  const lidoQueue = ILidoWithdrawalQueue__factory.connect(ethYield.lidoWithdrawalQueue, provider);
+  await lidoQueue.MAX_STETH_WITHDRAWAL_AMOUNT(); // throws an error if address has no right method hash
+
+  assertWardenHandlerConfigValidity(ethYield.wardenHandler, provider);
 }
