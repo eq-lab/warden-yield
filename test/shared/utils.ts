@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { ILidoWithdrawalQueueExtended } from '../../typechain-types';
-import { BigNumberish, BytesLike, parseEther } from 'ethers';
+import { BytesLike } from 'ethers';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { ActionType } from './warden-handler-fixtures';
 
