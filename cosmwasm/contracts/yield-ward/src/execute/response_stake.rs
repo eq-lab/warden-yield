@@ -51,9 +51,13 @@ pub fn try_handle_stake_response(
         .ok_or(ContractError::CustomError(
             "Can't create CW20 mint message".to_owned(),
         ))?;
-        response = response.add_message(lp_mint_msg)
+        response = response.add_message(lp_mint_msg);
 
-        // todo: add event
+        let stake_success_event = Event::new("stake_success")
+            .add_attribute("stake_id", stake_response.stake_id.to_string())
+            .add_attribute("lp_amount", stake_response.lp_token_amount)
+            .add_attribute("token_amount", stake_amount);
+        events.push(stake_success_event);
     } else {
         // update stake and user stats
         stake_stats.pending_stake -= Uint256::from(stake_amount);
@@ -61,8 +65,6 @@ pub fn try_handle_stake_response(
         STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
         stake_item.action_stage = StakeActionStage::Failed;
-
-        // todo: add event
 
         // CW20 deposit token transfer message
         let cw20_transfer_msg = create_cw20_transfer_msg(
@@ -73,7 +75,7 @@ pub fn try_handle_stake_response(
         .ok_or(ContractError::CustomError(
             "Can't create CW20 transfer message".to_owned(),
         ))?;
-        response = response.add_message(cw20_transfer_msg)
+        response = response.add_message(cw20_transfer_msg);
         // response = response.add_message(BankMsg::Send {
         //     to_address: stake_item.user.to_string(),
         //     amount: vec![Coin {
@@ -81,6 +83,11 @@ pub fn try_handle_stake_response(
         //         amount: stake_amount,
         //     }],
         // });
+
+        let stake_fail_event = Event::new("stake_failed")
+            .add_attribute("stake_id", stake_response.stake_id.to_string())
+            .add_attribute("token_amount", stake_amount);
+        events.push(stake_fail_event);
     }
 
     // update stake item

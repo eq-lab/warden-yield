@@ -48,6 +48,11 @@ pub fn try_handle_unstake_response(
         unstake_item.action_stage = UnstakeActionStage::Registered;
 
         // todo: burn LP tokens
+
+        let unstake_registered_event = Event::new("unstake_registered")
+            .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
+            .add_attribute("lp_amount", lpt_amount);
+        events.push(unstake_registered_event);
     } else {
         // update token stats
         stake_stats.pending_unstake_lp_token_amount -= Uint256::from(unstake_item.lp_token_amount);
@@ -74,6 +79,11 @@ pub fn try_handle_unstake_response(
             "Can't create CW20 transfer message".to_owned(),
         ))?;
         response = response.add_message(lp_mint_msg);
+
+        let unstake_failed_event = Event::new("unstake_failed")
+            .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
+            .add_attribute("lp_amount", lpt_amount);
+        events.push(unstake_failed_event);
     }
 
     UNSTAKES.save(
