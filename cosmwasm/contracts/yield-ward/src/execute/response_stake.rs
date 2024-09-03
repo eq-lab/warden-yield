@@ -84,7 +84,7 @@ pub fn try_handle_stake_response(
         //     }],
         // });
 
-        let stake_fail_event = Event::new("stake_fail")
+        let stake_fail_event = Event::new("stake_failed")
             .add_attribute("stake_id", stake_response.stake_id.to_string())
             .add_attribute("token_amount", stake_amount);
         events.push(stake_fail_event);
