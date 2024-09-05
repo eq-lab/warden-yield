@@ -33,6 +33,7 @@ fn test_init_stake_one_coin() {
             user: ctx.user.clone(),
             token_amount: stake_amount,
             action_stage: StakeActionStage::WaitingExecution,
+            lp_token_amount: None
         }
     );
 
@@ -92,6 +93,7 @@ fn test_stake_in_two_tx() {
             user: ctx.user.clone(),
             token_amount: stake_amount_1,
             action_stage: StakeActionStage::WaitingExecution,
+            lp_token_amount: None
         }
     );
 
@@ -102,6 +104,7 @@ fn test_stake_in_two_tx() {
             user: ctx.user,
             token_amount: stake_amount_2,
             action_stage: StakeActionStage::WaitingExecution,
+            lp_token_amount: None
         }
     );
 
@@ -130,6 +133,7 @@ fn test_stake_response_successful() {
         Status::Success,
         stake_id,
         reinit_unstake_id,
+        Uint128::zero(),
         lp_token_amount,
     );
 
@@ -161,6 +165,7 @@ fn test_stake_response_successful() {
             user: ctx.user,
             token_amount: stake_amount,
             action_stage: StakeActionStage::Executed,
+            lp_token_amount: Some(lp_token_amount)
         }
     );
 
@@ -190,6 +195,7 @@ fn test_stake_response_successful_with_reinit() {
         Status::Success,
         stake_id,
         unstake_details.unstake_id,
+        unstake_details.unstake_token_amount,
         lp_token_amount,
     );
 
@@ -221,6 +227,7 @@ fn test_stake_response_successful_with_reinit() {
             user: ctx.user.clone(),
             token_amount: stake_amount,
             action_stage: StakeActionStage::Executed,
+            lp_token_amount: Some(lp_token_amount)
         }
     );
 
@@ -247,6 +254,7 @@ fn test_stake_response_successful_with_reinit() {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
             action_stage: UnstakeActionStage::Executed,
+            token_amount: Some(unstake_details.unstake_token_amount)
         }
     );
 
@@ -276,6 +284,7 @@ fn test_stake_response_fail() {
         Status::Fail,
         stake_id,
         reinit_unstake_id,
+        Uint128::zero(),
         lp_token_amount,
     );
 
@@ -307,6 +316,7 @@ fn test_stake_response_fail() {
             user: ctx.user.clone(),
             token_amount: stake_amount,
             action_stage: StakeActionStage::Failed,
+            lp_token_amount: None
         }
     );
 
@@ -336,6 +346,7 @@ fn test_stake_response_fail_with_reinit() {
         Status::Fail,
         stake_id,
         unstake_details.unstake_id,
+        unstake_details.unstake_token_amount,
         lp_token_amount,
     );
 
@@ -367,6 +378,7 @@ fn test_stake_response_fail_with_reinit() {
             user: ctx.user.clone(),
             token_amount: stake_amount,
             action_stage: StakeActionStage::Failed,
+            lp_token_amount: None
         }
     );
 
@@ -393,6 +405,7 @@ fn test_stake_response_fail_with_reinit() {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
             action_stage: UnstakeActionStage::Executed,
+            token_amount: Some(lp_token_amount)
         }
     );
 

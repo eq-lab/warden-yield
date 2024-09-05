@@ -13,7 +13,7 @@
 
 ```bash
 wardend tx wasm store lp_token.wasm \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3 \
@@ -24,7 +24,7 @@ wardend tx wasm store lp_token.wasm \
 
 ```bash
 wardend tx wasm store yield_ward.wasm \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3 \
@@ -58,7 +58,7 @@ wardend tx wasm instantiate 9 \
   '{"name":"Ethereum","symbol":"ETH","decimals":18,"initial_balances":[],"mint":{"minter":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl"}}' \
   --label "ETH-demo-2024-08-29" \
   --admin "warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl" \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1"
 
@@ -66,7 +66,7 @@ wardend tx wasm instantiate 9 \
   '{"name":"Tether USD","symbol":"USDT","decimals":6,"initial_balances":[],"mint":{"minter":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl"}}' \
   --label "USDT-demo-2024-08-29" \
   --admin "warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl" \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1"
 
@@ -74,7 +74,7 @@ wardend tx wasm instantiate 9 \
   '{"name":"Circle USD","symbol":"USDC","decimals":6,"initial_balances":[],"mint":{"minter":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl"}}' \
   --label "USDC-demo-2024-08-29" \
   --admin "warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl" \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1"
 ```
@@ -103,7 +103,7 @@ WETH:
 wardend tx wasm execute \
   warden1vhjnzk9ly03dugffvzfcwgry4dgc8x0sv0nqqtfxj3ajn7rn5ghq6xwfv9 \
   '{"add_token":{"token_denom":"demo_weth","cw20_address":"warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey","is_stake_enabled":true,"is_unstake_enabled":true,"chain":"Ethereum","lpt_symbol":"LPWETH","lpt_name":"Wrapped Ether LPT","evm_yield_contract":"0x4DF66BCA96319C6A033cfd86c38BCDb9B3c11a72","evm_address":"0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2","lp_token_denom":"demo_weth_lp"}}' \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3
@@ -115,7 +115,7 @@ USDT:
 wardend tx wasm execute \
   warden1vhjnzk9ly03dugffvzfcwgry4dgc8x0sv0nqqtfxj3ajn7rn5ghq6xwfv9 \
   '{"add_token":{"token_denom":"demo_usdt","cw20_address":"warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk","is_stake_enabled":true,"is_unstake_enabled":true,"chain":"Ethereum","lpt_symbol":"LPUSDT","lpt_name":"Tether USD LPT","evm_yield_contract":"0x0F9d2C03AD21a30746A4b4f07919e1C5F3641F35","evm_address":"0xdAC17F958D2ee523a2206206994597C13D831ec7","lp_token_denom":"demo_usdt_lp"}}' \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3
@@ -127,7 +127,7 @@ USDC:
 wardend tx wasm execute \
   warden1vhjnzk9ly03dugffvzfcwgry4dgc8x0sv0nqqtfxj3ajn7rn5ghq6xwfv9 \
   '{"add_token":{"token_denom":"demo_usdc","cw20_address":"warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc","is_stake_enabled":true,"is_unstake_enabled":true,"chain":"Ethereum","lpt_symbol":"LPUSDC","lpt_name":"Circle USD LPT","evm_yield_contract":"0x0259044395FE54d8aFe28354Ac737EB216064cF9","evm_address":"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48","lp_token_denom":"demo_usdc_lp"}}' \
-  --from "keplr_test2_acc" -y \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3
@@ -140,8 +140,8 @@ ETH:
 ```bash  
 wardend tx wasm execute \
   warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey \
-  '{"mint":{"recipient":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl","amount":"1000000000000000000"}}' \
-  --from "keplr_test2_acc" -y \
+  '{"mint":{"recipient":"warden1730hj2t4dycp7aa2uv63gsuuhrnc5x50x70wkf","amount":"100000000000000000"}}' \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3
@@ -152,8 +152,8 @@ USDT:
 ```bash  
 wardend tx wasm execute \
   warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk \
-  '{"mint":{"recipient":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl","amount":"1000000000"}}' \
-  --from "keplr_test2_acc" -y \
+  '{"mint":{"recipient":"warden1730hj2t4dycp7aa2uv63gsuuhrnc5x50x70wkf","amount":"1000000000"}}' \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3
@@ -164,8 +164,8 @@ USDC:
 ```bash  
 wardend tx wasm execute \
   warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc \
-  '{"mint":{"recipient":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl","amount":"1000000000"}}' \
-  --from "keplr_test2_acc" -y \
+  '{"mint":{"recipient":"warden1mscv9y928gq6ankczrwr8mgt2fc6matv0086dy","amount":"1000000000"}}' \
+  --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
   --gas auto --gas-adjustment 1.3
@@ -175,8 +175,8 @@ wardend tx wasm execute \
 
 ```bash
 wardend query wasm contract-state smart \
-  warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc \
-  '{"balance":{"address":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl"}}' \
+  warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey \
+  '{"balance":{"address":"warden1mscv9y928gq6ankczrwr8mgt2fc6matv0086dy"}}' \
   --node "https://rpc.buenavista.wardenprotocol.org:443"
 ```
 

@@ -68,6 +68,8 @@ pub enum QueryMsg {
     StakeElem { token_denom: TokenDenom, id: u64 },
     #[returns(GetUnstakeItemResponse)]
     UnstakeElem { token_denom: TokenDenom, id: u64 },
+    #[returns(GetTokenDenomBySourceResponse)]
+    TokenDenomBySource {},
 }
 
 #[cw_serde]
@@ -98,6 +100,11 @@ pub struct GetUnstakeItemResponse {
 #[cw_serde]
 pub struct GetQueueParamsResponse {
     pub params: QueueParams,
+}
+
+#[cw_serde]
+pub struct GetTokenDenomBySourceResponse {
+    pub tokens_denoms: Vec<(String, String, TokenDenom)>,
 }
 
 #[cw_serde]

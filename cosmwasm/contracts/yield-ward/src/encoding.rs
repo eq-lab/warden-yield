@@ -4,9 +4,13 @@ use crate::types::{
 use cosmwasm_std::{Binary, Uint128};
 
 pub fn encode_stake_payload(stake_id: &u64) -> Binary {
-    let payload: Vec<u8> = stake_id
-        .to_be_bytes()
+    // 32 bytes:
+    //    23 bytes - not used
+    //    8 bytes  - StakeId
+    //    1 byte   - ActionType
+    let payload: Vec<u8> = vec![0_u8; 23]
         .into_iter()
+        .chain(stake_id.to_be_bytes().into_iter())
         .chain(Some(0)) // ActionType: stake = 0_u8
         .collect();
 
@@ -15,9 +19,14 @@ pub fn encode_stake_payload(stake_id: &u64) -> Binary {
 }
 
 pub fn encode_unstake_payload(unstake_id: &u64, lp_token_amount: &Uint128) -> Binary {
-    let payload: Vec<u8> = lp_token_amount
-        .to_be_bytes()
+    // 32 bytes:
+    //    7 bytes - not used
+    //    16 bytes - LptAmount
+    //    8 bytes  - UnstakeId
+    //    1 byte   - ActionType
+    let payload: Vec<u8> = vec![0_u8; 7]
         .into_iter()
+        .chain(lp_token_amount.to_be_bytes().into_iter())
         .chain(unstake_id.to_be_bytes().into_iter())
         .chain(Some(1)) // ActionType::Unstake = 1_u8
         .collect();

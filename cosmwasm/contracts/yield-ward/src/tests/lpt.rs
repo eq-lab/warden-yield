@@ -3,12 +3,14 @@ use cosmwasm_std::CosmosMsg::Wasm;
 use cosmwasm_std::{to_json_binary, Addr, Uint128, WasmMsg};
 use cw_multi_test::{BasicApp, Executor};
 
-use crate::tests::utils::call::call_add_token;
+use crate::tests::utils::call::{call_add_token, call_update_token_config};
 use crate::tests::utils::init::{
     get_lp_contract_address_from_response, get_tokens_info, instantiate_cw20,
-    instantiate_yield_ward_contract_without_tokens,
+    instantiate_yield_ward_contract_with_tokens, instantiate_yield_ward_contract_without_tokens,
 };
-use crate::tests::utils::query::get_token_config;
+use crate::tests::utils::query::{
+    get_all_tokens_configs, get_token_config, get_token_denom_by_source,
+};
 use crate::tests::utils::types::{TestInfo, TokenTestInfo};
 use lp_token::msg::QueryMsg as lp_token_query_msg;
 
@@ -181,4 +183,42 @@ fn test_disallow_mint() {
     let resp = app.execute(test_info.admin.clone(), mint_msg);
 
     assert!(resp.is_err());
+}
+
+#[test]
+fn test_update_token_config() {
+    let (mut app, test_info) = instantiate_yield_ward_contract_with_tokens();
+    let tokens_configs_before = get_all_tokens_configs(&app, &test_info);
+    let token_denom_by_source_before = get_token_denom_by_source(&app, &test_info);
+
+    let token_denom = test_info
+        .tokens
+        .first()
+        .unwrap()
+        .deposit_token_denom
+        .clone();
+
+    let token_config_old = tokens_configs_before[&token_denom].clone();
+    let mut token_config_new = tokens_configs_before[&token_denom].clone();
+    token_config_new.evm_yield_contract = "new_yield_contract_address".to_string();
+    token_config_new.deposit_token_symbol = "new_deposit_token_symbol".to_string();
+
+    call_update_token_config(&mut app, &test_info, &token_denom, &token_config_new);
+    let tokens_configs_after = get_all_tokens_configs(&app, &test_info);
+
+    let mut tokens_configs_expected = tokens_configs_before.clone();
+    tokens_configs_expected.insert(token_denom.clone(), token_config_new.clone());
+    assert_eq!(tokens_configs_expected, tokens_configs_after);
+
+    let token_denom_by_source_after = get_token_denom_by_source(&app, &test_info);
+
+    let mut token_denom_by_source_expected = token_denom_by_source_before.clone();
+    token_denom_by_source_expected
+        .remove(&(token_config_old.chain, token_config_old.evm_yield_contract));
+
+    token_denom_by_source_expected.insert(
+        (token_config_new.chain, token_config_new.evm_yield_contract),
+        token_denom.clone(),
+    );
+    assert_eq!(token_denom_by_source_expected, token_denom_by_source_after);
 }

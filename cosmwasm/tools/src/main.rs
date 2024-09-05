@@ -3,7 +3,7 @@ mod common;
 use crate::common::{
     create_stake_response_payload, create_unstake_response_payload, get_token_details,
 };
-use cosmwasm_std::{to_json_binary, to_json_string, Uint128};
+use cosmwasm_std::{to_base64, to_json_binary, to_json_string, Uint128};
 use std::string::ToString;
 use yield_ward::msg::Cw20ActionMsg;
 
@@ -23,6 +23,8 @@ enum Commands {
     Stake {
         #[arg(long)]
         token: String,
+        #[arg(long)]
+        amount: u128,
     },
     StakeResponse {
         #[arg(long)]
@@ -41,6 +43,8 @@ enum Commands {
     Unstake {
         #[arg(long)]
         token: String,
+        #[arg(long)]
+        amount: u128,
     },
     UnstakeResponse {
         #[arg(long)]
@@ -60,7 +64,7 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Stake { token } => process_stake(token),
+        Commands::Stake { token, amount } => process_stake(token, amount),
         Commands::StakeResponse {
             token,
             stake_id,
@@ -76,7 +80,7 @@ fn main() {
             is_success,
             return_amount,
         ),
-        Commands::Unstake { token } => process_unstake(token),
+        Commands::Unstake { token, amount } => process_unstake(token, amount),
         Commands::UnstakeResponse {
             token,
             unstake_id,
@@ -93,7 +97,7 @@ fn main() {
     }
 }
 
-fn process_stake(token: &String) {
+fn process_stake(token: &String, amount: &u128) {
     let token_details = get_token_details(&token);
     let encoded = to_json_binary(&Cw20ActionMsg::Stake {
         deposit_token_denom: token_details.deposit_token_denom.clone(),
@@ -104,7 +108,7 @@ fn process_stake(token: &String) {
 
     let result = to_json_string(&Cw20ExecuteMsg::Send {
         contract: token_details.yield_ward_address,
-        amount: Uint128::new(12345),
+        amount: Uint128::new(*amount),
         msg: encoded,
     })
     .unwrap();
@@ -126,8 +130,10 @@ fn process_stake_response(
     let token_details = get_token_details(&token);
     let response_payload =
         create_stake_response_payload(stake_id, reinit_unstake_id, lp_token_amount, is_success);
+    let response_payload_base64 = to_base64(&response_payload);
 
     println!("Response payload hex: {:?}", response_payload);
+    println!("Response payload base64: {}", response_payload_base64);
 
     let encoded = to_json_binary(&Cw20ActionMsg::HandleResponse {
         deposit_token_denom: token_details.deposit_token_denom.clone(),
@@ -148,7 +154,7 @@ fn process_stake_response(
     println!("Encoded stake response message: {}", result);
 }
 
-fn process_unstake(token: &String) {
+fn process_unstake(token: &String, amount: &u128) {
     let token_details = get_token_details(&token);
     let encoded = to_json_binary(&Cw20ActionMsg::Unstake {
         deposit_token_denom: token_details.deposit_token_denom.clone(),
@@ -157,7 +163,7 @@ fn process_unstake(token: &String) {
 
     let result = to_json_string(&Cw20ExecuteMsg::Send {
         contract: token_details.yield_ward_address,
-        amount: Uint128::new(123),
+        amount: Uint128::new(*amount),
         msg: encoded,
     })
     .unwrap();

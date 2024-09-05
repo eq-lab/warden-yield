@@ -13,8 +13,8 @@ use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
-    query_tokens_configs, query_unstake_item, query_unstake_params,
+    query_all_tokens_denoms_by_source, query_contract_config, query_stake_item, query_stake_params,
+    query_stake_stats, query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{ContractConfigState, CONTRACT_CONFIG};
@@ -124,6 +124,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::UnstakeElem { token_denom, id } => {
             to_json_binary(&query_unstake_item(deps, token_denom, id)?)
+        }
+        QueryMsg::TokenDenomBySource {} => {
+            to_json_binary(&query_all_tokens_denoms_by_source(deps)?)
         }
     }
 }

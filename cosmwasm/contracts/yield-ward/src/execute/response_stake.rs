@@ -41,6 +41,7 @@ pub fn try_handle_stake_response(
         STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
         stake_item.action_stage = StakeActionStage::Executed;
+        stake_item.lp_token_amount = Some(stake_response.lp_token_amount);
 
         // CW20 LP mint message
         let lp_mint_msg = create_cw20_mint_msg(
@@ -105,9 +106,12 @@ pub fn try_handle_stake_response(
     // handle reinit
     if stake_response.reinit_unstake_id != 0 {
         // get unstake amount
-        let unstake_amount = token_amount
-            .checked_sub(stake_amount)
-            .map_err(|err| ContractError::Std(StdError::from(err)))?;
+        let unstake_amount = match stake_response.status {
+            Status::Success => token_amount,
+            Status::Fail => token_amount
+                .checked_sub(stake_amount)
+                .map_err(|err| ContractError::Std(StdError::from(err)))?,
+        };
 
         let (reinit_wasm_msg, reinit_event) = handle_reinit(
             deps,
