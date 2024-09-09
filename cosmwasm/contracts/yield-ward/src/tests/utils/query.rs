@@ -1,6 +1,6 @@
 use crate::msg::{
     GetContractConfigResponse, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
-    GetTokensConfigsResponse, GetUnstakeItemResponse, QueryMsg,
+    GetTokenDenomBySourceResponse, GetTokensConfigsResponse, GetUnstakeItemResponse, QueryMsg,
 };
 use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::types::TestInfo;
@@ -118,6 +118,28 @@ pub fn get_all_tokens_configs(app: &BasicApp, ctx: &TestInfo) -> HashMap<TokenDe
 
     let configs: HashMap<_, _> = response.tokens.into_iter().collect();
     configs
+}
+
+pub fn get_token_denom_by_source(
+    app: &BasicApp,
+    ctx: &TestInfo,
+) -> HashMap<(String, String), TokenDenom> {
+    let response: GetTokenDenomBySourceResponse = app
+        .wrap()
+        .query_wasm_smart(
+            ctx.yield_ward_address.to_string(),
+            &QueryMsg::TokenDenomBySource {},
+        )
+        .unwrap();
+
+    let token_denom_by_source: HashMap<_, _> = response
+        .tokens_denoms
+        .into_iter()
+        .map(|(source_chain, source_address, token_denom)| {
+            ((source_chain, source_address), token_denom)
+        })
+        .collect();
+    token_denom_by_source
 }
 
 pub fn get_token_config(app: &BasicApp, ctx: &TestInfo, token_denom: &String) -> TokenConfig {

@@ -14,14 +14,14 @@ pub fn try_handle_unstake_response(
     source_chain: String,
     source_address: String,
     payload: &[u8],
-    lpt_amount: Uint128,
+    token_amount: Uint128,
 ) -> Result<Response, ContractError> {
     let (token_denom, token_config) =
         find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
     let unstake_response =
         decode_unstake_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
 
-    ensure_unstake_response_is_valid(lpt_amount, &token_denom, &unstake_response)?;
+    ensure_unstake_response_is_valid(token_amount, &token_denom, &unstake_response)?;
 
     let mut unstake_item =
         UNSTAKES.load(deps.storage, (&token_denom, unstake_response.unstake_id))?;
@@ -51,7 +51,8 @@ pub fn try_handle_unstake_response(
 
         let unstake_registered_event = Event::new("unstake_registered")
             .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-            .add_attribute("lp_amount", lpt_amount);
+            .add_attribute("token_amount", token_amount)
+            .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string());
         events.push(unstake_registered_event);
     } else {
         // update token stats
@@ -82,7 +83,7 @@ pub fn try_handle_unstake_response(
 
         let unstake_failed_event = Event::new("unstake_failed")
             .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-            .add_attribute("lp_amount", lpt_amount);
+            .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string());
         events.push(unstake_failed_event);
     }
 
@@ -100,7 +101,7 @@ pub fn try_handle_unstake_response(
             deps,
             &token_denom,
             &token_config.cw20_address,
-            lpt_amount,
+            token_amount,
             &unstake_response.reinit_unstake_id,
             stake_stats,
         )?;
@@ -114,17 +115,17 @@ pub fn try_handle_unstake_response(
 }
 
 fn ensure_unstake_response_is_valid(
-    lpt_amount: Uint128,
+    token_amount: Uint128,
     _token_denom: &str,
     unstake_response: &UnstakeResponseData,
 ) -> Result<(), ContractError> {
     // assert message funds
-    if lpt_amount.is_zero() && unstake_response.reinit_unstake_id != 0 {
+    if token_amount.is_zero() && unstake_response.reinit_unstake_id != 0 {
         return Err(ContractError::CustomError(
             "Unstake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
         ));
     }
-    if !lpt_amount.is_zero() {
+    if !token_amount.is_zero() {
         if unstake_response.reinit_unstake_id == 0 {
             return Err(ContractError::CustomError(
                 "Unstake response: reinit_unstake_id == 0, but message have tokens".to_string(),

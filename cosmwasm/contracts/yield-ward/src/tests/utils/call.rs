@@ -9,7 +9,8 @@ use crate::tests::utils::query::{
 };
 use crate::tests::utils::types::{TestInfo, TokenTestInfo, UnstakeDetails};
 use crate::types::{
-    ReinitResponseData, StakeResponseData, Status, UnstakeActionStage, UnstakeResponseData,
+    ReinitResponseData, StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage,
+    UnstakeResponseData,
 };
 use cosmwasm_std::CosmosMsg::Wasm;
 use cosmwasm_std::{to_json_binary, Addr, Uint128, Uint256, WasmMsg};
@@ -37,6 +38,27 @@ pub fn call_add_token(
                 evm_yield_contract: lpt.evm_yield_contract.clone(),
                 evm_address: lpt.evm_address.clone(),
                 lp_token_denom: lpt.lp_token_denom.clone(),
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    )
+    .unwrap()
+}
+
+pub fn call_update_token_config(
+    app: &mut BasicApp,
+    test_info: &TestInfo,
+    token_denom: &TokenDenom,
+    token_config: &TokenConfig,
+) -> AppResponse {
+    app.execute(
+        test_info.admin.clone(),
+        Wasm(WasmMsg::Execute {
+            contract_addr: test_info.yield_ward_address.to_string(),
+            msg: to_json_binary(&ExecuteMsg::UpdateTokenConfig {
+                token_denom: token_denom.clone(),
+                config: token_config.clone(),
             })
             .unwrap(),
             funds: vec![],
@@ -139,26 +161,18 @@ pub fn call_stake_response(
     status: Status,
     stake_id: u64,
     reinit_unstake_id: u64,
+    reinit_token_amount: Uint128,
     lp_token_amount: Uint128,
 ) {
     let token_config = get_token_config(&app, &ctx, &token_info.deposit_token_denom);
 
-    let mut return_amount = Uint128::zero();
+    let mut return_amount = reinit_token_amount;
     if status == Status::Fail {
         return_amount = get_stake_item(app, ctx, &token_info.deposit_token_denom, stake_id)
             .unwrap()
             .token_amount;
     }
 
-    if reinit_unstake_id != 0 {
-        return_amount += Uint128::new(
-            get_unstake_item(app, ctx, &token_info.deposit_token_denom, reinit_unstake_id)
-                .unwrap()
-                .lp_token_amount
-                .u128()
-                + 20_u128,
-        );
-    }
     if !return_amount.is_zero() {
         call_mint_cw20(
             app,
@@ -313,6 +327,7 @@ pub fn call_stake_and_unstake(
         Status::Success,
         stake_id,
         reinit_unstake_id,
+        Uint128::zero(),
         lp_token_amount,
     );
 
@@ -346,7 +361,8 @@ pub fn call_stake_and_unstake(
         UnstakeItem {
             user: user.clone(),
             lp_token_amount,
-            action_stage: UnstakeActionStage::Registered
+            action_stage: UnstakeActionStage::Registered,
+            token_amount: None
         }
     );
 

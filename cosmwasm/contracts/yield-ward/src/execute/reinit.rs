@@ -44,6 +44,11 @@ pub fn handle_reinit(
 
     // update unstake item
     unstake_item.action_stage = UnstakeActionStage::Executed;
+    unstake_item.token_amount = match unstake_item.token_amount {
+        Some(amount) => Some(amount + token_amount),
+        None => Some(token_amount),
+    };
+
     UNSTAKES.save(
         deps.storage,
         (&deposit_token_denom, reinit_unstake_id.clone()),
@@ -71,7 +76,8 @@ pub fn handle_reinit(
         Event::new("unstake_finished")
             .add_attribute("token", deposit_token_denom)
             .add_attribute("lp_amount", unstake_item.lp_token_amount)
-            .add_attribute("token_amount", token_amount),
+            .add_attribute("token_amount", token_amount)
+            .add_attribute("total_token_amount", unstake_item.token_amount.unwrap()),
     ))
 }
 

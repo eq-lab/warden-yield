@@ -41,6 +41,7 @@ pub fn try_init_stake(
             user,
             token_amount,
             action_stage: StakeActionStage::WaitingExecution,
+            lp_token_amount: None,
         },
     )?;
 

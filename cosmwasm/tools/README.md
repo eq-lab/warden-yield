@@ -6,16 +6,16 @@ Build:
 cargo build
 ```
 
-Encode stake message:
+Encode stake 15 USDC message:
 
 ```bash
-../target/debug/tools stake --token "weth"
+../target/debug/tools stake --token "usdc" --amount 15000000
 ```
 
-Encode unstake message:
+Encode unstake 0.001 LPETH message:
 
 ```bash
-../target/debug/tools unstake --token "weth"
+../target/debug/tools unstake --token "weth" --amount 1000000000000
 ```
 
 Encode stake response message:
@@ -26,7 +26,7 @@ Encode stake response message:
     --stake-id 1 \
     --is-success \
     --reinit-unstake-id 0 \
-    --lp-token-amount 101 \
+    --lp-token-amount 10000000000000000 \
     --return-amount 0
 ```
 
