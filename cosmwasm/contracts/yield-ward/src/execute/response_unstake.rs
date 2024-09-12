@@ -106,7 +106,7 @@ pub fn try_handle_unstake_response(
             deps,
             &token_denom,
             coin.amount,
-            &unstake_response.reinit_unstake_id,
+            unstake_response.reinit_unstake_id,
             stake_stats,
         )?;
         response = response

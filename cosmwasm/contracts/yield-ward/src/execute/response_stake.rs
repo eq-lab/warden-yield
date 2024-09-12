@@ -106,7 +106,7 @@ pub fn try_handle_stake_response(
             deps,
             &token_denom,
             unstake_amount,
-            &stake_response.reinit_unstake_id,
+            stake_response.reinit_unstake_id,
             stake_stats,
         )?;
 

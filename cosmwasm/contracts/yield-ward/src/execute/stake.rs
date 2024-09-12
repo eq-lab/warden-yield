@@ -61,7 +61,7 @@ pub fn try_init_stake(
     stake_stats.pending_stake += Uint256::from(*token_amount);
     STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-    let payload = encode_stake_payload(&stake_id);
+    let payload = encode_stake_payload(stake_id);
     // todo: send tokens to Axelar
     let payload_hex_str = to_hex(payload);
 

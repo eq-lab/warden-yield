@@ -27,7 +27,7 @@ pub fn handle_reinit(
     deps: DepsMut,
     deposit_token_denom: &TokenDenom,
     token_amount: Uint128,
-    reinit_unstake_id: &u64,
+    reinit_unstake_id: u64,
     mut stake_stats: StakeStatsItem,
 ) -> Result<(BankMsg, Event), ContractError> {
     let mut unstake_item = UNSTAKES.load(
@@ -110,7 +110,7 @@ pub fn try_handle_reinit_response(
         deps,
         &token_denom,
         coin.amount,
-        &reinit_response_data.reinit_unstake_id,
+        reinit_response_data.reinit_unstake_id,
         stake_stats,
     )?;
 

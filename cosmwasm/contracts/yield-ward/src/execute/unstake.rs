@@ -39,7 +39,7 @@ pub fn try_init_unstake(
     stake_stats.pending_unstake_lp_token_amount += Uint256::from(lpt_amount);
     STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-    let unstake_payload = encode_unstake_payload(&unstake_id, &lpt_amount);
+    let unstake_payload = encode_unstake_payload(unstake_id, &lpt_amount);
     // todo: send message to Axelar
 
     let payload_hex_str = to_hex(unstake_payload);

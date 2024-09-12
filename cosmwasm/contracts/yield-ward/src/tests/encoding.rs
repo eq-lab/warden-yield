@@ -70,7 +70,7 @@ fn test_decode_reinit_response() {
 #[test]
 fn test_encode_stake_payload() {
     let stake_id = 5_u64;
-    let reinit_payload = encode_stake_payload(&stake_id);
+    let reinit_payload = encode_stake_payload(stake_id);
     let expected = "0x0000000000000000000000000000000000000000000000000000000000000500";
 
     assert_eq!(binary_to_hex_string(reinit_payload), expected);
@@ -81,7 +81,7 @@ fn test_encode_unstake_payload() {
     let lp_token_amount = Uint128::from(1000000_u128);
     let unstake_id = 2_u64;
 
-    let reinit_payload = encode_unstake_payload(&unstake_id, &lp_token_amount);
+    let reinit_payload = encode_unstake_payload(unstake_id, &lp_token_amount);
 
     let expected = "0x00000000000000000000000000000000000000000f4240000000000000000201";
 
