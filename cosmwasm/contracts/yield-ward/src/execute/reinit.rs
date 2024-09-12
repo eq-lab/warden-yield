@@ -1,12 +1,14 @@
 use crate::encoding::{decode_reinit_response_payload, encode_reinit_payload};
-use crate::execute::common::create_cw20_transfer_msg;
+use crate::execute::common::{create_bank_transfer_msg, create_cw20_burn_msg};
 use crate::helpers::find_token_by_message_source;
 use crate::state::{
     QueueParams, StakeStatsItem, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
-use crate::types::{TokenDenom, UnstakeActionStage};
+use crate::types::{TokenConfig, TokenDenom, UnstakeActionStage};
 use crate::ContractError;
-use cosmwasm_std::{Addr, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256, WasmMsg};
+use cosmwasm_std::{
+    BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256, WasmMsg,
+};
 
 pub fn try_reinit(
     deps: DepsMut,
@@ -18,7 +20,7 @@ pub fn try_reinit(
 
     let _reinit_payload = encode_reinit_payload();
 
-    // todo: send message to axelar
+    // todo: send reinit message to Axelar
 
     Ok(Response::new())
 }
@@ -26,21 +28,19 @@ pub fn try_reinit(
 pub fn handle_reinit(
     deps: DepsMut,
     deposit_token_denom: &TokenDenom,
-    deposit_token_address: &Addr,
+    token_config: &TokenConfig,
     token_amount: Uint128,
     reinit_unstake_id: &u64,
     mut stake_stats: StakeStatsItem,
-) -> Result<(WasmMsg, Event), ContractError> {
+) -> Result<(BankMsg, WasmMsg, Event), ContractError> {
     let mut unstake_item = UNSTAKES.load(
         deps.storage,
         (&deposit_token_denom, reinit_unstake_id.clone()),
     )?;
 
     // return deposit + earnings to user
-    let cw20_transfer_msg =
-        create_cw20_transfer_msg(deposit_token_address, &unstake_item.user, token_amount).ok_or(
-            ContractError::CustomError("Can't create CW20 transfer message".to_owned()),
-        )?;
+    let bank_transfer_msg =
+        create_bank_transfer_msg(&unstake_item.user, deposit_token_denom, token_amount);
 
     // update unstake item
     unstake_item.action_stage = UnstakeActionStage::Executed;
@@ -69,11 +69,16 @@ pub fn handle_reinit(
     stake_stats.pending_unstake_lp_token_amount -= Uint256::from(unstake_item.lp_token_amount);
     STAKE_STATS.save(deps.storage, &deposit_token_denom, &stake_stats)?;
 
-    // todo: add message to burn LP tokens
+    let burn_lpt_message =
+        create_cw20_burn_msg(&token_config.lpt_address, unstake_item.lp_token_amount).ok_or(
+            ContractError::CustomError("Can't create CW20 burn message".to_owned()),
+        )?;
 
     Ok((
-        cw20_transfer_msg,
+        bank_transfer_msg,
+        burn_lpt_message,
         Event::new("unstake_finished")
+            .add_attribute("unstake_id", reinit_unstake_id.to_string())
             .add_attribute("token", deposit_token_denom)
             .add_attribute("lp_amount", unstake_item.lp_token_amount)
             .add_attribute("token_amount", token_amount)
@@ -84,33 +89,43 @@ pub fn handle_reinit(
 pub fn try_handle_reinit_response(
     deps: DepsMut,
     _env: Env,
-    // info: MessageInfo,
+    info: MessageInfo,
     source_chain: String,
     source_address: String,
     payload: &[u8],
-    token_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    if token_amount.is_zero() {
+    if info.funds.len() != 1 || info.funds.first().unwrap().amount.is_zero() {
         return Err(ContractError::CustomError(
             "Reinit message must have one type of coins as funds".to_string(),
         ));
     }
 
+    let coin = info.funds.first().unwrap();
     let (token_denom, token_config) =
         find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
+
+    if token_denom != coin.denom {
+        return Err(ContractError::InvalidToken {
+            actual: coin.denom.to_string(),
+            expected: token_denom,
+        });
+    }
 
     let reinit_response_data =
         decode_reinit_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
 
     let stake_stats = STAKE_STATS.load(deps.storage, &token_denom)?;
-    let (mint_msg, event) = handle_reinit(
+    let (bank_transfer_msg, lpt_burn_msg, event) = handle_reinit(
         deps,
         &token_denom,
-        &token_config.cw20_address,
-        token_amount,
+        &token_config,
+        coin.amount,
         &reinit_response_data.reinit_unstake_id,
         stake_stats,
     )?;
 
-    Ok(Response::new().add_message(mint_msg).add_event(event))
+    Ok(Response::new()
+        .add_message(bank_transfer_msg)
+        .add_message(lpt_burn_msg)
+        .add_event(event))
 }

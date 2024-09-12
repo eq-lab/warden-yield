@@ -5,11 +5,12 @@ use cw_multi_test::{BasicApp, Executor};
 
 use crate::tests::utils::call::{call_add_token, call_update_token_config};
 use crate::tests::utils::init::{
-    get_lp_contract_address_from_response, get_tokens_info, instantiate_cw20,
+    get_lp_contract_address_from_response, get_tokens_info,
     instantiate_yield_ward_contract_with_tokens, instantiate_yield_ward_contract_without_tokens,
 };
 use crate::tests::utils::query::{
-    get_all_tokens_configs, get_token_config, get_token_denom_by_source,
+    get_all_tokens_configs, get_token_config, get_token_denom_by_lpt_address,
+    get_token_denom_by_source,
 };
 use crate::tests::utils::types::{TestInfo, TokenTestInfo};
 use lp_token::msg::QueryMsg as lp_token_query_msg;
@@ -21,14 +22,13 @@ fn assert_token_config(
     actual_lpt_address: &Addr,
 ) {
     let token_config = get_token_config(app, test_info, &lpt.deposit_token_denom);
-
+    assert_eq!(token_config.deposit_token_symbol, lpt.deposit_token_symbol);
     assert_eq!(token_config.is_stake_enabled, lpt.is_stake_enabled);
     assert_eq!(token_config.is_unstake_enabled, lpt.is_unstake_enabled);
     assert_eq!(token_config.chain, lpt.chain);
     assert_eq!(token_config.evm_yield_contract, lpt.evm_yield_contract);
     assert_eq!(token_config.evm_address, lpt.evm_address);
     assert_eq!(token_config.lpt_symbol, lpt.symbol);
-    assert_eq!(token_config.lpt_denom, lpt.lp_token_denom);
     assert_eq!(token_config.lpt_address, actual_lpt_address);
 }
 
@@ -38,14 +38,7 @@ fn test_add_one_lpt() {
 
     let tokens = get_tokens_info();
     let lpt0 = tokens.get(0).unwrap();
-    let cw20_deposit_token = instantiate_cw20(
-        &mut app,
-        &test_info,
-        test_info.lp_token_code_id,
-        &"TestTok".to_owned(),
-        &"TestT".to_owned(),
-    );
-    let resp = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token);
+    let resp = call_add_token(&mut app, &test_info, &lpt0);
 
     let actual_lpt_address = get_lp_contract_address_from_response(&resp);
     println!("LP token address from event: {}", actual_lpt_address);
@@ -65,23 +58,8 @@ fn test_add_two_lpt() {
     let tokens = get_tokens_info();
     let lpt0 = tokens.get(0).unwrap();
     let lpt1 = tokens.get(1).unwrap();
-
-    let cw20_deposit_token_0 = instantiate_cw20(
-        &mut app,
-        &test_info,
-        test_info.lp_token_code_id,
-        &"TestTokZero".to_owned(),
-        &"TestTZ".to_owned(),
-    );
-    let cw20_deposit_token_1 = instantiate_cw20(
-        &mut app,
-        &test_info,
-        test_info.lp_token_code_id,
-        &"TestTokOne".to_owned(),
-        &"TestTO".to_owned(),
-    );
-    let resp0 = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token_0);
-    let resp1 = call_add_token(&mut app, &test_info, &lpt1, &cw20_deposit_token_1);
+    let resp0 = call_add_token(&mut app, &test_info, &lpt0);
+    let resp1 = call_add_token(&mut app, &test_info, &lpt1);
 
     let actual_lpt_0_address = get_lp_contract_address_from_response(&resp0);
     let actual_lpt_1_address = get_lp_contract_address_from_response(&resp1);
@@ -105,14 +83,7 @@ fn test_mint_lpt() {
 
     let tokens = get_tokens_info();
     let lpt0 = tokens.get(0).unwrap();
-    let cw20_deposit_token = instantiate_cw20(
-        &mut app,
-        &test_info,
-        test_info.lp_token_code_id,
-        &"TestTok".to_owned(),
-        &"TestT".to_owned(),
-    );
-    let resp = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token);
+    let resp = call_add_token(&mut app, &test_info, &lpt0);
     let mint_amount = Uint128::new(12345);
 
     let actual_lpt_address = get_lp_contract_address_from_response(&resp);
@@ -149,14 +120,7 @@ fn test_disallow_mint() {
 
     let tokens = get_tokens_info();
     let lpt0 = tokens.get(0).unwrap();
-    let cw20_deposit_token = instantiate_cw20(
-        &mut app,
-        &test_info,
-        test_info.lp_token_code_id,
-        &"TestTok".to_owned(),
-        &"TestT".to_owned(),
-    );
-    let resp = call_add_token(&mut app, &test_info, &lpt0, &cw20_deposit_token);
+    let resp = call_add_token(&mut app, &test_info, &lpt0);
     let mint_amount = Uint128::new(12345);
 
     let actual_lpt_address = get_lp_contract_address_from_response(&resp);
@@ -190,6 +154,7 @@ fn test_update_token_config() {
     let (mut app, test_info) = instantiate_yield_ward_contract_with_tokens();
     let tokens_configs_before = get_all_tokens_configs(&app, &test_info);
     let token_denom_by_source_before = get_token_denom_by_source(&app, &test_info);
+    let token_denom_by_lpt_address_before = get_token_denom_by_lpt_address(&app, &test_info);
 
     let token_denom = test_info
         .tokens
@@ -202,6 +167,7 @@ fn test_update_token_config() {
     let mut token_config_new = tokens_configs_before[&token_denom].clone();
     token_config_new.evm_yield_contract = "new_yield_contract_address".to_string();
     token_config_new.deposit_token_symbol = "new_deposit_token_symbol".to_string();
+    token_config_new.lpt_address = Addr::unchecked("warden135");
 
     call_update_token_config(&mut app, &test_info, &token_denom, &token_config_new);
     let tokens_configs_after = get_all_tokens_configs(&app, &test_info);
@@ -210,8 +176,8 @@ fn test_update_token_config() {
     tokens_configs_expected.insert(token_denom.clone(), token_config_new.clone());
     assert_eq!(tokens_configs_expected, tokens_configs_after);
 
+    // check token_denom_by_source storage
     let token_denom_by_source_after = get_token_denom_by_source(&app, &test_info);
-
     let mut token_denom_by_source_expected = token_denom_by_source_before.clone();
     token_denom_by_source_expected
         .remove(&(token_config_old.chain, token_config_old.evm_yield_contract));
@@ -221,4 +187,15 @@ fn test_update_token_config() {
         token_denom.clone(),
     );
     assert_eq!(token_denom_by_source_expected, token_denom_by_source_after);
+
+    // check token_denom_by_lpt_address storage
+    let token_denom_by_lpt_address_after = get_token_denom_by_lpt_address(&app, &test_info);
+    let mut token_denom_by_lpt_address_expected = token_denom_by_lpt_address_before.clone();
+    token_denom_by_lpt_address_expected.remove(&token_config_old.lpt_address);
+
+    token_denom_by_lpt_address_expected.insert(token_config_new.lpt_address, token_denom.clone());
+    assert_eq!(
+        token_denom_by_lpt_address_expected,
+        token_denom_by_lpt_address_after
+    );
 }

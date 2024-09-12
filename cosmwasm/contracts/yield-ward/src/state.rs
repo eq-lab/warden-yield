@@ -21,6 +21,9 @@ pub const TOKEN_CONFIG: Map<&TokenDenom, TokenConfig> = Map::new("token_config_m
 pub const TOKEN_DENOM_BY_SOURCE: Map<(&str, &str), TokenDenom> =
     Map::new("token_denom_by_source_map");
 
+pub const TOKEN_DENOM_BY_LPT_ADDRESS: Map<&Addr, TokenDenom> =
+    Map::new("token_denom_by_lpt_address");
+
 pub const STAKE_STATS: Map<&TokenDenom, StakeStatsItem> = Map::new("stake_stats_map");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, Default)]

@@ -4,6 +4,7 @@ import 'hardhat-contract-sizer';
 
 import './tasks/deploy';
 import './tasks/upgrade';
+import './tasks/bridge-mock';
 
 import * as defaultConfig from './hardhat.common';
 
@@ -11,19 +12,19 @@ const config = {
   ...defaultConfig.default,
   networks: {
     ethereum: {
-      url: "https://rpc.ankr.com/eth"
+      url: 'https://rpc.ankr.com/eth',
     },
     holesky: {
-      url: 'https://endpoints.omniatech.io/v1/eth/holesky/public',
+      url: 'https://1rpc.io/holesky', //'https://endpoints.omniatech.io/v1/eth/holesky/public',
     },
     holesky2: {
       url: 'https://1rpc.io/holesky',
-    }
+    },
   },
   etherscan: {
     apiKey: {
-      holesky: ""
-    }
+      holesky: '',
+    },
   },
 };
 

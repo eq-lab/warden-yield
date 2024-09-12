@@ -1,7 +1,5 @@
-use crate::execute::common::{assert_cw20_deposit_token_address, assert_cw20_lpt_address};
-use crate::execute::response::try_handle_response;
-use crate::execute::stake::try_init_stake;
 use crate::execute::unstake::try_init_unstake;
+use crate::helpers::find_deposit_token_denom_by_lpt_address;
 use crate::msg::Cw20ActionMsg;
 use crate::ContractError;
 use cosmwasm_std::{from_json, DepsMut, Env, MessageInfo, Response};
@@ -20,40 +18,13 @@ pub fn try_receive_cw20(
     let user = deps.api.addr_validate(&msg.sender)?;
 
     match action_msg {
-        Cw20ActionMsg::Stake {
-            deposit_token_denom,
-        } => {
-            assert_cw20_deposit_token_address(deps.as_ref(), &deposit_token_denom, &info.sender)?;
+        Cw20ActionMsg::Unstake {} => {
             if msg.amount.is_zero() {
                 return Err(ContractError::ZeroTokenAmount);
             }
-            try_init_stake(deps, env, user, deposit_token_denom, msg.amount)
-        }
-        Cw20ActionMsg::Unstake {
-            deposit_token_denom,
-        } => {
-            if msg.amount.is_zero() {
-                return Err(ContractError::ZeroTokenAmount);
-            }
-            assert_cw20_lpt_address(deps.as_ref(), &deposit_token_denom, &info.sender)?;
+            let deposit_token_denom =
+                find_deposit_token_denom_by_lpt_address(deps.as_ref(), &info.sender)?;
             try_init_unstake(deps, env, user, deposit_token_denom, msg.amount)
-        }
-        Cw20ActionMsg::HandleResponse {
-            deposit_token_denom,
-            source_chain,
-            source_address,
-            payload,
-        } => {
-            assert_cw20_deposit_token_address(deps.as_ref(), &deposit_token_denom, &info.sender)?;
-            try_handle_response(
-                deps,
-                env,
-                user,
-                source_chain,
-                source_address,
-                payload,
-                msg.amount,
-            )
         }
     }
 }

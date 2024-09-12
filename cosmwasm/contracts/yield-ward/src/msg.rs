@@ -25,7 +25,8 @@ pub enum ExecuteMsg {
     },
     AddToken {
         token_denom: TokenDenom,
-        cw20_address: Addr,
+        token_symbol: String,
+        token_decimals: u8,
         is_stake_enabled: bool,
         is_unstake_enabled: bool,
         chain: String,
@@ -33,7 +34,6 @@ pub enum ExecuteMsg {
         evm_address: String,
         lpt_symbol: String,
         lpt_name: String,
-        lp_token_denom: String, // todo: remove it, redundant
     },
     UpdateContractConfig {
         contract_config: ContractConfigState,
@@ -43,11 +43,11 @@ pub enum ExecuteMsg {
         config: TokenConfig,
     },
 
-    // HandleResponse {
-    //     source_chain: String,
-    //     source_address: String,
-    //     payload: Binary,
-    // },
+    HandleResponse {
+        source_chain: String,
+        source_address: String,
+        payload: Binary,
+    },
     DisallowMint,
 }
 
@@ -70,6 +70,8 @@ pub enum QueryMsg {
     UnstakeElem { token_denom: TokenDenom, id: u64 },
     #[returns(GetTokenDenomBySourceResponse)]
     TokenDenomBySource {},
+    #[returns(GetTokenDenomByLptAddressResponse)]
+    TokenDenomByLptAddress {},
 }
 
 #[cw_serde]
@@ -108,6 +110,11 @@ pub struct GetTokenDenomBySourceResponse {
 }
 
 #[cw_serde]
+pub struct GetTokenDenomByLptAddressResponse {
+    pub tokens_denoms: Vec<(Addr, TokenDenom)>,
+}
+
+#[cw_serde]
 pub enum MigrateMsg {}
 
 #[derive(PartialEq, Eq, Clone, Default, Debug, Serialize, Deserialize)]
@@ -115,16 +122,5 @@ pub struct MsgLpTokenMintResponse {}
 
 #[cw_serde]
 pub enum Cw20ActionMsg {
-    Stake {
-        deposit_token_denom: TokenDenom,
-    },
-    Unstake {
-        deposit_token_denom: TokenDenom,
-    },
-    HandleResponse {
-        deposit_token_denom: TokenDenom,
-        source_chain: String,
-        source_address: String,
-        payload: Binary,
-    },
+    Unstake,
 }

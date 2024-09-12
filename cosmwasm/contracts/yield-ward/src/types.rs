@@ -7,7 +7,6 @@ pub type TokenDenom = String;
 
 #[cw_serde]
 pub struct TokenConfig {
-    pub cw20_address: Addr,
     pub is_stake_enabled: bool,
     pub is_unstake_enabled: bool,
     pub deposit_token_symbol: String,
@@ -15,7 +14,6 @@ pub struct TokenConfig {
     pub evm_yield_contract: String,
     pub evm_address: String,
     pub lpt_symbol: String,
-    pub lpt_denom: String,
     pub lpt_address: Addr,
 }
 

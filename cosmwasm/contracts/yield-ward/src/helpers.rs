@@ -2,10 +2,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::msg::ExecuteMsg;
-use crate::state::{CONTRACT_CONFIG, TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE};
+use crate::state::{
+    CONTRACT_CONFIG, TOKEN_CONFIG, TOKEN_DENOM_BY_LPT_ADDRESS, TOKEN_DENOM_BY_SOURCE,
+};
 use crate::types::{TokenConfig, TokenDenom};
 use crate::ContractError;
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Deps, MessageInfo, Order, StdResult, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Deps, MessageInfo, StdResult, WasmMsg};
 
 /// CwTemplateContract is a wrapper around Addr that provides a lot of helpers
 /// for working with this.
@@ -37,6 +39,7 @@ pub fn assert_msg_sender_is_admin(deps: Deps, info: &MessageInfo) -> Result<(), 
 }
 
 pub fn assert_msg_sender_is_axelar(deps: Deps, sender: &Addr) -> Result<(), ContractError> {
+    // todo: check origin assertion: https://github.com/axelarnetwork/evm-cosmos-gmp-sample/tree/main/cosmwasm-integration#authenticate-the-sender
     let contract_config = CONTRACT_CONFIG.load(deps.storage)?;
     if contract_config.axelar != sender {
         return Err(ContractError::Unauthorized);
@@ -61,19 +64,12 @@ pub fn find_token_by_message_source(
     return Ok((token_denom, token_config));
 }
 
-pub fn find_token_by_lp_token_denom(
+pub fn find_deposit_token_denom_by_lpt_address(
     deps: Deps,
-    lp_token_denom: &String,
-) -> Result<(TokenDenom, TokenConfig), ContractError> {
-    let tokens_configs: StdResult<Vec<(TokenDenom, TokenConfig)>> = TOKEN_CONFIG
-        .range(deps.storage, None, None, Order::Ascending)
-        .collect();
-
-    let tokens_configs = tokens_configs?;
-
-    tokens_configs
-        .iter()
-        .find(|(_, config)| &config.lpt_denom == lp_token_denom)
-        .cloned()
-        .ok_or(ContractError::UnknownLpToken(lp_token_denom.clone()))
+    lpt_address: &Addr,
+) -> Result<TokenDenom, ContractError> {
+    Ok(TOKEN_DENOM_BY_LPT_ADDRESS
+        .load(deps.storage, lpt_address)
+        .ok()
+        .ok_or(ContractError::UnknownLpToken(lpt_address.to_string()))?)
 }

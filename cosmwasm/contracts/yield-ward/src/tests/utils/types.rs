@@ -13,7 +13,8 @@ pub struct TestInfo {
 
 pub struct TokenTestInfo {
     pub deposit_token_denom: TokenDenom,
-    pub lp_token_denom: String,
+    pub deposit_token_symbol: String,
+    pub deposit_token_decimals: u8,
     pub is_stake_enabled: bool,
     pub is_unstake_enabled: bool,
     pub symbol: String,

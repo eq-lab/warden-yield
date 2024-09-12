@@ -140,7 +140,7 @@ ETH:
 ```bash  
 wardend tx wasm execute \
   warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey \
-  '{"mint":{"recipient":"warden1730hj2t4dycp7aa2uv63gsuuhrnc5x50x70wkf","amount":"100000000000000000"}}' \
+  '{"mint":{"recipient":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl","amount":"1000000000000000000"}}' \
   --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
@@ -152,7 +152,7 @@ USDT:
 ```bash  
 wardend tx wasm execute \
   warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk \
-  '{"mint":{"recipient":"warden1730hj2t4dycp7aa2uv63gsuuhrnc5x50x70wkf","amount":"1000000000"}}' \
+  '{"mint":{"recipient":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl","amount":"1000000000"}}' \
   --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
@@ -164,7 +164,7 @@ USDC:
 ```bash  
 wardend tx wasm execute \
   warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc \
-  '{"mint":{"recipient":"warden1mscv9y928gq6ankczrwr8mgt2fc6matv0086dy","amount":"1000000000"}}' \
+  '{"mint":{"recipient":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl","amount":"1000000000"}}' \
   --from "yieldward-stage-admin" -y \
   --node "https://rpc.buenavista.wardenprotocol.org:443" \
   --chain-id "buenavista-1" \
@@ -175,8 +175,8 @@ wardend tx wasm execute \
 
 ```bash
 wardend query wasm contract-state smart \
-  warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey \
-  '{"balance":{"address":"warden1mscv9y928gq6ankczrwr8mgt2fc6matv0086dy"}}' \
+  warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc \
+  '{"balance":{"address":"warden1ptf722r8tnxk8c7w5twln6xxp9hzc2fzr5djkl"}}' \
   --node "https://rpc.buenavista.wardenprotocol.org:443"
 ```
 
