@@ -1,11 +1,11 @@
 use crate::encoding::decode_unstake_response_payload;
-use crate::execute::common::create_cw20_transfer_msg;
+use crate::execute::common::{create_cw20_burn_msg, create_cw20_transfer_msg};
 use crate::execute::reinit::handle_reinit;
 use crate::helpers::find_token_by_message_source;
 use crate::state::{STAKE_STATS, UNSTAKES, UNSTAKE_PARAMS};
 use crate::types::{Status, UnstakeActionStage, UnstakeResponseData};
 use crate::ContractError;
-use cosmwasm_std::{Attribute, DepsMut, Env, Event, MessageInfo, Response, Uint256};
+use cosmwasm_std::{DepsMut, Env, Event, MessageInfo, Response, Uint256};
 
 pub fn try_handle_unstake_response(
     deps: DepsMut,
@@ -35,8 +35,6 @@ pub fn try_handle_unstake_response(
     let mut stake_stats = STAKE_STATS.load(deps.storage, &token_denom)?;
 
     let mut response = Response::new();
-    let attributes: Vec<Attribute> = vec![];
-    let mut events: Vec<Event> = vec![];
 
     if unstake_response.status == Status::Success {
         // update token stats
@@ -46,10 +44,19 @@ pub fn try_handle_unstake_response(
         // update action stage
         unstake_item.action_stage = UnstakeActionStage::Registered;
 
-        let unstake_registered_event = Event::new("unstake_registered")
-            .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-            .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string());
-        events.push(unstake_registered_event);
+        // burn LPT from contract balance
+        response = response
+            .add_message(
+                create_cw20_burn_msg(&token_config.lpt_address, unstake_item.lp_token_amount)
+                    .ok_or(ContractError::CustomError(
+                        "Can't create CW20 burn message".to_owned(),
+                    ))?,
+            )
+            .add_event(
+                Event::new("unstake_registered")
+                    .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
+                    .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string()),
+            );
     } else {
         // update token stats
         stake_stats.pending_unstake_lp_token_amount -= Uint256::from(unstake_item.lp_token_amount);
@@ -67,21 +74,22 @@ pub fn try_handle_unstake_response(
         // update action stage
         unstake_item.action_stage = UnstakeActionStage::Failed;
 
-        response = response.add_message(
-            create_cw20_transfer_msg(
-                &token_config.lpt_address,
-                &unstake_item.user,
-                unstake_item.lp_token_amount,
+        response = response
+            .add_message(
+                create_cw20_transfer_msg(
+                    &token_config.lpt_address,
+                    &unstake_item.user,
+                    unstake_item.lp_token_amount,
+                )
+                .ok_or(ContractError::CustomError(
+                    "Can't create CW20 transfer message".to_owned(),
+                ))?,
             )
-            .ok_or(ContractError::CustomError(
-                "Can't create CW20 transfer message".to_owned(),
-            ))?,
-        );
-
-        let unstake_failed_event = Event::new("unstake_failed")
-            .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-            .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string());
-        events.push(unstake_failed_event);
+            .add_event(
+                Event::new("unstake_failed")
+                    .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
+                    .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string()),
+            );
     }
 
     UNSTAKES.save(
@@ -94,22 +102,17 @@ pub fn try_handle_unstake_response(
     if unstake_response.reinit_unstake_id != 0 {
         // get unstake amount
         let coin = info.funds.first().unwrap();
-        let (bank_transfer_msg, burn_lpt_msg, reinit_event) = handle_reinit(
+        let (bank_transfer_msg, reinit_event) = handle_reinit(
             deps,
             &token_denom,
-            &token_config,
             coin.amount,
             &unstake_response.reinit_unstake_id,
             stake_stats,
         )?;
         response = response
             .add_message(bank_transfer_msg)
-            .add_message(burn_lpt_msg);
-
-        events.push(reinit_event);
+            .add_event(reinit_event);
     }
-
-    response = response.add_attributes(attributes).add_events(events);
 
     Ok(response)
 }

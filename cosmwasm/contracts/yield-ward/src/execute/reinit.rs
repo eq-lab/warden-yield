@@ -1,14 +1,12 @@
 use crate::encoding::{decode_reinit_response_payload, encode_reinit_payload};
-use crate::execute::common::{create_bank_transfer_msg, create_cw20_burn_msg};
+use crate::execute::common::create_bank_transfer_msg;
 use crate::helpers::find_token_by_message_source;
 use crate::state::{
     QueueParams, StakeStatsItem, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
-use crate::types::{TokenConfig, TokenDenom, UnstakeActionStage};
+use crate::types::{TokenDenom, UnstakeActionStage};
 use crate::ContractError;
-use cosmwasm_std::{
-    BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256, WasmMsg,
-};
+use cosmwasm_std::{BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256};
 
 pub fn try_reinit(
     deps: DepsMut,
@@ -28,11 +26,10 @@ pub fn try_reinit(
 pub fn handle_reinit(
     deps: DepsMut,
     deposit_token_denom: &TokenDenom,
-    token_config: &TokenConfig,
     token_amount: Uint128,
     reinit_unstake_id: &u64,
     mut stake_stats: StakeStatsItem,
-) -> Result<(BankMsg, WasmMsg, Event), ContractError> {
+) -> Result<(BankMsg, Event), ContractError> {
     let mut unstake_item = UNSTAKES.load(
         deps.storage,
         (&deposit_token_denom, reinit_unstake_id.clone()),
@@ -69,14 +66,8 @@ pub fn handle_reinit(
     stake_stats.pending_unstake_lp_token_amount -= Uint256::from(unstake_item.lp_token_amount);
     STAKE_STATS.save(deps.storage, &deposit_token_denom, &stake_stats)?;
 
-    let burn_lpt_message =
-        create_cw20_burn_msg(&token_config.lpt_address, unstake_item.lp_token_amount).ok_or(
-            ContractError::CustomError("Can't create CW20 burn message".to_owned()),
-        )?;
-
     Ok((
         bank_transfer_msg,
-        burn_lpt_message,
         Event::new("unstake_finished")
             .add_attribute("unstake_id", reinit_unstake_id.to_string())
             .add_attribute("token", deposit_token_denom)
@@ -101,7 +92,7 @@ pub fn try_handle_reinit_response(
     }
 
     let coin = info.funds.first().unwrap();
-    let (token_denom, token_config) =
+    let (token_denom, _token_config) =
         find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
 
     if token_denom != coin.denom {
@@ -115,10 +106,9 @@ pub fn try_handle_reinit_response(
         decode_reinit_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
 
     let stake_stats = STAKE_STATS.load(deps.storage, &token_denom)?;
-    let (bank_transfer_msg, lpt_burn_msg, event) = handle_reinit(
+    let (bank_transfer_msg, event) = handle_reinit(
         deps,
         &token_denom,
-        &token_config,
         coin.amount,
         &reinit_response_data.reinit_unstake_id,
         stake_stats,
@@ -126,6 +116,5 @@ pub fn try_handle_reinit_response(
 
     Ok(Response::new()
         .add_message(bank_transfer_msg)
-        .add_message(lpt_burn_msg)
         .add_event(event))
 }

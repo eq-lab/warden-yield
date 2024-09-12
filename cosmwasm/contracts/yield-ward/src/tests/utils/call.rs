@@ -280,17 +280,6 @@ pub fn call_reinit_response(
     unstake_amount: Uint128,
 ) {
     assert!(!unstake_amount.is_zero());
-    let token_config = get_token_config(&app, &ctx, &token_info.deposit_token_denom);
-    let unstake_item = get_unstake_item(
-        &app,
-        ctx,
-        &token_info.deposit_token_denom,
-        reinit_unstake_id,
-    )
-    .unwrap();
-
-    let contract_lpt_balance_before =
-        get_cw20_balance(&app, &token_config.lpt_address, &ctx.yield_ward_address);
 
     call_mint_bank_token(
         app,
@@ -317,13 +306,6 @@ pub fn call_reinit_response(
         }),
     )
     .unwrap();
-
-    let contract_lpt_balance_after =
-        get_cw20_balance(&app, &token_config.lpt_address, &ctx.yield_ward_address);
-    assert_eq!(
-        contract_lpt_balance_after,
-        contract_lpt_balance_before - unstake_item.lp_token_amount
-    );
 }
 
 pub fn call_stake_and_unstake(
