@@ -15,7 +15,7 @@ pub fn try_mint_lp_token(
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
     if !CONTRACT_CONFIG.load(deps.storage)?.is_mint_allowed {
-        return Err(ContractError::MintIsNowAllowed);
+        return Err(ContractError::MintIsNotAllowed);
     }
 
     let mint_msg = create_cw20_mint_msg(&lp_token_address, &recipient, amount).ok_or(

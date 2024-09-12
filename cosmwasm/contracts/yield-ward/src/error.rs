@@ -27,7 +27,7 @@ pub enum ContractError {
     MismatchCw20Token { actual: String, expected: String },
 
     #[error("Mint is not allowed")]
-    MintIsNowAllowed,
+    MintIsNotAllowed,
 
     #[error("Message has invalid action type")]
     InvalidActionType,
