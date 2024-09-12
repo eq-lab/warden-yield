@@ -1,5 +1,5 @@
 use crate::encoding::decode_unstake_response_payload;
-use crate::execute::common::{create_cw20_burn_msg, create_cw20_transfer_msg};
+use crate::execute::common::create_cw20_transfer_msg;
 use crate::execute::reinit::handle_reinit;
 use crate::helpers::find_token_by_message_source;
 use crate::state::{STAKE_STATS, UNSTAKES, UNSTAKE_PARAMS};
@@ -45,13 +45,6 @@ pub fn try_handle_unstake_response(
 
         // update action stage
         unstake_item.action_stage = UnstakeActionStage::Registered;
-
-        // burn LPT from contract balance
-        response = response.add_message(
-            create_cw20_burn_msg(&token_config.lpt_address, unstake_item.lp_token_amount).ok_or(
-                ContractError::CustomError("Can't create CW20 burn message".to_owned()),
-            )?,
-        );
 
         let unstake_registered_event = Event::new("unstake_registered")
             .add_attribute("unstake_id", unstake_response.unstake_id.to_string())

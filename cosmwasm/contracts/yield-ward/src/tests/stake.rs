@@ -405,7 +405,7 @@ fn test_stake_response_fail_with_reinit() {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
             action_stage: UnstakeActionStage::Executed,
-            token_amount: Some(lp_token_amount)
+            token_amount: Some(unstake_details.unstake_token_amount)
         }
     );
 

@@ -144,6 +144,9 @@ pub fn call_unstake(
     let balance_before = get_cw20_balance(app, &token_config.lpt_address, &from);
     assert!(balance_before >= lpt_amount);
 
+    let contract_lpt_balance_before =
+        get_cw20_balance(&app, &token_config.lpt_address, &ctx.yield_ward_address);
+
     app.execute(
         from.clone(),
         Wasm(WasmMsg::Execute {
@@ -158,6 +161,14 @@ pub fn call_unstake(
         }),
     )
     .unwrap();
+
+    let contract_lpt_balance_after =
+        get_cw20_balance(&app, &token_config.lpt_address, &ctx.yield_ward_address);
+
+    assert_eq!(
+        contract_lpt_balance_after,
+        contract_lpt_balance_before + lpt_amount
+    );
 }
 
 pub fn call_stake_response(
@@ -172,7 +183,7 @@ pub fn call_stake_response(
 ) {
     let mut return_amount = reinit_token_amount;
     if status == Status::Fail {
-        return_amount = get_stake_item(app, ctx, &token_info.deposit_token_denom, stake_id)
+        return_amount += get_stake_item(app, ctx, &token_info.deposit_token_denom, stake_id)
             .unwrap()
             .token_amount;
     }
@@ -322,8 +333,6 @@ pub fn call_stake_and_unstake(
     token_info: &TokenTestInfo,
 ) -> UnstakeDetails {
     let stake_id = get_stake_params(app, ctx, &token_info.deposit_token_denom).next_id;
-    let token_config = get_token_config(&app, ctx, &token_info.deposit_token_denom);
-
     let stake_amount = Uint128::from(14000_u128);
 
     // init stake
@@ -344,18 +353,10 @@ pub fn call_stake_and_unstake(
         lp_token_amount,
     );
 
-    let contract_lpt_balance_before =
-        get_cw20_balance(&app, &token_config.lpt_address, &ctx.yield_ward_address);
     let unstake_id = get_unstake_params(app, ctx, &token_info.deposit_token_denom).next_id;
     call_unstake(app, ctx, &user, token_info, lp_token_amount);
-    let contract_lpt_balance_after =
-        get_cw20_balance(&app, &token_config.lpt_address, &ctx.yield_ward_address);
-    assert_eq!(
-        contract_lpt_balance_after,
-        contract_lpt_balance_before + lp_token_amount
-    );
 
-    // response for unstake action
+    // response to register unstake
     call_unstake_response(
         app,
         ctx,
