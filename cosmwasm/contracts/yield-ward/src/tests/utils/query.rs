@@ -59,7 +59,7 @@ pub fn get_stake_item(
     token_denom: &TokenDenom,
     id: u64,
 ) -> Option<StakeItem> {
-    let response: GetStakeItemResponse = app
+    let response: Option<GetStakeItemResponse> = app
         .wrap()
         .query_wasm_smart(
             ctx.yield_ward_address.to_string(),
@@ -68,9 +68,9 @@ pub fn get_stake_item(
                 id,
             },
         )
-        .unwrap();
+        .ok();
 
-    Some(response.item)
+    response.map(|x| x.item)
 }
 
 pub fn get_unstake_item(
@@ -79,7 +79,7 @@ pub fn get_unstake_item(
     token_denom: &TokenDenom,
     id: u64,
 ) -> Option<UnstakeItem> {
-    let response: GetUnstakeItemResponse = app
+    let response: Option<GetUnstakeItemResponse> = app
         .wrap()
         .query_wasm_smart(
             ctx.yield_ward_address.to_string(),
@@ -88,9 +88,9 @@ pub fn get_unstake_item(
                 id,
             },
         )
-        .unwrap();
+        .ok();
 
-    Some(response.item)
+    response.map(|x| x.item)
 }
 
 pub fn get_all_stake_stats(app: &BasicApp, ctx: &TestInfo) -> HashMap<TokenDenom, StakeStatsItem> {

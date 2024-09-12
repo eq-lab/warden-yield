@@ -121,8 +121,6 @@ fn test_init_unstake_one_coin() {
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
         }
     );
-
-    // todo: check events ?
 }
 
 #[test]
@@ -158,8 +156,6 @@ fn test_unstake_response_successful() {
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
         }
     );
-
-    // todo: check LP tokens are burned
 }
 
 #[test]
@@ -217,9 +213,6 @@ fn test_unstake_response_successful_instant_reinit() {
             token_amount: Some(unstake_amount)
         }
     );
-
-    // todo: check LP tokens are burned
-    // todo: check user received deposit + rewards tokens
 }
 
 #[test]
@@ -280,9 +273,6 @@ fn test_unstake_response_successful_with_reinit() {
             token_amount: Some(unstake_amount)
         }
     );
-
-    // todo: check LP tokens are burned
-    // todo: check user received deposit + rewards tokens
 }
 
 #[test]
@@ -318,8 +308,6 @@ fn test_unstake_response_fail() {
             pending_unstake_lp_token_amount: Uint256::zero()
         }
     );
-
-    // todo: check LP tokens are returned to user
 }
 
 #[test]
@@ -358,6 +346,4 @@ fn test_unstake_response_fail_with_reinit() {
             pending_unstake_lp_token_amount: Uint256::zero()
         }
     );
-
-    // todo: check LP tokens are returned to user
 }

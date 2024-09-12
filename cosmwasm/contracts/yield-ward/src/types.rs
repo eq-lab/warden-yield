@@ -52,7 +52,7 @@ pub struct ReinitResponseData {
     pub reinit_unstake_id: u64,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Status {
     Success = 0,
     Fail,

@@ -181,6 +181,14 @@ pub fn call_stake_response(
     reinit_token_amount: Uint128,
     lp_token_amount: Uint128,
 ) {
+    let stake_item = get_stake_item(&app, &ctx, &token_info.deposit_token_denom, stake_id).unwrap();
+    let unstake_item = get_unstake_item(
+        &app,
+        &ctx,
+        &token_info.deposit_token_denom,
+        reinit_unstake_id,
+    );
+
     let mut return_amount = reinit_token_amount;
     if status == Status::Fail {
         return_amount += get_stake_item(app, ctx, &token_info.deposit_token_denom, stake_id)
@@ -197,8 +205,17 @@ pub fn call_stake_response(
         );
     }
 
+    let token_config = get_token_config(&app, &ctx, &token_info.deposit_token_denom);
+
+    let token_balance_before =
+        get_bank_token_balance(&app, &token_info.deposit_token_denom, &stake_item.user);
+    let lpt_balance_before = get_cw20_balance(&app, &token_config.lpt_address, &stake_item.user);
+    let unstaker_token_balance_before = unstake_item
+        .clone()
+        .map(|x| get_bank_token_balance(&app, &token_info.deposit_token_denom, &x.user));
+
     let response_payload = create_stake_response_payload(StakeResponseData {
-        status,
+        status: status.clone(),
         stake_id,
         reinit_unstake_id,
         lp_token_amount,
@@ -224,6 +241,34 @@ pub fn call_stake_response(
         }),
     )
     .unwrap();
+
+    let token_balance_after =
+        get_bank_token_balance(&app, &token_info.deposit_token_denom, &stake_item.user);
+    let lpt_balance_after = get_cw20_balance(&app, &token_config.lpt_address, &stake_item.user);
+
+    assert_eq!(lpt_balance_after, lpt_balance_before + lp_token_amount);
+
+    if status == Status::Success {
+        assert_eq!(token_balance_after, token_balance_before);
+    } else {
+        assert_eq!(
+            token_balance_after,
+            token_balance_before + stake_item.token_amount
+        );
+    }
+
+    if reinit_unstake_id != 0 {
+        let unstaker_token_balance_after = get_bank_token_balance(
+            &app,
+            &token_info.deposit_token_denom,
+            &unstake_item.unwrap().user,
+        );
+
+        assert_eq!(
+            unstaker_token_balance_after,
+            unstaker_token_balance_before.unwrap() + reinit_token_amount
+        );
+    }
 }
 
 pub fn call_unstake_response(
@@ -243,6 +288,26 @@ pub fn call_unstake_response(
             unstake_amount,
         );
     }
+
+    let unstake_item =
+        get_unstake_item(&app, &ctx, &token_info.deposit_token_denom, unstake_id).unwrap();
+    let reinit_unstake_item = get_unstake_item(
+        &app,
+        &ctx,
+        &token_info.deposit_token_denom,
+        reinit_unstake_id,
+    );
+
+    let token_config = get_token_config(&app, &ctx, &token_info.deposit_token_denom);
+
+    let contract_lpt_balance_before =
+        get_cw20_balance(app, &token_config.lpt_address, &ctx.yield_ward_address);
+    let user_lpt_balance_before =
+        get_cw20_balance(app, &token_config.lpt_address, &unstake_item.user);
+
+    let reinit_unstaker_token_balance_before = reinit_unstake_item
+        .clone()
+        .map(|x| get_bank_token_balance(&app, &token_info.deposit_token_denom, &x.user));
 
     let response_payload = create_unstake_response_payload(UnstakeResponseData {
         status,
@@ -270,6 +335,36 @@ pub fn call_unstake_response(
         }),
     )
     .unwrap();
+
+    // check lpt balances
+    let contract_lpt_balance_after =
+        get_cw20_balance(app, &token_config.lpt_address, &ctx.yield_ward_address);
+    let user_lpt_balance_after =
+        get_cw20_balance(app, &token_config.lpt_address, &unstake_item.user);
+
+    assert_eq!(
+        contract_lpt_balance_after,
+        contract_lpt_balance_before - unstake_item.lp_token_amount
+    );
+    if status == Status::Success {
+        assert_eq!(user_lpt_balance_after, user_lpt_balance_before);
+    } else {
+        assert_eq!(
+            user_lpt_balance_after,
+            user_lpt_balance_before + unstake_item.lp_token_amount
+        );
+    }
+
+    // check Bank module balances
+    let reinit_unstaker_token_balance_after = reinit_unstake_item
+        .map(|x| get_bank_token_balance(&app, &token_info.deposit_token_denom, &x.user));
+
+    if reinit_unstake_id != 0 {
+        assert_eq!(
+            reinit_unstaker_token_balance_after.unwrap(),
+            reinit_unstaker_token_balance_before.unwrap() + unstake_amount
+        );
+    }
 }
 
 pub fn call_reinit_response(
