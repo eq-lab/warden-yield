@@ -74,31 +74,28 @@ pub fn query_unstake_item(
 }
 
 pub fn query_all_tokens_denoms_by_source(deps: Deps) -> StdResult<GetTokenDenomBySourceResponse> {
-    let tokens_denoms: StdResult<Vec<_>> = TOKEN_DENOM_BY_SOURCE
+    let result: StdResult<Vec<_>> = TOKEN_DENOM_BY_SOURCE
         .range(deps.storage, None, None, Order::Ascending)
-        .collect();
-
-    let tokens_denoms: Vec<_> = tokens_denoms?
-        .into_iter()
-        .map(|((source_chain, source_address), token_denom)| {
-            (source_chain, source_address, token_denom)
+        .map(|x| {
+            x.map(|((source_chain, source_address), token_denom)| {
+                (source_chain, source_address, token_denom)
+            })
         })
         .collect();
 
-    Ok(GetTokenDenomBySourceResponse { tokens_denoms })
+    Ok(GetTokenDenomBySourceResponse {
+        tokens_denoms: result?,
+    })
 }
 
 pub fn query_all_tokens_denoms_by_lpt_address(
     deps: Deps,
 ) -> StdResult<GetTokenDenomByLptAddressResponse> {
-    let tokens_denoms: StdResult<Vec<_>> = TOKEN_DENOM_BY_LPT_ADDRESS
+    let result: StdResult<Vec<_>> = TOKEN_DENOM_BY_LPT_ADDRESS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
 
-    let tokens_denoms: Vec<_> = tokens_denoms?
-        .into_iter()
-        .map(|(lpt_address, token_denom)| (lpt_address, token_denom))
-        .collect();
-
-    Ok(GetTokenDenomByLptAddressResponse { tokens_denoms })
+    Ok(GetTokenDenomByLptAddressResponse {
+        tokens_denoms: result?,
+    })
 }

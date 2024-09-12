@@ -46,12 +46,10 @@ pub fn try_handle_unstake_response(
 
         // burn LPT from contract balance
         response = response
-            .add_message(
-                create_cw20_burn_msg(&token_config.lpt_address, unstake_item.lp_token_amount)
-                    .ok_or(ContractError::CustomError(
-                        "Can't create CW20 burn message".to_owned(),
-                    ))?,
-            )
+            .add_message(create_cw20_burn_msg(
+                &token_config.lpt_address,
+                unstake_item.lp_token_amount,
+            )?)
             .add_event(
                 Event::new("unstake_registered")
                     .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
@@ -62,11 +60,7 @@ pub fn try_handle_unstake_response(
         stake_stats.pending_unstake_lp_token_amount -= Uint256::from(unstake_item.lp_token_amount);
         STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-        // pop unstake and update unstake params
-        UNSTAKES.remove(
-            deps.storage,
-            (&token_denom, unstake_response.unstake_id.clone()),
-        );
+        // update unstake params
         let mut unstake_params = UNSTAKE_PARAMS.load(deps.storage, &token_denom)?;
         unstake_params.pending_count -= 1;
         UNSTAKE_PARAMS.save(deps.storage, &token_denom, &unstake_params)?;
@@ -75,16 +69,11 @@ pub fn try_handle_unstake_response(
         unstake_item.action_stage = UnstakeActionStage::Failed;
 
         response = response
-            .add_message(
-                create_cw20_transfer_msg(
-                    &token_config.lpt_address,
-                    &unstake_item.user,
-                    unstake_item.lp_token_amount,
-                )
-                .ok_or(ContractError::CustomError(
-                    "Can't create CW20 transfer message".to_owned(),
-                ))?,
-            )
+            .add_message(create_cw20_transfer_msg(
+                &token_config.lpt_address,
+                &unstake_item.user,
+                unstake_item.lp_token_amount,
+            )?)
             .add_event(
                 Event::new("unstake_failed")
                     .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
@@ -94,7 +83,7 @@ pub fn try_handle_unstake_response(
 
     UNSTAKES.save(
         deps.storage,
-        (&token_denom, unstake_response.unstake_id.clone()),
+        (&token_denom, unstake_response.unstake_id),
         &unstake_item,
     )?;
 
@@ -122,29 +111,35 @@ fn ensure_unstake_response_is_valid(
     token_denom: &str,
     unstake_response: &UnstakeResponseData,
 ) -> Result<(), ContractError> {
-    if info.funds.len() == 0 && unstake_response.reinit_unstake_id != 0 {
-        return Err(ContractError::CustomError(
-            "Unstake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
-        ));
-    }
-    if info.funds.len() == 1 {
-        if unstake_response.reinit_unstake_id == 0 {
+    match info.funds.len() {
+        0 => {
+            if unstake_response.reinit_unstake_id != 0 {
+                return Err(ContractError::CustomError(
+                    "Unstake response: reinit_unstake_id != 0, but message have no tokens"
+                        .to_string(),
+                ));
+            }
+        }
+        1 => {
+            if unstake_response.reinit_unstake_id == 0 {
+                return Err(ContractError::CustomError(
+                    "Unstake response: reinit_unstake_id == 0, but message have tokens".to_string(),
+                ));
+            }
+            let coin = info.funds.first().unwrap();
+            if coin.denom != *token_denom {
+                return Err(ContractError::InvalidToken {
+                    expected: token_denom.to_owned(),
+                    actual: coin.denom.clone(),
+                });
+            }
+        }
+        _ => {
             return Err(ContractError::CustomError(
-                "Unstake response: reinit_unstake_id == 0, but message have tokens".to_string(),
-            ));
-        }
-        let coin = info.funds.first().unwrap();
-        if coin.denom != *token_denom {
-            return Err(ContractError::InvalidToken {
-                expected: token_denom.to_owned(),
-                actual: coin.denom.clone(),
-            });
+                "Unstake response has too much coins in message".to_string(),
+            ))
         }
     }
-    if info.funds.len() > 1 {
-        return Err(ContractError::CustomError(
-            "Unstake response has too much coins in message".to_string(),
-        ));
-    }
+
     Ok(())
 }

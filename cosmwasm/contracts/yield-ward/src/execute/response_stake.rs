@@ -45,10 +45,7 @@ pub fn try_handle_stake_response(
             &token_config.lpt_address,
             &stake_item.user,
             stake_response.lp_token_amount,
-        )
-        .ok_or(ContractError::CustomError(
-            "Can't create CW20 mint message".to_owned(),
-        ))?;
+        )?;
 
         response = response.add_message(lp_mint_msg).add_event(
             Event::new("stake_success")
@@ -81,7 +78,7 @@ pub fn try_handle_stake_response(
     // update stake item
     STAKES.save(
         deps.storage,
-        (&token_denom, stake_response.stake_id.clone()),
+        (&token_denom, stake_response.stake_id),
         &stake_item,
     )?;
 
@@ -123,36 +120,39 @@ fn ensure_stake_response_is_valid(
     token_denom: &str,
     stake_response: &StakeResponseData,
 ) -> Result<(), ContractError> {
-    if info.funds.len() == 0 {
-        if stake_response.reinit_unstake_id != 0 {
+    match info.funds.len() {
+        0 => {
+            if stake_response.reinit_unstake_id != 0 {
+                return Err(ContractError::CustomError(
+                    "Stake response: reinit_unstake_id != 0, but message have no tokens"
+                        .to_string(),
+                ));
+            }
+            if stake_response.status == Status::Fail {
+                return Err(ContractError::CustomError(
+                    "Fail stake response must have tokens in message".to_string(),
+                ));
+            }
+        }
+        1 => {
+            if stake_response.reinit_unstake_id == 0 && stake_response.status == Status::Success {
+                return Err(ContractError::CustomError(
+                    "Stake response: reinit_unstake_id == 0 and status is Success, but message have tokens".to_string(),
+                ));
+            }
+            let coin = info.funds.first().unwrap();
+            if coin.denom != *token_denom {
+                return Err(ContractError::InvalidToken {
+                    expected: token_denom.to_owned(),
+                    actual: coin.denom.clone(),
+                });
+            }
+        }
+        _ => {
             return Err(ContractError::CustomError(
-                "Stake response: reinit_unstake_id != 0, but message have no tokens".to_string(),
-            ));
+                "Stake response has too much coins in message".to_string(),
+            ))
         }
-        if stake_response.status == Status::Fail {
-            return Err(ContractError::CustomError(
-                "Fail stake response must have tokens in message".to_string(),
-            ));
-        }
-    }
-    if info.funds.len() == 1 {
-        if stake_response.reinit_unstake_id == 0 && stake_response.status == Status::Success {
-            return Err(ContractError::CustomError(
-                "Stake response: reinit_unstake_id == 0 and status is Success, but message have tokens".to_string(),
-            ));
-        }
-        let coin = info.funds.first().unwrap();
-        if coin.denom != *token_denom {
-            return Err(ContractError::InvalidToken {
-                expected: token_denom.to_owned(),
-                actual: coin.denom.clone(),
-            });
-        }
-    }
-    if info.funds.len() > 1 {
-        return Err(ContractError::CustomError(
-            "Stake response has too much coins in message".to_string(),
-        ));
     }
 
     Ok(())

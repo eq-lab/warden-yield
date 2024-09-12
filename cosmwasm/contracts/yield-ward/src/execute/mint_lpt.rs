@@ -18,9 +18,7 @@ pub fn try_mint_lp_token(
         return Err(ContractError::MintIsNotAllowed);
     }
 
-    let mint_msg = create_cw20_mint_msg(&lp_token_address, &recipient, amount).ok_or(
-        ContractError::CustomError("Can't create CW20 mint message".to_owned()),
-    )?;
+    let mint_msg = create_cw20_mint_msg(&lp_token_address, &recipient, amount)?;
 
     Ok(Response::new().add_message(mint_msg))
 }

@@ -11,14 +11,13 @@ pub fn try_receive_cw20(
     info: MessageInfo,
     msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
-    let action_msg: Cw20ActionMsg = from_json(msg.msg)
-        .ok()
-        .ok_or(ContractError::InvalidCw20Message)?;
+    let action_msg: Cw20ActionMsg =
+        from_json(msg.msg).map_err(|_| ContractError::InvalidCw20Message)?;
 
     let user = deps.api.addr_validate(&msg.sender)?;
 
     match action_msg {
-        Cw20ActionMsg::Unstake {} => {
+        Cw20ActionMsg::Unstake => {
             if msg.amount.is_zero() {
                 return Err(ContractError::ZeroTokenAmount);
             }

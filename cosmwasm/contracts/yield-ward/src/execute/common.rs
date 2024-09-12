@@ -1,4 +1,5 @@
 use crate::types::TokenDenom;
+use crate::ContractError;
 use cosmwasm_std::{to_json_binary, Addr, BankMsg, Coin, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 
@@ -6,24 +7,28 @@ pub fn create_cw20_mint_msg(
     cw20_address: &Addr,
     recipient: &Addr,
     amount: Uint128,
-) -> Option<WasmMsg> {
+) -> Result<WasmMsg, ContractError> {
     let msg = to_json_binary(&Cw20ExecuteMsg::Mint {
         recipient: recipient.to_string(),
         amount,
     })
-    .ok()?;
+    .map_err(|_| ContractError::CustomError("Can't create CW20 mint message".to_owned()))?;
 
-    Some(WasmMsg::Execute {
+    Ok(WasmMsg::Execute {
         contract_addr: cw20_address.to_string(),
         msg,
         funds: vec![],
     })
 }
 
-pub fn create_cw20_burn_msg(cw20_address: &Addr, amount: Uint128) -> Option<WasmMsg> {
-    let msg = to_json_binary(&Cw20ExecuteMsg::Burn { amount }).ok()?;
+pub fn create_cw20_burn_msg(
+    cw20_address: &Addr,
+    amount: Uint128,
+) -> Result<WasmMsg, ContractError> {
+    let msg = to_json_binary(&Cw20ExecuteMsg::Burn { amount })
+        .map_err(|_| ContractError::CustomError("Can't create CW20 burn message".to_owned()))?;
 
-    Some(WasmMsg::Execute {
+    Ok(WasmMsg::Execute {
         contract_addr: cw20_address.to_string(),
         msg,
         funds: vec![],
@@ -34,14 +39,14 @@ pub fn create_cw20_transfer_msg(
     cw20_address: &Addr,
     recipient: &Addr,
     amount: Uint128,
-) -> Option<WasmMsg> {
+) -> Result<WasmMsg, ContractError> {
     let msg = to_json_binary(&Cw20ExecuteMsg::Transfer {
         recipient: recipient.to_string(),
         amount,
     })
-    .ok()?;
+    .map_err(|_| ContractError::CustomError("Can't create CW20 transfer message".to_owned()))?;
 
-    Some(WasmMsg::Execute {
+    Ok(WasmMsg::Execute {
         contract_addr: cw20_address.to_string(),
         msg,
         funds: vec![],

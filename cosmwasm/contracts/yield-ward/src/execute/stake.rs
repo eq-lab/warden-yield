@@ -23,7 +23,7 @@ pub fn try_init_stake(
         return Err(ContractError::ZeroTokenAmount);
     }
     let token_config = TOKEN_CONFIG
-        .may_load(deps.storage, &token_denom)?
+        .may_load(deps.storage, token_denom)?
         .ok_or(ContractError::UnknownToken(token_denom.clone()))?;
 
     // check is staking enabled
@@ -31,13 +31,13 @@ pub fn try_init_stake(
         return Err(ContractError::StakeDisabled(token_config.lpt_symbol));
     }
 
-    let stake_params = STAKE_PARAMS.load(deps.storage, &token_denom)?;
+    let stake_params = STAKE_PARAMS.load(deps.storage, token_denom)?;
     let stake_id = stake_params.next_id;
 
     // push to stakes map
     STAKES.save(
         deps.storage,
-        (&token_denom, stake_id),
+        (token_denom, stake_id),
         &StakeItem {
             user: info.sender.clone(),
             token_amount: *token_amount,
@@ -49,7 +49,7 @@ pub fn try_init_stake(
     // increment stake next_id
     STAKE_PARAMS.save(
         deps.storage,
-        &token_denom,
+        token_denom,
         &QueueParams {
             pending_count: stake_params.pending_count + 1,
             next_id: stake_id + 1,
@@ -57,9 +57,9 @@ pub fn try_init_stake(
     )?;
 
     // update stake stats
-    let mut stake_stats = STAKE_STATS.load(deps.storage, &token_denom)?;
+    let mut stake_stats = STAKE_STATS.load(deps.storage, token_denom)?;
     stake_stats.pending_stake += Uint256::from(*token_amount);
-    STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
+    STAKE_STATS.save(deps.storage, token_denom, &stake_stats)?;
 
     let payload = encode_stake_payload(stake_id);
     // todo: send tokens to Axelar

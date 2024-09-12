@@ -70,6 +70,5 @@ pub fn find_deposit_token_denom_by_lpt_address(
 ) -> Result<TokenDenom, ContractError> {
     Ok(TOKEN_DENOM_BY_LPT_ADDRESS
         .load(deps.storage, lpt_address)
-        .ok()
-        .ok_or(ContractError::UnknownLpToken(lpt_address.to_string()))?)
+        .map_err(|_| ContractError::UnknownLpToken(lpt_address.to_string()))?)
 }

@@ -19,7 +19,7 @@ fn stake_and_response(
 ) -> Uint128 {
     let stake_params_before = get_stake_params(app, ctx, &token_info.deposit_token_denom);
     let token_stats_before = get_stake_stats(app, ctx, &token_info.deposit_token_denom);
-    let stake_id = stake_params_before.next_id.clone();
+    let stake_id = stake_params_before.next_id;
 
     // init stake
     call_stake(app, ctx, &ctx.user, token_info, stake_amount);
@@ -94,13 +94,8 @@ fn test_init_unstake_one_coin() {
         }
     );
 
-    let unstake_item = get_unstake_item(
-        &app,
-        &ctx,
-        &token_info.deposit_token_denom,
-        unstake_id.clone(),
-    )
-    .unwrap();
+    let unstake_item =
+        get_unstake_item(&app, &ctx, &token_info.deposit_token_denom, unstake_id).unwrap();
     assert_eq!(
         unstake_item,
         UnstakeItem {

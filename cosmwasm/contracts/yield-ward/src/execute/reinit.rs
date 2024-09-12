@@ -30,10 +30,8 @@ pub fn handle_reinit(
     reinit_unstake_id: u64,
     mut stake_stats: StakeStatsItem,
 ) -> Result<(BankMsg, Event), ContractError> {
-    let mut unstake_item = UNSTAKES.load(
-        deps.storage,
-        (&deposit_token_denom, reinit_unstake_id.clone()),
-    )?;
+    let mut unstake_item =
+        UNSTAKES.load(deps.storage, (&deposit_token_denom, reinit_unstake_id))?;
 
     // return deposit + earnings to user
     let bank_transfer_msg =
@@ -48,7 +46,7 @@ pub fn handle_reinit(
 
     UNSTAKES.save(
         deps.storage,
-        (&deposit_token_denom, reinit_unstake_id.clone()),
+        (&deposit_token_denom, reinit_unstake_id),
         &unstake_item,
     )?;
 
@@ -85,9 +83,14 @@ pub fn try_handle_reinit_response(
     source_address: String,
     payload: &[u8],
 ) -> Result<Response, ContractError> {
-    if info.funds.len() != 1 || info.funds.first().unwrap().amount.is_zero() {
+    if info.funds.len() != 1 {
         return Err(ContractError::CustomError(
             "Reinit message must have one type of coins as funds".to_string(),
+        ));
+    }
+    if info.funds.first().unwrap().amount.is_zero() {
+        return Err(ContractError::CustomError(
+            "Reinit message must have non-zero token amount".to_string(),
         ));
     }
 
