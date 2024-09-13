@@ -88,13 +88,13 @@ pub fn try_handle_reinit_response(
             "Reinit message must have one type of coins as funds".to_string(),
         ));
     }
-    if info.funds.first().unwrap().amount.is_zero() {
+    let coin = info.funds.first().unwrap();
+    if coin.amount.is_zero() {
         return Err(ContractError::CustomError(
             "Reinit message must have non-zero token amount".to_string(),
         ));
     }
 
-    let coin = info.funds.first().unwrap();
     let (token_denom, _token_config) =
         find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
 
