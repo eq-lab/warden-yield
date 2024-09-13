@@ -3,7 +3,7 @@ use crate::types::{
 };
 use cosmwasm_std::{Binary, Uint128};
 
-pub fn encode_stake_payload(stake_id: &u64) -> Binary {
+pub fn encode_stake_payload(stake_id: u64) -> Binary {
     // 32 bytes:
     //    23 bytes - not used
     //    8 bytes  - StakeId
@@ -18,7 +18,7 @@ pub fn encode_stake_payload(stake_id: &u64) -> Binary {
     return result;
 }
 
-pub fn encode_unstake_payload(unstake_id: &u64, lp_token_amount: &Uint128) -> Binary {
+pub fn encode_unstake_payload(unstake_id: u64, lp_token_amount: &Uint128) -> Binary {
     // 32 bytes:
     //    7 bytes - not used
     //    16 bytes - LptAmount

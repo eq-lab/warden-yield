@@ -46,8 +46,6 @@ fn test_init_stake_one_coin() {
             pending_unstake_lp_token_amount: Uint256::zero(),
         }
     );
-
-    // todo: check events ?
 }
 
 #[test]
@@ -107,8 +105,6 @@ fn test_stake_in_two_tx() {
             lp_token_amount: None
         }
     );
-
-    // todo: check events?
 }
 
 #[test]
@@ -168,8 +164,6 @@ fn test_stake_response_successful() {
             lp_token_amount: Some(lp_token_amount)
         }
     );
-
-    // todo: check LP tokens are minted
 }
 
 #[test]
@@ -257,9 +251,6 @@ fn test_stake_response_successful_with_reinit() {
             token_amount: Some(unstake_details.unstake_token_amount)
         }
     );
-
-    // todo: check unstake account received funds
-    // todo: check LP tokens are minted
 }
 
 #[test]
@@ -319,9 +310,6 @@ fn test_stake_response_fail() {
             lp_token_amount: None
         }
     );
-
-    // todo: check LP tokens are not minted
-    // todo: check deposited tokens are returned to user
 }
 
 #[test]
@@ -405,11 +393,7 @@ fn test_stake_response_fail_with_reinit() {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
             action_stage: UnstakeActionStage::Executed,
-            token_amount: Some(lp_token_amount)
+            token_amount: Some(unstake_details.unstake_token_amount)
         }
     );
-
-    // todo: check LP tokens are not minted
-    // todo: check deposited tokens are returned to user
-    // todo: check unstake account received funds
 }

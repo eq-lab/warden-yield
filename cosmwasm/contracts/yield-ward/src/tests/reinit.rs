@@ -9,9 +9,9 @@ use cosmwasm_std::Uint256;
 fn test_reinit() {
     let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
     let token_info = ctx.tokens.get(0).unwrap();
+    let unstake_user = &ctx.unstake_user;
 
-    let unstake_user = ctx.unstake_user.clone();
-    let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
+    let unstake_details = call_stake_and_unstake(&mut app, &ctx, unstake_user, &token_info);
 
     // reinit response
     call_reinit_response(

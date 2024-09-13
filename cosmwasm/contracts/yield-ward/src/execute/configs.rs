@@ -1,5 +1,8 @@
 use crate::helpers::assert_msg_sender_is_admin;
-use crate::state::{ContractConfigState, CONTRACT_CONFIG, TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE};
+use crate::state::{
+    ContractConfigState, CONTRACT_CONFIG, TOKEN_CONFIG, TOKEN_DENOM_BY_LPT_ADDRESS,
+    TOKEN_DENOM_BY_SOURCE,
+};
 use crate::types::TokenConfig;
 use crate::ContractError;
 use cosmwasm_std::{DepsMut, Env, Event, MessageInfo, Order, Response, StdResult};
@@ -13,9 +16,8 @@ pub fn try_update_token_config(
 ) -> Result<Response, ContractError> {
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
-    if !TOKEN_CONFIG.has(deps.storage, &token_denom) {
-        return Err(ContractError::UnknownToken(token_denom.clone()));
-    }
+    let config_old = TOKEN_CONFIG.load(deps.storage, &token_denom)?;
+
     TOKEN_CONFIG.save(deps.storage, &token_denom, &config)?;
 
     let tokens_denoms = TOKEN_DENOM_BY_SOURCE
@@ -39,6 +41,11 @@ pub fn try_update_token_config(
             (config.chain.as_str(), config.evm_yield_contract.as_str()),
             &token_denom,
         )?;
+    }
+
+    if config_old.lpt_address != config.lpt_address {
+        TOKEN_DENOM_BY_LPT_ADDRESS.remove(deps.storage, &config_old.lpt_address);
+        TOKEN_DENOM_BY_LPT_ADDRESS.save(deps.storage, &config.lpt_address, &token_denom)?;
     }
 
     Ok(Response::new().add_event(

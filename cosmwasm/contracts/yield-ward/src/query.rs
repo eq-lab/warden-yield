@@ -1,10 +1,11 @@
 use crate::msg::{
     GetContractConfigResponse, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
-    GetTokenDenomBySourceResponse, GetTokensConfigsResponse, GetUnstakeItemResponse,
+    GetTokenDenomByLptAddressResponse, GetTokenDenomBySourceResponse, GetTokensConfigsResponse,
+    GetUnstakeItemResponse,
 };
 use crate::state::{
-    CONTRACT_CONFIG, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG, TOKEN_DENOM_BY_SOURCE,
-    UNSTAKES, UNSTAKE_PARAMS,
+    CONTRACT_CONFIG, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG, TOKEN_DENOM_BY_LPT_ADDRESS,
+    TOKEN_DENOM_BY_SOURCE, UNSTAKES, UNSTAKE_PARAMS,
 };
 use crate::types::TokenDenom;
 use cosmwasm_std::{Deps, Order, StdResult};
@@ -73,16 +74,28 @@ pub fn query_unstake_item(
 }
 
 pub fn query_all_tokens_denoms_by_source(deps: Deps) -> StdResult<GetTokenDenomBySourceResponse> {
-    let tokens_denoms: StdResult<Vec<_>> = TOKEN_DENOM_BY_SOURCE
+    let result: StdResult<Vec<_>> = TOKEN_DENOM_BY_SOURCE
         .range(deps.storage, None, None, Order::Ascending)
-        .collect();
-
-    let tokens_denoms: Vec<_> = tokens_denoms?
-        .into_iter()
-        .map(|((source_chain, source_address), token_denom)| {
-            (source_chain, source_address, token_denom)
+        .map(|x| {
+            x.map(|((source_chain, source_address), token_denom)| {
+                (source_chain, source_address, token_denom)
+            })
         })
         .collect();
 
-    Ok(GetTokenDenomBySourceResponse { tokens_denoms })
+    Ok(GetTokenDenomBySourceResponse {
+        tokens_denoms: result?,
+    })
+}
+
+pub fn query_all_tokens_denoms_by_lpt_address(
+    deps: Deps,
+) -> StdResult<GetTokenDenomByLptAddressResponse> {
+    let result: StdResult<Vec<_>> = TOKEN_DENOM_BY_LPT_ADDRESS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    Ok(GetTokenDenomByLptAddressResponse {
+        tokens_denoms: result?,
+    })
 }

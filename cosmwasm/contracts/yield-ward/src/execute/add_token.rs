@@ -1,24 +1,24 @@
 use crate::helpers::assert_msg_sender_is_admin;
 use crate::state::{
     QueueParams, StakeStatsItem, CONTRACT_CONFIG, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG,
-    TOKEN_DENOM_BY_SOURCE, UNSTAKE_PARAMS,
+    TOKEN_DENOM_BY_LPT_ADDRESS, TOKEN_DENOM_BY_SOURCE, UNSTAKE_PARAMS,
 };
-use crate::types::TokenConfig;
+use crate::types::{TokenConfig, TokenDenom};
 use crate::ContractError;
 use cosmwasm_std::QueryRequest::Wasm;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, Addr, Binary, CodeInfoResponse, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdError, StdResult, WasmMsg, WasmQuery,
 };
-use lp_token::msg::QueryMsg::TokenInfo;
 use lp_token::msg::{InstantiateMarketingInfo, InstantiateMsg as LpInstantiateMsg};
 
 pub fn try_add_token(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    token_denom: String,
-    cw20_address: Addr,
+    token_denom: TokenDenom,
+    token_symbol: String,
+    token_decimals: u8,
     is_stake_enabled: bool,
     is_unstake_enabled: bool,
     chain: String,
@@ -26,7 +26,6 @@ pub fn try_add_token(
     lpt_name: String,
     evm_yield_contract: String,
     evm_address: String,
-    lpt_denom: String,
 ) -> Result<Response, ContractError> {
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
@@ -56,16 +55,10 @@ pub fn try_add_token(
 
     TOKEN_DENOM_BY_SOURCE.save(deps.storage, (&chain, &evm_yield_contract), &token_denom)?;
 
-    let deposit_token_info: cw20::TokenInfoResponse =
-        deps.querier.query(&Wasm(WasmQuery::Smart {
-            contract_addr: cw20_address.to_string(),
-            msg: to_json_binary(&TokenInfo {})?,
-        }))?;
-
     let msg = to_json_binary(&LpInstantiateMsg {
         name: lpt_name,
         symbol: lpt_symbol.clone(),
-        decimals: deposit_token_info.decimals,
+        decimals: token_decimals,
         initial_balances: vec![],
         mint: Some(cw20::MinterResponse {
             minter: env.contract.address.to_string(),
@@ -95,19 +88,19 @@ pub fn try_add_token(
     let lpt_address =
         calculate_token_address(deps.as_ref(), env, contract_config.lp_token_code_id, salt)?;
 
+    TOKEN_DENOM_BY_LPT_ADDRESS.save(deps.storage, &lpt_address, &token_denom)?;
+
     TOKEN_CONFIG.save(
         deps.storage,
         &token_denom,
         &TokenConfig {
-            cw20_address,
-            deposit_token_symbol: deposit_token_info.symbol,
+            deposit_token_symbol: token_symbol,
             is_stake_enabled,
             is_unstake_enabled,
             chain,
             evm_yield_contract,
             evm_address,
             lpt_symbol,
-            lpt_denom,
             lpt_address,
         },
     )?;

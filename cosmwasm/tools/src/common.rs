@@ -8,7 +8,6 @@ pub enum Token {
 
 pub struct TokenDetails {
     pub _token: Token,
-    pub _deposit_token_address: String,
     pub _lp_token_address: String,
     pub _decimals: u8,
     pub deposit_token_denom: String,
@@ -17,6 +16,7 @@ pub struct TokenDetails {
     pub evm_yield_contract: String,
 }
 
+// todo: actualize after deploy testnet contracts with Bank tokens
 pub fn get_token_details(token: &String) -> TokenDetails {
     let chain = "Ethereum".to_string();
     let yield_ward_address =
@@ -27,8 +27,6 @@ pub fn get_token_details(token: &String) -> TokenDetails {
             _token: Token::WETH,
             deposit_token_denom: "demo_weth".to_string(),
             _decimals: 18,
-            _deposit_token_address:
-                "warden1dk9c86h7gmvuaq89cv72cjhq4c97r2wgl5gyfruv6shquwspalgqr09xey".to_string(),
             _lp_token_address: "warden12nnqks893jx3pz34yj4r4uhlvvgw5e6zjkjwxx03pxtd8y89faqseepx4j"
                 .to_string(),
             chain,
@@ -39,8 +37,6 @@ pub fn get_token_details(token: &String) -> TokenDetails {
             _token: Token::USDT,
             deposit_token_denom: "demo_usdt".to_string(),
             _decimals: 6,
-            _deposit_token_address:
-                "warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk".to_string(),
             _lp_token_address: "warden1uyvxsvmjh8j4vnekgdl3rc36pjepaqdqw5999gmkfk05zrs3y03sd6g5wz"
                 .to_string(),
             chain,
@@ -51,8 +47,6 @@ pub fn get_token_details(token: &String) -> TokenDetails {
             _token: Token::USDC,
             deposit_token_denom: "demo_usdc".to_string(),
             _decimals: 6,
-            _deposit_token_address:
-                "warden1euqmngymytlt8j707spv9hn6ajzy92ndfjk47pnlu9uzmfuyplhsyeh0vc".to_string(),
             _lp_token_address: "warden1qex8hj0ux0vlrzvvnydztlhlrz4whfreahvf49lgjd6zthaf8zsqlq5x4u"
                 .to_string(),
             chain,

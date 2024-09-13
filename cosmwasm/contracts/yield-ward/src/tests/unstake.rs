@@ -19,7 +19,7 @@ fn stake_and_response(
 ) -> Uint128 {
     let stake_params_before = get_stake_params(app, ctx, &token_info.deposit_token_denom);
     let token_stats_before = get_stake_stats(app, ctx, &token_info.deposit_token_denom);
-    let stake_id = stake_params_before.next_id.clone();
+    let stake_id = stake_params_before.next_id;
 
     // init stake
     call_stake(app, ctx, &ctx.user, token_info, stake_amount);
@@ -94,13 +94,8 @@ fn test_init_unstake_one_coin() {
         }
     );
 
-    let unstake_item = get_unstake_item(
-        &app,
-        &ctx,
-        &token_info.deposit_token_denom,
-        unstake_id.clone(),
-    )
-    .unwrap();
+    let unstake_item =
+        get_unstake_item(&app, &ctx, &token_info.deposit_token_denom, unstake_id).unwrap();
     assert_eq!(
         unstake_item,
         UnstakeItem {
@@ -121,8 +116,6 @@ fn test_init_unstake_one_coin() {
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
         }
     );
-
-    // todo: check events ?
 }
 
 #[test]
@@ -158,8 +151,6 @@ fn test_unstake_response_successful() {
             pending_unstake_lp_token_amount: Uint256::from(lp_token_amount),
         }
     );
-
-    // todo: check LP tokens are burned
 }
 
 #[test]
@@ -217,9 +208,6 @@ fn test_unstake_response_successful_instant_reinit() {
             token_amount: Some(unstake_amount)
         }
     );
-
-    // todo: check LP tokens are burned
-    // todo: check user received deposit + rewards tokens
 }
 
 #[test]
@@ -280,9 +268,6 @@ fn test_unstake_response_successful_with_reinit() {
             token_amount: Some(unstake_amount)
         }
     );
-
-    // todo: check LP tokens are burned
-    // todo: check user received deposit + rewards tokens
 }
 
 #[test]
@@ -318,8 +303,6 @@ fn test_unstake_response_fail() {
             pending_unstake_lp_token_amount: Uint256::zero()
         }
     );
-
-    // todo: check LP tokens are returned to user
 }
 
 #[test]
@@ -358,6 +341,4 @@ fn test_unstake_response_fail_with_reinit() {
             pending_unstake_lp_token_amount: Uint256::zero()
         }
     );
-
-    // todo: check LP tokens are returned to user
 }

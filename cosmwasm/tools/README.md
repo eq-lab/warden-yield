@@ -30,6 +30,16 @@ Encode stake response message:
     --return-amount 0
 ```
 
+```bash
+wardend tx wasm execute \
+  warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk \
+  '{"send":{"contract":"warden1vhjnzk9ly03dugffvzfcwgry4dgc8x0sv0nqqtfxj3ajn7rn5ghq6xwfv9","amount":"0","msg":"eyJoYW5kbGVfcmVzcG9uc2UiOnsiZGVwb3NpdF90b2tlbl9kZW5vbSI6ImRlbW9fdXNkdCIsInNvdXJjZV9jaGFpbiI6IkV0aGVyZXVtIiwic291cmNlX2FkZHJlc3MiOiIweDBGOWQyQzAzQUQyMWEzMDc0NkE0YjRmMDc5MTllMUM1RjM2NDFGMzUiLCJwYXlsb2FkIjoiQUFBQUFBQUFBQUFBQVFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUJUN0dBQT09In19"}}' \
+  --from "yieldward-stage-admin" -y \
+  --node "https://rpc.buenavista.wardenprotocol.org:443" \
+  --chain-id "buenavista-1" \
+  --gas auto --gas-adjustment 1.3
+```
+
 Encode unstake response message:
 
 ```bash
@@ -38,7 +48,17 @@ Encode unstake response message:
     --unstake-id 1 \
     --is-success \
     --reinit-unstake-id 1 \
-    --return-amount 111
+    --return-amount 1000000000000000
+```
+
+```bash
+wardend tx wasm execute \
+  warden1xqkp8x4gqwjnhemtemc5dqhwll6w6rrgpywvhka7sh8vz8swul9ss7ztuk \
+  '{"send":{"contract":"warden1vhjnzk9ly03dugffvzfcwgry4dgc8x0sv0nqqtfxj3ajn7rn5ghq6xwfv9","amount":"22000000","msg":"eyJoYW5kbGVfcmVzcG9uc2UiOnsiZGVwb3NpdF90b2tlbl9kZW5vbSI6ImRlbW9fdXNkdCIsInNvdXJjZV9jaGFpbiI6IkV0aGVyZXVtIiwic291cmNlX2FkZHJlc3MiOiIweDBGOWQyQzAzQUQyMWEzMDc0NkE0YjRmMDc5MTllMUM1RjM2NDFGMzUiLCJwYXlsb2FkIjoiQVFBQUFBQUFBQUFBQVFBQUFBQUFBQUFCIn19"}}' \
+  --from "yieldward-stage-admin" -y \
+  --node "https://rpc.buenavista.wardenprotocol.org:443" \
+  --chain-id "buenavista-1" \
+  --gas auto --gas-adjustment 1.3
 ```
 
 ## Stake messages

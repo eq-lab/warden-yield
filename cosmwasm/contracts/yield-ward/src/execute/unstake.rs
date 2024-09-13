@@ -11,16 +11,6 @@ pub fn try_init_unstake(
     token_denom: TokenDenom,
     lpt_amount: Uint128,
 ) -> Result<Response, ContractError> {
-    // if info.funds.len() != 1 {
-    //     return Err(ContractError::CustomError(
-    //         "Init unstake message must have one type of coins as funds".to_string(),
-    //     ));
-    // }
-    //
-    // let coin = info.funds.first().unwrap();
-
-    // let (token_denom, token_config) = find_token_by_lp_token_denom(deps.as_ref(), &token_denom)?;
-
     let token_config = TOKEN_CONFIG
         .may_load(deps.storage, &token_denom)?
         .ok_or(ContractError::UnknownToken(token_denom.clone()))?;
@@ -37,7 +27,7 @@ pub fn try_init_unstake(
         deps.storage,
         (&token_denom, unstake_id),
         &UnstakeItem {
-            user,
+            user: user.clone(),
             lp_token_amount: lpt_amount,
             action_stage: UnstakeActionStage::WaitingRegistration,
             token_amount: None,
@@ -49,7 +39,7 @@ pub fn try_init_unstake(
     stake_stats.pending_unstake_lp_token_amount += Uint256::from(lpt_amount);
     STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-    let unstake_payload = encode_unstake_payload(&unstake_id, &lpt_amount);
+    let unstake_payload = encode_unstake_payload(unstake_id, &lpt_amount);
     // todo: send message to Axelar
 
     let payload_hex_str = to_hex(unstake_payload);
@@ -57,6 +47,7 @@ pub fn try_init_unstake(
     Ok(Response::new().add_event(
         Event::new("unstake")
             .add_attribute("unstake_id", unstake_id.to_string())
+            .add_attribute("sender", user)
             .add_attribute("token_symbol", token_config.deposit_token_symbol)
             .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
             .add_attribute("dest_chain", token_config.chain)

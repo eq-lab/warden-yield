@@ -11,10 +11,13 @@ use crate::execute::configs::{try_update_contract_config, try_update_token_confi
 use crate::execute::mint_lpt::{try_disallow_mint, try_mint_lp_token};
 use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
+use crate::execute::response::try_handle_response;
+use crate::execute::stake::try_init_stake;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_all_tokens_denoms_by_source, query_contract_config, query_stake_item, query_stake_params,
-    query_stake_stats, query_tokens_configs, query_unstake_item, query_unstake_params,
+    query_all_tokens_denoms_by_lpt_address, query_all_tokens_denoms_by_source,
+    query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
+    query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{ContractConfigState, CONTRACT_CONFIG};
@@ -55,9 +58,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Stake => {
-            unimplemented!() // todo: return after finish CW20 deposit tests: try_init_stake(deps, env, info),
-        }
+        ExecuteMsg::Stake => try_init_stake(deps, env, info),
         ExecuteMsg::Receive(msg) => try_receive_cw20(deps, env, info, msg),
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
         ExecuteMsg::MintLpToken {
@@ -67,7 +68,8 @@ pub fn execute(
         } => try_mint_lp_token(deps, env, info, recipient, lp_token_address, amount),
         ExecuteMsg::AddToken {
             token_denom,
-            cw20_address,
+            token_symbol,
+            token_decimals,
             is_stake_enabled,
             is_unstake_enabled,
             chain,
@@ -75,13 +77,13 @@ pub fn execute(
             lpt_name,
             evm_yield_contract,
             evm_address,
-            lp_token_denom,
         } => try_add_token(
             deps,
             env,
             info,
             token_denom,
-            cw20_address,
+            token_symbol,
+            token_decimals,
             is_stake_enabled,
             is_unstake_enabled,
             chain,
@@ -89,7 +91,6 @@ pub fn execute(
             lpt_name,
             evm_yield_contract,
             evm_address,
-            lp_token_denom,
         ),
         ExecuteMsg::UpdateTokenConfig {
             token_denom,
@@ -98,11 +99,11 @@ pub fn execute(
         ExecuteMsg::UpdateContractConfig { contract_config } => {
             try_update_contract_config(deps, env, info, contract_config)
         }
-        // ExecuteMsg::HandleResponse {
-        //     source_chain,
-        //     source_address,
-        //     payload,
-        // } => try_handle_response(deps, env, info, source_chain, source_address, payload),
+        ExecuteMsg::HandleResponse {
+            source_chain,
+            source_address,
+            payload,
+        } => try_handle_response(deps, env, info, source_chain, source_address, payload),
         ExecuteMsg::DisallowMint => try_disallow_mint(deps, env, info),
     }
 }
@@ -127,6 +128,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::TokenDenomBySource {} => {
             to_json_binary(&query_all_tokens_denoms_by_source(deps)?)
+        }
+        QueryMsg::TokenDenomByLptAddress {} => {
+            to_json_binary(&query_all_tokens_denoms_by_lpt_address(deps)?)
         }
     }
 }

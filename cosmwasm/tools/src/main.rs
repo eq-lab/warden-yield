@@ -3,9 +3,9 @@ mod common;
 use crate::common::{
     create_stake_response_payload, create_unstake_response_payload, get_token_details,
 };
-use cosmwasm_std::{to_base64, to_json_binary, to_json_string, Uint128};
+use cosmwasm_std::{coins, to_base64, to_json_binary, to_json_string, Uint128, WasmMsg};
 use std::string::ToString;
-use yield_ward::msg::Cw20ActionMsg;
+use yield_ward::msg::{Cw20ActionMsg, ExecuteMsg};
 
 use clap::{command, Parser, Subcommand};
 use cw20::Cw20ExecuteMsg;
@@ -99,17 +99,14 @@ fn main() {
 
 fn process_stake(token: &String, amount: &u128) {
     let token_details = get_token_details(&token);
-    let encoded = to_json_binary(&Cw20ActionMsg::Stake {
-        deposit_token_denom: token_details.deposit_token_denom.clone(),
-    })
-    .unwrap();
+    let msg = ExecuteMsg::Stake;
+    let encoded = to_json_binary(&msg).unwrap();
 
-    println!("Cw20ActionMsg::Stake inner call hex: {}", encoded);
-
-    let result = to_json_string(&Cw20ExecuteMsg::Send {
-        contract: token_details.yield_ward_address,
-        amount: Uint128::new(*amount),
+    println!("Inner call: {}", to_json_string(&msg).unwrap());
+    let result = to_json_string(&WasmMsg::Execute {
+        contract_addr: token_details.yield_ward_address,
         msg: encoded,
+        funds: coins(*amount, token_details.deposit_token_denom),
     })
     .unwrap();
     println!("Encoded stake message: {}", result);
@@ -135,19 +132,21 @@ fn process_stake_response(
     println!("Response payload hex: {:?}", response_payload);
     println!("Response payload base64: {}", response_payload_base64);
 
-    let encoded = to_json_binary(&Cw20ActionMsg::HandleResponse {
-        deposit_token_denom: token_details.deposit_token_denom.clone(),
+    let msg = ExecuteMsg::HandleResponse {
         source_chain: token_details.chain.to_string(),
         source_address: token_details.evm_yield_contract.to_string(),
         payload: response_payload,
-    })
-    .unwrap();
-    println!("Cw20ActionMsg::Response inner call hex: {}", encoded);
+    };
+    println!("Inner call: {}", to_json_string(&msg).unwrap());
+    let encoded = to_json_binary(&msg).unwrap();
 
-    let result = to_json_string(&Cw20ExecuteMsg::Send {
-        contract: token_details.yield_ward_address.to_string(),
-        amount: Uint128::new(*return_amount),
+    let result = to_json_string(&WasmMsg::Execute {
+        contract_addr: token_details.yield_ward_address,
         msg: encoded,
+        funds: match *return_amount {
+            0 => vec![],
+            _ => coins(*return_amount, token_details.deposit_token_denom),
+        },
     })
     .unwrap();
 
@@ -156,10 +155,9 @@ fn process_stake_response(
 
 fn process_unstake(token: &String, amount: &u128) {
     let token_details = get_token_details(&token);
-    let encoded = to_json_binary(&Cw20ActionMsg::Unstake {
-        deposit_token_denom: token_details.deposit_token_denom.clone(),
-    })
-    .unwrap();
+    let msg = Cw20ActionMsg::Unstake;
+    println!("Inner call: {}", to_json_string(&msg).unwrap());
+    let encoded = to_json_binary(&msg).unwrap();
 
     let result = to_json_string(&Cw20ExecuteMsg::Send {
         contract: token_details.yield_ward_address,
@@ -188,19 +186,23 @@ fn process_unstake_response(
 
     println!("Response payload hex: {:?}", response_payload);
 
-    let encoded = to_json_binary(&Cw20ActionMsg::HandleResponse {
-        deposit_token_denom: token_details.deposit_token_denom.clone(),
+    let msg = ExecuteMsg::HandleResponse {
         source_chain: token_details.chain.to_string(),
         source_address: token_details.evm_yield_contract.to_string(),
         payload: response_payload,
-    })
-    .unwrap();
-    println!("Cw20ActionMsg::Response inner call hex: {}", encoded);
+    };
+    println!("Inner call: {}", to_json_string(&msg).unwrap());
 
-    let result = to_json_string(&Cw20ExecuteMsg::Send {
-        contract: token_details.yield_ward_address.to_string(),
-        amount: Uint128::new(*return_amount),
+    let encoded = to_json_binary(&msg).unwrap();
+    println!("ExecuteMsg::HandleResponse inner call hex: {}", encoded);
+
+    let result = to_json_string(&WasmMsg::Execute {
+        contract_addr: token_details.yield_ward_address,
         msg: encoded,
+        funds: match *return_amount {
+            0 => vec![],
+            _ => coins(*return_amount, token_details.deposit_token_denom),
+        },
     })
     .unwrap();
 
