@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     pub axelar: Addr,
     pub lp_token_code_id: u64,
+    pub axelar_config: AxelarConfigState,
 }
 
 #[cw_serde]

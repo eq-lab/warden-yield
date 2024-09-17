@@ -22,7 +22,7 @@ use crate::query::{
     query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
-use crate::state::{ContractConfigState, CONTRACT_CONFIG};
+use crate::state::{ContractConfigState, AXELAR_CONFIG, CONTRACT_CONFIG};
 use crate::types::ReplyType;
 
 // version info for migration info
@@ -46,6 +46,7 @@ pub fn instantiate(
         is_mint_allowed: true,
     };
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
+    AXELAR_CONFIG.save(deps.storage, &msg.axelar_config)?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
