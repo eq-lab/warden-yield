@@ -124,3 +124,19 @@ pub struct MsgLpTokenMintResponse {}
 pub enum Cw20ActionMsg {
     Unstake,
 }
+
+#[cw_serde]
+pub struct Fee {
+    pub amount: String,
+    pub recipient: String,
+}
+
+#[cw_serde]
+pub struct GmpMessage {
+    pub destination_chain: String,
+    pub destination_address: String,
+    pub payload: Binary,
+    #[serde(rename = "type")]
+    pub type_: i64,
+    pub fee: Option<Fee>,
+}

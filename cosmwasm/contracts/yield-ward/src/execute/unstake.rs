@@ -1,12 +1,14 @@
 use crate::encoding::encode_unstake_payload;
+use crate::execute::axelar_messaging::send_message_evm;
 use crate::state::{UnstakeItem, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS};
 use crate::types::{TokenDenom, UnstakeActionStage};
 use crate::ContractError;
-use cosmwasm_std::{to_hex, Addr, DepsMut, Env, Event, Response, Uint128, Uint256};
+use cosmwasm_std::{to_hex, Addr, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256};
 
 pub fn try_init_unstake(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
+    info: MessageInfo,
     user: Addr,
     token_denom: TokenDenom,
     lpt_amount: Uint128,
@@ -40,11 +42,11 @@ pub fn try_init_unstake(
     STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
     let unstake_payload = encode_unstake_payload(unstake_id, &lpt_amount);
-    // todo: send message to Axelar
+    let payload_hex_str = to_hex(&unstake_payload);
 
-    let payload_hex_str = to_hex(unstake_payload);
+    let response = send_message_evm(deps.as_ref(), env, &info, unstake_payload)?;
 
-    Ok(Response::new().add_event(
+    Ok(response.add_event(
         Event::new("unstake")
             .add_attribute("unstake_id", unstake_id.to_string())
             .add_attribute("sender", user)

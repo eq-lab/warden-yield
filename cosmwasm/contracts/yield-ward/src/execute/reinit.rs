@@ -1,4 +1,5 @@
 use crate::encoding::{decode_reinit_response_payload, encode_reinit_payload};
+use crate::execute::axelar_messaging::send_message_evm;
 use crate::execute::common::create_bank_transfer_msg;
 use crate::helpers::find_token_by_message_source;
 use crate::state::{
@@ -6,21 +7,24 @@ use crate::state::{
 };
 use crate::types::{TokenDenom, UnstakeActionStage};
 use crate::ContractError;
-use cosmwasm_std::{BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256};
+use cosmwasm_std::{to_hex, BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256};
 
 pub fn try_reinit(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
+    env: Env,
+    info: MessageInfo,
     token_denom: TokenDenom,
 ) -> Result<Response, ContractError> {
     let _token_config = TOKEN_CONFIG.load(deps.storage, &token_denom)?;
 
-    let _reinit_payload = encode_reinit_payload();
+    let reinit_payload = encode_reinit_payload();
+    let payload_hex_str = to_hex(&reinit_payload);
 
-    // todo: send reinit message to Axelar
+    let response = send_message_evm(deps.as_ref(), env, &info, reinit_payload)?;
 
-    Ok(Response::new())
+    Ok(response.add_event(
+        Event::new("reinit").add_attribute("payload", "0x".to_owned() + &payload_hex_str),
+    ))
 }
 
 pub fn handle_reinit(
