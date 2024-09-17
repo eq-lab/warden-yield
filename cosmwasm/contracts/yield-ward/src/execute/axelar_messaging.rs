@@ -1,10 +1,10 @@
 use cosmwasm_std::{Binary, Deps, Env, IbcMsg, MessageInfo, Response};
 use serde_json_wasm::to_string;
 
-use crate::{msg::GmpMessage, ContractError};
+use crate::{msg::GmpMessage, state::AXELAR_CONFIG, ContractError};
 
 pub fn send_message_evm(
-    _deps: Deps,
+    deps: Deps,
     env: Env,
     info: &MessageInfo,
     payload: Binary,
@@ -12,9 +12,13 @@ pub fn send_message_evm(
     // {info.funds} used to pay gas. Must only contain 1 token type.
     // let coin: Coin = cw_utils::one_coin(&info).unwrap();
 
+    let axelar_config = AXELAR_CONFIG
+        .load(deps.storage)
+        .map_err(|_| ContractError::CustomError("Failed to load axelar config".into()))?;
+
     let gmp_message: GmpMessage = GmpMessage {
-        destination_chain: "evm".into(),
-        destination_address: "evmAddress".into(),
+        destination_chain: axelar_config.evm_destination_chain_tag,
+        destination_address: axelar_config.yield_ward_evm_address,
         payload: payload,
         type_: 1,
         fee: None,
@@ -26,10 +30,14 @@ pub fn send_message_evm(
     );
 
     let ibc_message = IbcMsg::Transfer {
-        channel_id: "channel-3".to_string(),
-        to_address: "axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5".to_string(),
+        channel_id: axelar_config.axelar_channel_id,
+        to_address: axelar_config.axelar_gateway_cosmos_address,
         amount: info.funds.first().unwrap().clone(),
-        timeout: env.block.time.plus_seconds(604_800u64).into(), // week, taken from example
+        timeout: env
+            .block
+            .time
+            .plus_seconds(axelar_config.ibc_timeout_seconds)
+            .into(),
         memo: memo,
     };
 

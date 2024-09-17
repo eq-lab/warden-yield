@@ -1,4 +1,6 @@
-use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
+use crate::state::{
+    AxelarConfigState, ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem,
+};
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Uint128};
@@ -38,11 +40,13 @@ pub enum ExecuteMsg {
     UpdateContractConfig {
         contract_config: ContractConfigState,
     },
+    UpdateAxelarConfig {
+        axelar_config: AxelarConfigState,
+    },
     UpdateTokenConfig {
         token_denom: TokenDenom,
         config: TokenConfig,
     },
-
     HandleResponse {
         source_chain: String,
         source_address: String,

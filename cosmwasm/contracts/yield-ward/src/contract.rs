@@ -7,7 +7,9 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::execute::add_token::try_add_token;
-use crate::execute::configs::{try_update_contract_config, try_update_token_config};
+use crate::execute::configs::{
+    try_update_axelar_config, try_update_contract_config, try_update_token_config,
+};
 use crate::execute::mint_lpt::{try_disallow_mint, try_mint_lp_token};
 use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
@@ -98,6 +100,9 @@ pub fn execute(
         } => try_update_token_config(deps, env, info, token_denom, config),
         ExecuteMsg::UpdateContractConfig { contract_config } => {
             try_update_contract_config(deps, env, info, contract_config)
+        }
+        ExecuteMsg::UpdateAxelarConfig { axelar_config } => {
+            try_update_axelar_config(deps, env, info, axelar_config)
         }
         ExecuteMsg::HandleResponse {
             source_chain,

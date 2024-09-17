@@ -14,6 +14,17 @@ pub struct ContractConfigState {
     pub is_mint_allowed: bool,
 }
 
+pub const AXELAR_CONFIG: Item<AxelarConfigState> = Item::new("axelar_config");
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+pub struct AxelarConfigState {
+    pub evm_destination_chain_tag: String,
+    pub axelar_channel_id: String,
+    pub axelar_gateway_cosmos_address: String,
+    pub yield_ward_evm_address: String,
+    pub ibc_timeout_seconds: u64,
+}
+
 // Map<> doc - https://book.cosmwasm.com/cross-contract/map-storage.html
 pub const TOKEN_CONFIG: Map<&TokenDenom, TokenConfig> = Map::new("token_config_map");
 
