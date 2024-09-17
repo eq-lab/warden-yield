@@ -1,12 +1,13 @@
 use crate::msg::ExecuteMsg;
 use cosmwasm_std::CosmosMsg::Wasm;
 use cosmwasm_std::{to_json_binary, Addr, Uint128, WasmMsg};
-use cw_multi_test::{BasicApp, Executor};
+use cw_multi_test::Executor;
 
 use crate::tests::utils::call::{call_add_token, call_update_token_config};
 use crate::tests::utils::init::{
     get_lp_contract_address_from_response, get_tokens_info,
     instantiate_yield_ward_contract_with_tokens, instantiate_yield_ward_contract_without_tokens,
+    TestingApp,
 };
 use crate::tests::utils::query::{
     get_all_tokens_configs, get_token_config, get_token_denom_by_lpt_address,
@@ -16,7 +17,7 @@ use crate::tests::utils::types::{TestInfo, TokenTestInfo};
 use lp_token::msg::QueryMsg as lp_token_query_msg;
 
 fn assert_token_config(
-    app: &BasicApp,
+    app: &TestingApp,
     test_info: &TestInfo,
     lpt: &TokenTestInfo,
     actual_lpt_address: &Addr,

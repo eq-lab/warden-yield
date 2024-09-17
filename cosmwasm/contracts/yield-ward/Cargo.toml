@@ -52,4 +52,4 @@ package = "lp-token"
 path = "../lp-token"
 
 [dev-dependencies]
-cw-multi-test = { version = "2.1.1", features = ["cosmwasm_1_4"] }
+cw-multi-test = { version = "2.1.1", features = ["cosmwasm_1_4", "stargate"] }
