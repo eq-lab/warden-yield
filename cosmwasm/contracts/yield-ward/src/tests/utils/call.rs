@@ -3,12 +3,11 @@ use crate::state::{QueueParams, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::calldata::{
     create_reinit_response_payload, create_stake_response_payload, create_unstake_response_payload,
 };
-use crate::tests::utils::init::TestingApp;
 use crate::tests::utils::query::{
     get_bank_token_balance, get_cw20_balance, get_stake_item, get_stake_params, get_stake_stats,
     get_token_config, get_unstake_item, get_unstake_params,
 };
-use crate::tests::utils::types::{TestInfo, TokenTestInfo, UnstakeDetails};
+use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo, UnstakeDetails};
 use crate::types::{
     ReinitResponseData, StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage,
     UnstakeResponseData,

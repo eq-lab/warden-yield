@@ -2,29 +2,14 @@ use crate::msg::InstantiateMsg;
 use crate::state::AxelarConfigState;
 use crate::tests::utils::call::call_add_token;
 use crate::tests::utils::query::get_bank_token_balance;
-use crate::tests::utils::types::{TestInfo, TokenTestInfo};
-use cosmwasm_std::{Addr, Coin, Empty, Uint128};
+use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo};
+use cosmwasm_std::{Addr, Coin, Uint128};
 use cw20::MinterResponse;
-use cw_multi_test::{
-    App, AppBuilder, AppResponse, ContractWrapper, Executor, FailingModule, IbcAcceptingModule,
-};
+use cw_multi_test::{AppBuilder, AppResponse, ContractWrapper, Executor, IbcAcceptingModule};
 use lp_token::contract::{
     execute as lp_token_execute, instantiate as lp_token_instantiate, query as lp_token_query,
     InstantiateMsg as Cw20InstantiateMsg,
 };
-
-pub type TestingApp<ExecC = Empty, QueryC = Empty> = App<
-    cw_multi_test::BankKeeper,
-    cosmwasm_std::testing::MockApi,
-    cosmwasm_std::testing::MockStorage,
-    cw_multi_test::FailingModule<ExecC, QueryC, Empty>,
-    cw_multi_test::WasmKeeper<ExecC, QueryC>,
-    FailingModule<Empty, Empty, Empty>,
-    FailingModule<Empty, Empty, Empty>,
-    cw_multi_test::IbcAcceptingModule,
-    cw_multi_test::GovFailingModule,
-    cw_multi_test::StargateFailing,
->;
 
 fn store_lp_token_code(app: &mut TestingApp) -> u64 {
     let lp_token_code =

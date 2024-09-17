@@ -4,8 +4,7 @@ use crate::msg::{
     GetUnstakeItemResponse, QueryMsg,
 };
 use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
-use crate::tests::utils::init::TestingApp;
-use crate::tests::utils::types::TestInfo;
+use crate::tests::utils::types::{TestInfo, TestingApp};
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_std::BankQuery::Balance;
 use cosmwasm_std::QueryRequest::Bank;
