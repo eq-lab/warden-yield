@@ -11,7 +11,7 @@ use lp_token::contract::{
     InstantiateMsg as Cw20InstantiateMsg,
 };
 
-use super::types::IbcModuleMock;
+use crate::tests::mocks::ibc_module_mock::IbcModuleMock;
 
 fn store_lp_token_code(app: &mut TestingApp) -> u64 {
     let lp_token_code =
