@@ -5,11 +5,13 @@ use crate::tests::utils::query::get_bank_token_balance;
 use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo};
 use cosmwasm_std::{Addr, Coin, Uint128};
 use cw20::MinterResponse;
-use cw_multi_test::{AppBuilder, AppResponse, ContractWrapper, Executor, IbcAcceptingModule};
+use cw_multi_test::{AppBuilder, AppResponse, ContractWrapper, Executor};
 use lp_token::contract::{
     execute as lp_token_execute, instantiate as lp_token_instantiate, query as lp_token_query,
     InstantiateMsg as Cw20InstantiateMsg,
 };
+
+use super::types::IbcModuleMock;
 
 fn store_lp_token_code(app: &mut TestingApp) -> u64 {
     let lp_token_code =
@@ -59,7 +61,7 @@ pub fn _instantiate_cw20(
 
 pub fn instantiate_yield_ward_contract_without_tokens() -> (TestingApp, TestInfo) {
     let mut app = AppBuilder::new()
-        .with_ibc(IbcAcceptingModule::new())
+        .with_ibc(IbcModuleMock::new())
         .build(cw_multi_test::no_init);
 
     let lp_token_code_id = store_lp_token_code(&mut app);
@@ -106,33 +108,32 @@ pub fn instantiate_yield_ward_contract_with_tokens() -> (TestingApp, TestInfo) {
     let deposit_token_mint_amount = Uint128::new(5000000000_u128);
 
     let tokens = get_tokens_info();
-    let mut app =
-        AppBuilder::new()
-            .with_ibc(IbcAcceptingModule::new())
-            .build(|router, api, storage| {
-                api.addr_make(&admin_str.to_string());
-                let user = api.addr_make(&user_str.to_string());
-                let unstake_user = api.addr_make(&unstake_user_str.to_string());
-                api.addr_make(&axelar_str.to_string());
+    let mut app = AppBuilder::new()
+        .with_ibc(IbcModuleMock::new())
+        .build(|router, api, storage| {
+            api.addr_make(&admin_str.to_string());
+            let user = api.addr_make(&user_str.to_string());
+            let unstake_user = api.addr_make(&unstake_user_str.to_string());
+            api.addr_make(&axelar_str.to_string());
 
-                let coins: Vec<Coin> = tokens
-                    .iter()
-                    .map(|x| Coin {
-                        denom: x.deposit_token_denom.to_string(),
-                        amount: deposit_token_mint_amount,
-                    })
-                    .collect();
+            let coins: Vec<Coin> = tokens
+                .iter()
+                .map(|x| Coin {
+                    denom: x.deposit_token_denom.to_string(),
+                    amount: deposit_token_mint_amount,
+                })
+                .collect();
 
-                router
-                    .bank
-                    .init_balance(storage, &user, coins.clone())
-                    .unwrap();
+            router
+                .bank
+                .init_balance(storage, &user, coins.clone())
+                .unwrap();
 
-                router
-                    .bank
-                    .init_balance(storage, &unstake_user, coins)
-                    .unwrap();
-            });
+            router
+                .bank
+                .init_balance(storage, &unstake_user, coins)
+                .unwrap();
+        });
 
     let admin = app.api().addr_make(&admin_str.to_string());
     let user = app.api().addr_make(&user_str.to_string());
@@ -226,10 +227,10 @@ pub fn get_tokens_info() -> Vec<TokenTestInfo> {
 
 fn get_axelar_config() -> AxelarConfigState {
     AxelarConfigState {
-        evm_destination_chain_tag: "ethereum".into(),
-        axelar_channel_id: "channel-1".into(),
-        axelar_gateway_cosmos_address: "axelar-address".into(),
-        yield_ward_evm_address: "0x0000000000000000000000000000000000000000".into(),
-        ibc_timeout_seconds: 60,
+        evm_destination_chain_tag: super::constants::EVM_DESTINATION_CHAIN_TAG.into(),
+        axelar_channel_id: super::constants::AXELAR_CHANNEL_ID.into(),
+        axelar_gateway_cosmos_address: super::constants::AXELAR_GATEWAY_COSMOS_ADDRESS.into(),
+        yield_ward_evm_address: super::constants::YIELD_WARD_EVM_ADDRESS.into(),
+        ibc_timeout_seconds: super::constants::IBC_TIMEOUT_SECONDS,
     }
 }

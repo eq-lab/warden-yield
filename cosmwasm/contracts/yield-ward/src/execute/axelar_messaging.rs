@@ -1,7 +1,11 @@
 use cosmwasm_std::{Binary, Coin, Deps, Env, IbcMsg, MessageInfo, Response};
 use serde_json_wasm::to_string;
 
-use crate::{msg::{GmpMessage, GmpMsgType}, state::AXELAR_CONFIG, ContractError};
+use crate::{
+    msg::{GmpMessage, GmpMsgType},
+    state::AXELAR_CONFIG,
+    ContractError,
+};
 
 pub fn send_message_evm(
     deps: Deps,
@@ -25,7 +29,7 @@ pub fn send_message_evm(
     // Feels like the `type_` value can be actually defined by info.funds length
     let (transfer, fee, type_) = match fund {
         Some(coin) => (coin, None, GmpMsgType::WithToken as i64),
-        None => (&Coin::new(0_u64, "ward"), None, GmpMsgType::Pure as i64)
+        None => (&Coin::new(0_u64, "ward"), None, GmpMsgType::Pure as i64),
     };
 
     let gmp_message: GmpMessage = GmpMessage {
@@ -38,7 +42,9 @@ pub fn send_message_evm(
 
     let memo = to_string(&gmp_message).ok();
     if memo.is_none() {
-        return Err(ContractError::CustomError("Failed to serialize gmp message".into()));
+        return Err(ContractError::CustomError(
+            "Failed to serialize gmp message".into(),
+        ));
     }
 
     let ibc_message = IbcMsg::Transfer {
