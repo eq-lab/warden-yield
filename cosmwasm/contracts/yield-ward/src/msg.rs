@@ -130,6 +130,13 @@ pub enum Cw20ActionMsg {
     Unstake,
 }
 
+// https://github.com/axelarnetwork/evm-cosmos-gmp-sample/blob/main/native-integration/README.md#cosmos---evm
+pub enum GmpMsgType {
+    Pure = 1,
+    WithToken = 2,
+    PureTokenTransfer = 3,
+}
+
 #[cw_serde]
 pub struct Fee {
     pub amount: String,
