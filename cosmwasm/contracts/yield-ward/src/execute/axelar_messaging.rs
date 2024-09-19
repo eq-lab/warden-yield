@@ -4,6 +4,7 @@ use serde_json_wasm::to_string;
 use crate::{
     msg::{GmpMessage, GmpMsgType},
     state::AXELAR_CONFIG,
+    types::TokenConfig,
     ContractError,
 };
 
@@ -11,6 +12,7 @@ pub fn send_message_evm(
     deps: Deps,
     env: Env,
     info: &MessageInfo,
+    token_config: &TokenConfig,
     payload: Binary,
 ) -> Result<Response, ContractError> {
     let axelar_config = AXELAR_CONFIG
@@ -33,8 +35,8 @@ pub fn send_message_evm(
     };
 
     let gmp_message: GmpMessage = GmpMessage {
-        destination_chain: axelar_config.evm_destination_chain_tag,
-        destination_address: axelar_config.yield_ward_evm_address,
+        destination_chain: token_config.chain.clone(),
+        destination_address: token_config.evm_yield_contract.clone(),
         payload,
         type_,
         fee,

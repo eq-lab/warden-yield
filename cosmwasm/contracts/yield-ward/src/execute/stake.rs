@@ -65,7 +65,7 @@ pub fn try_init_stake(
     let stake_payload = encode_stake_payload(stake_id);
     let payload_hex_str = to_hex(&stake_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, stake_payload)?;
+    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, stake_payload)?;
 
     Ok(response.add_event(
         Event::new("stake")

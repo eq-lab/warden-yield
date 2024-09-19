@@ -15,12 +15,12 @@ pub fn try_reinit(
     info: MessageInfo,
     token_denom: TokenDenom,
 ) -> Result<Response, ContractError> {
-    let _token_config = TOKEN_CONFIG.load(deps.storage, &token_denom)?;
+    let token_config = TOKEN_CONFIG.load(deps.storage, &token_denom)?;
 
     let reinit_payload = encode_reinit_payload();
     let payload_hex_str = to_hex(&reinit_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, reinit_payload)?;
+    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, reinit_payload)?;
 
     Ok(response.add_event(
         Event::new("reinit").add_attribute("payload", "0x".to_owned() + &payload_hex_str),

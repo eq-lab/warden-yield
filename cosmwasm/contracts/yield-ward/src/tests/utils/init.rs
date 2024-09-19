@@ -206,8 +206,8 @@ pub fn get_tokens_info() -> Vec<TokenTestInfo> {
             is_unstake_enabled: true,
             symbol: "LPT-zero".to_string(),
             name: "LP token 0".to_string(),
-            chain: "Ethereum".to_string(),
-            evm_yield_contract: "0x0000000000000000000000000000000000000077".to_string(),
+            chain: super::constants::EVM_DESTINATION_CHAIN_TAG.to_string(),
+            evm_yield_contract: super::constants::YIELD_WARD_EVM_ADDRESS.to_string(),
             evm_address: "0x0000000000000000000000000000000000000007".to_string(),
         },
         TokenTestInfo {
@@ -218,7 +218,7 @@ pub fn get_tokens_info() -> Vec<TokenTestInfo> {
             is_unstake_enabled: true,
             symbol: "LPT-one".to_string(),
             name: "LP token 1".to_string(),
-            chain: "Ethereum".to_string(),
+            chain: super::constants::EVM_DESTINATION_CHAIN_TAG.to_string(),
             evm_yield_contract: "0x0000000000000000000000000000000000010077".to_string(),
             evm_address: "0x0000000000000000000000000000000000010007".to_string(),
         },
@@ -227,10 +227,8 @@ pub fn get_tokens_info() -> Vec<TokenTestInfo> {
 
 fn get_axelar_config() -> AxelarConfigState {
     AxelarConfigState {
-        evm_destination_chain_tag: super::constants::EVM_DESTINATION_CHAIN_TAG.into(),
         axelar_channel_id: super::constants::AXELAR_CHANNEL_ID.into(),
         axelar_gateway_cosmos_address: super::constants::AXELAR_GATEWAY_COSMOS_ADDRESS.into(),
-        yield_ward_evm_address: super::constants::YIELD_WARD_EVM_ADDRESS.into(),
         ibc_timeout_seconds: super::constants::IBC_TIMEOUT_SECONDS,
     }
 }

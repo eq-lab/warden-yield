@@ -44,7 +44,7 @@ pub fn try_init_unstake(
     let unstake_payload = encode_unstake_payload(unstake_id, &lpt_amount);
     let payload_hex_str = to_hex(&unstake_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, unstake_payload)?;
+    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, unstake_payload)?;
 
     Ok(response.add_event(
         Event::new("unstake")
