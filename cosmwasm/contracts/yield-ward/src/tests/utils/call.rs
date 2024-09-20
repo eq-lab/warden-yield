@@ -126,7 +126,7 @@ pub fn call_stake(
         from.clone(),
         Wasm(WasmMsg::Execute {
             contract_addr: ctx.yield_ward_address.to_string(),
-            msg: to_json_binary(&ExecuteMsg::Stake).unwrap(),
+            msg: to_json_binary(&ExecuteMsg::Stake {}).unwrap(),
             funds: coins(amount.u128(), token_info.deposit_token_denom.to_string()),
         }),
     )

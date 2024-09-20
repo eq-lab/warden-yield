@@ -99,7 +99,7 @@ fn main() {
 
 fn process_stake(token: &String, amount: &u128) {
     let token_details = get_token_details(&token);
-    let msg = ExecuteMsg::Stake;
+    let msg = ExecuteMsg::Stake {};
     let encoded = to_json_binary(&msg).unwrap();
 
     println!("Inner call: {}", to_json_string(&msg).unwrap());

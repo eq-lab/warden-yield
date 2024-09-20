@@ -1,4 +1,7 @@
-use crate::types::{StakeActionStage, TokenConfig, TokenDenom, UnstakeActionStage};
+use crate::types::{
+    IbcSendMessageReply, IbcSendMessageTransfer, StakeActionStage, TokenConfig, TokenDenom,
+    UnstakeActionStage,
+};
 use cosmwasm_std::{Addr, Uint128, Uint256};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
@@ -47,6 +50,18 @@ pub const STAKE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("stake_params")
 
 pub const UNSTAKES: Map<(&TokenDenom, u64), UnstakeItem> = Map::new("unstakes_map");
 pub const UNSTAKE_PARAMS: Map<&TokenDenom, QueueParams> = Map::new("unstake_params");
+
+// IBC data
+pub const IBC_SEND_MESSAGE_REPLY: Item<IbcSendMessageReply> = Item::new("ibc_send_message_reply");
+pub const IBC_SEND_MESSAGE_INFLIGHT: Map<(&str, u64), IbcSendMessageTransfer> =
+    Map::new("ibc_send_message_inflight");
+pub const IBC_SEND_MESSAGE_RECOVERY: Map<&Addr, Vec<IbcSendMessageTransfer>> =
+    Map::new("ibc_send_message_recovery");
+
+/// (channel_id) -> count. Reset on channel closure.
+pub const IBC_CONNECTION_COUNTS: Map<String, u32> = Map::new("ibc_connection_counts");
+/// (channel_id) -> timeout_count. Reset on channel closure.
+pub const IBC_TIMEOUT_COUNTS: Map<String, u32> = Map::new("ibc_timeout_count");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct StakeItem {

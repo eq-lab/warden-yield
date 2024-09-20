@@ -15,15 +15,16 @@ use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
 use crate::execute::response::try_handle_response;
 use crate::execute::stake::try_init_stake;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, IbcLifecycleComplete, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
 use crate::query::{
     query_all_tokens_denoms_by_lpt_address, query_all_tokens_denoms_by_source,
     query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
     query_tokens_configs, query_unstake_item, query_unstake_params,
 };
-use crate::reply::handle_lp_token_mint_reply;
+use crate::reply::execute_send_ibc_message_reply;
 use crate::state::{ContractConfigState, AXELAR_CONFIG, CONTRACT_CONFIG};
-use crate::types::ReplyType;
+use crate::sudo::execute_receive_lifecycle_completion;
+use crate::types::{IbcSendMessageStatus, ReplyType};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "warden-yield";
@@ -61,7 +62,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Stake => try_init_stake(deps, env, info),
+        ExecuteMsg::Stake {} => try_init_stake(deps, env, info),
         ExecuteMsg::Receive(msg) => try_receive_cw20(deps, env, info, msg),
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
         ExecuteMsg::MintLpToken {
@@ -110,7 +111,7 @@ pub fn execute(
             source_address,
             payload,
         } => try_handle_response(deps, env, info, source_chain, source_address, payload),
-        ExecuteMsg::DisallowMint => try_disallow_mint(deps, env, info),
+        ExecuteMsg::DisallowMint {} => try_disallow_mint(deps, env, info),
     }
 }
 
@@ -141,16 +142,75 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+// #[cfg_attr(not(feature = "library"), entry_point)]
+// pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+//     return Ok(Response::new().add_event(Event::new("sudo_called")));
+// match msg {
+//     SudoMsg::IbcLifecycleComplete(IbcLifecycleComplete::IbcAck {
+//         channel,
+//         sequence,
+//         ack: _,
+//         success,
+//     }) => execute_receive_lifecycle_completion(
+//         deps,
+//         "execute_receive_ack",
+//         IbcSendMessageStatus::AckFailure,
+//         &channel,
+//         sequence,
+//         success,
+//     ),
+//
+//     SudoMsg::IbcLifecycleComplete(IbcLifecycleComplete::IbcTimeout { channel, sequence }) => {
+//         execute_receive_lifecycle_completion(
+//             deps,
+//             "execute_receive_timeout",
+//             IbcSendMessageStatus::TimedOut,
+//             &channel,
+//             sequence,
+//             false,
+//         )
+//     }
+// }
+// }
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match ReplyType::try_from(&msg.id) {
-        Ok(ReplyType::LpMint) => handle_lp_token_mint_reply(deps, env, msg),
+        Ok(ReplyType::SendIbcMessage) => execute_send_ibc_message_reply(deps, msg),
         _ => Err(ContractError::UnrecognizedReply(msg.id)),
     }
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // No state migrations performed, just returned a Response
     Ok(Response::default())
 }
+
+// #[cfg_attr(not(feature = "library"), entry_point)]
+// pub fn ibc_packet_ack(
+//     _deps: DepsMut,
+//     _env: Env,
+//     msg: IbcPacketAckMsg,
+// ) -> StdResult<IbcBasicResponse> {
+//     // this example assumes that the acknowledgement is an StdAck
+//     let ack: StdResult<StdAck> = from_json(&msg.acknowledgement.data);
+//     if ack.is_err() {
+//         return Ok(IbcBasicResponse::new().add_event(
+//             Event::new("ibc_packet_ack")
+//                 .add_attribute("success", "no_info")
+//                 .add_attribute("error", "from_json error!"),
+//         ));
+//     }
+//     let (is_ok, err) = match ack.unwrap() {
+//         StdAck::Success(_) => (true, "".to_string()),
+//         StdAck::Error(x) => (false, x),
+//     };
+//     // here you can do something with the acknowledgement
+//
+//     Ok(IbcBasicResponse::new().add_event(
+//         Event::new("ibc_packet_ack")
+//             .add_attribute("success", is_ok.to_string())
+//             .add_attribute("error", err),
+//     ))
+// }

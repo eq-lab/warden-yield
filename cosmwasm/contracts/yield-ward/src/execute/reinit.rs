@@ -5,7 +5,7 @@ use crate::helpers::find_token_by_message_source;
 use crate::state::{
     QueueParams, StakeStatsItem, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
-use crate::types::{TokenDenom, UnstakeActionStage};
+use crate::types::{ActionType, TokenDenom, UnstakeActionStage};
 use crate::ContractError;
 use cosmwasm_std::{to_hex, BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256};
 
@@ -20,7 +20,7 @@ pub fn try_reinit(
     let reinit_payload = encode_reinit_payload();
     let payload_hex_str = to_hex(&reinit_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, reinit_payload)?;
+    let response = send_message_evm(deps, env, &info, &token_config, reinit_payload, 0, ActionType::Reinit)?;
 
     Ok(response.add_event(
         Event::new("reinit").add_attribute("payload", "0x".to_owned() + &payload_hex_str),

@@ -65,6 +65,18 @@ pub enum ContractError {
     #[error("Invalid CW-20 message")]
     InvalidCw20Message,
 
+    #[error("IBC message failed: {message}")]
+    IbcMessageFailed { message: String },
+
+    #[error("IBC sub-message failed: {message}")]
+    IbcSubMessageFailed { message: String },
+
+    #[error("IbcOrderedChannel")]
+    IbcOrderedChannel,
+
+    #[error("invalid IBC channel version. Got ({actual}), expected ({expected})")]
+    InvalidVersion { actual: String, expected: String },
+
     #[error("Custom Error: {0}")]
     CustomError(String),
     // Add any other custom errors you like here.

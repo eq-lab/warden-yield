@@ -46,6 +46,8 @@ serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.58" }
 protobuf = { version = "3.5.0", features = ["with-bytes"] }
 serde-json-wasm = "1.0.1"
+prost = "0.13.2"
+enum-repr = "0.2.6"
 
 [dependencies.lp-token]
 package = "lp-token"

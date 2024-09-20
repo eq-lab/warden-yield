@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Timestamp, Uint128};
+use enum_repr::EnumRepr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -17,8 +18,9 @@ pub struct TokenConfig {
     pub lpt_address: Addr,
 }
 
+#[EnumRepr(type = "u64")]
 pub enum ReplyType {
-    LpMint = 1,
+    SendIbcMessage = 1,
 }
 
 impl TryFrom<&u64> for ReplyType {
@@ -26,7 +28,7 @@ impl TryFrom<&u64> for ReplyType {
 
     fn try_from(value: &u64) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(ReplyType::LpMint),
+            1 => Ok(ReplyType::SendIbcMessage),
             _ => Err(()),
         }
     }
@@ -70,10 +72,21 @@ impl TryFrom<&u8> for Status {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum ActionType {
     Stake = 0,
     Unstake,
     Reinit,
+}
+
+impl ActionType {
+    pub fn to_string(&self) -> String {
+        match self {
+            ActionType::Stake => "stake".to_string(),
+            ActionType::Unstake => "unstake".to_string(),
+            ActionType::Reinit => "reinit".to_string(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -89,4 +102,38 @@ pub enum UnstakeActionStage {
     Registered,
     Executed,
     Failed,
+}
+
+#[cw_serde]
+pub enum IbcSendMessageStatus {
+    Sent,
+    AckSuccess,
+    AckFailure,
+    TimedOut,
+}
+
+#[cw_serde]
+pub struct IbcSendMessageTransfer {
+    pub channel_id: String,
+    pub sequence: u64,
+    pub denom: Option<String>,
+    pub action_type: ActionType,
+    pub action_id: u64,
+    pub status: IbcSendMessageStatus,
+}
+
+#[derive(Clone, PartialEq, Eq, ::prost::Message)]
+pub struct IbcMsgTransferResponse {
+    #[prost(uint64, tag = "1")]
+    pub sequence: u64,
+}
+
+#[cw_serde]
+pub struct IbcSendMessageReply {
+    pub channel_id: String,
+    pub recipient: String,
+    pub denom: Option<String>,
+    pub action_type: ActionType,
+    pub action_id: u64,
+    pub block_time: Timestamp,
 }

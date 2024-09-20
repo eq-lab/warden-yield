@@ -24,7 +24,9 @@ fn store_yield_ward_code(app: &mut TestingApp) -> u64 {
         crate::contract::execute,
         crate::contract::instantiate,
         crate::contract::query,
-    );
+    )
+    .with_reply(crate::contract::reply);
+    // .with_sudo(crate::contract::sudo);
     app.store_code(Box::new(yield_ward_code))
 }
 

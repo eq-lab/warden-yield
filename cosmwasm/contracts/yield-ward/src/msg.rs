@@ -16,7 +16,7 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Stake,
+    Stake {},
     Receive(Cw20ReceiveMsg),
     Reinit {
         token_denom: TokenDenom,
@@ -53,7 +53,7 @@ pub enum ExecuteMsg {
         source_address: String,
         payload: Binary,
     },
-    DisallowMint,
+    DisallowMint {},
 }
 
 #[cw_serde]
@@ -151,4 +151,24 @@ pub struct GmpMessage {
     #[serde(rename = "type")]
     pub type_: i64,
     pub fee: Option<Fee>,
+}
+
+// source: https://github.com/osmosis-labs/osmosis/blob/main/x/ibc-hooks/README.md#implementation
+#[cw_serde]
+pub enum SudoMsg {
+    #[serde(rename = "ibc_lifecycle_complete")]
+    IbcLifecycleComplete(IbcLifecycleComplete),
+}
+
+#[cw_serde]
+pub enum IbcLifecycleComplete {
+    #[serde(rename = "ibc_ack")]
+    IbcAck {
+        channel: String,
+        sequence: u64,
+        ack: String,
+        success: bool,
+    },
+    #[serde(rename = "ibc_timeout")]
+    IbcTimeout { channel: String, sequence: u64 },
 }

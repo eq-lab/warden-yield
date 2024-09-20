@@ -1,7 +1,7 @@
 use crate::encoding::encode_stake_payload;
 use crate::execute::axelar_messaging::send_message_evm;
 use crate::state::{QueueParams, StakeItem, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG};
-use crate::types::StakeActionStage;
+use crate::types::{ActionType, StakeActionStage};
 use crate::ContractError;
 use cosmwasm_std::{to_hex, Coin, DepsMut, Env, Event, MessageInfo, Response, Uint256};
 
@@ -65,7 +65,7 @@ pub fn try_init_stake(
     let stake_payload = encode_stake_payload(stake_id);
     let payload_hex_str = to_hex(&stake_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, stake_payload)?;
+    let response = send_message_evm(deps, env, &info, &token_config, stake_payload, stake_id, ActionType::Stake)?;
 
     Ok(response.add_event(
         Event::new("stake")
