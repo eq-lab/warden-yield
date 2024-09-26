@@ -17,6 +17,12 @@ pub fn try_init_unstake(
         .may_load(deps.storage, &token_denom)?
         .ok_or(ContractError::UnknownToken(token_denom.clone()))?;
 
+    if info.funds.len() != 1 {
+        return Err(ContractError::CustomError(
+            "Wrong number of tokens attached to unstake call".to_string(),
+        ));
+    }
+
     // update unstake params
     let mut unstake_params = UNSTAKE_PARAMS.load(deps.storage, &token_denom)?;
     let unstake_id = unstake_params.next_id;
@@ -41,10 +47,18 @@ pub fn try_init_unstake(
     stake_stats.pending_unstake_lp_token_amount += Uint256::from(lpt_amount);
     STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
+    let fund = info.funds.first().unwrap();
     let unstake_payload = encode_unstake_payload(unstake_id, &lpt_amount);
     let payload_hex_str = to_hex(&unstake_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, unstake_payload)?;
+    let response = send_message_evm(
+        deps.as_ref(),
+        env,
+        fund,
+        &token_config,
+        unstake_payload,
+        fund.amount,
+    )?;
 
     Ok(response.add_event(
         Event::new("unstake")

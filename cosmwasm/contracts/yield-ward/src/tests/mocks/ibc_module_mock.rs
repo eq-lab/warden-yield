@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
 
 use crate::msg::{GmpMessage, GmpMsgType};
-use cosmwasm_std::{Addr, Api, Binary, BlockInfo, Empty, IbcMsg, IbcQuery, Querier, Storage};
+use cosmwasm_std::{
+    Addr, Api, Binary, BlockInfo, Empty, IbcMsg, IbcQuery, Querier, Storage, Uint128,
+};
 use cw_multi_test::{
     error::{anyhow, bail, AnyResult},
     AppResponse, CosmosRouter, Ibc, Module,
@@ -79,6 +81,21 @@ impl Module for IbcModuleMock {
             crate::tests::utils::constants::YIELD_WARD_EVM_ADDRESS
         );
 
+        assert!(gmp_message.fee.is_some());
+
+        let fee = gmp_message.fee.unwrap();
+        assert_eq!(
+            fee.recipient,
+            crate::tests::utils::constants::AXELAR_FEE_RECIPIENT_ADDRESS
+        );
+
+        let fee_amount: Uint128 = fee
+            .amount
+            .trim()
+            .parse::<u128>()
+            .map_err(|_| anyhow!("Failed to parse stake fee amount"))?
+            .into();
+
         match gmp_message
             .payload
             .last()
@@ -88,19 +105,19 @@ impl Module for IbcModuleMock {
                 // stake
                 assert_eq!(gmp_message.type_, GmpMsgType::WithToken as i64);
                 assert!(!amount.amount.is_zero());
-                assert!(gmp_message.fee.is_none());
+                assert!(fee_amount.is_zero());
             }
             1 => {
                 // unstake
                 assert_eq!(gmp_message.type_, GmpMsgType::Pure as i64);
-                assert!(amount.amount.is_zero());
-                assert!(gmp_message.fee.is_none());
+                assert_eq!(amount.amount, Uint128::from(crate::tests::utils::constants::AXELAR_FEE));
+                assert_eq!(fee_amount, amount.amount);
             }
             2 => {
                 // reinit
                 assert_eq!(gmp_message.type_, GmpMsgType::Pure as i64);
-                assert!(amount.amount.is_zero());
-                assert!(gmp_message.fee.is_none());
+                assert_eq!(amount.amount, Uint128::from(crate::tests::utils::constants::AXELAR_FEE));
+                assert_eq!(fee_amount, amount.amount);
             }
             _ => bail!("Wrong action type"),
         };

@@ -157,7 +157,10 @@ pub fn call_unstake(
                 msg: to_json_binary(&Cw20ActionMsg::Unstake).unwrap(),
             })
             .unwrap(),
-            funds: vec![],
+            funds: coins(
+                crate::tests::utils::constants::AXELAR_FEE,
+                token_info.deposit_token_denom.to_string(),
+            ),
         }),
     )
     .unwrap();

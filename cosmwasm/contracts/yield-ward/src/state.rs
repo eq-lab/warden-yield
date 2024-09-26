@@ -20,6 +20,7 @@ pub const AXELAR_CONFIG: Item<AxelarConfigState> = Item::new("axelar_config");
 pub struct AxelarConfigState {
     pub axelar_channel_id: String,
     pub axelar_gateway_cosmos_address: String,
+    pub axelar_fee_recipient_address: String,
     pub ibc_timeout_seconds: u64,
 }
 

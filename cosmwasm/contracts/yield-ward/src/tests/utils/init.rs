@@ -229,6 +229,7 @@ fn get_axelar_config() -> AxelarConfigState {
     AxelarConfigState {
         axelar_channel_id: super::constants::AXELAR_CHANNEL_ID.into(),
         axelar_gateway_cosmos_address: super::constants::AXELAR_GATEWAY_COSMOS_ADDRESS.into(),
+        axelar_fee_recipient_address: super::constants::AXELAR_FEE_RECIPIENT_ADDRESS.into(),
         ibc_timeout_seconds: super::constants::IBC_TIMEOUT_SECONDS,
     }
 }

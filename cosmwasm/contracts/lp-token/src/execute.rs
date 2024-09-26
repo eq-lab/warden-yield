@@ -1,7 +1,7 @@
 use crate::logo::verify_logo;
 use crate::state::{MinterData, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO};
 use crate::ContractError;
-use cosmwasm_std::{Binary, DepsMut, Env, MessageInfo, Response, StdResult, Uint128};
+use cosmwasm_std::{Binary, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg};
 use cw20::{Cw20ReceiveMsg, Logo, LogoInfo};
 
 pub fn execute_transfer(
@@ -145,18 +145,23 @@ pub fn execute_send(
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
+    let cw20_receive_msg = Cw20ReceiveMsg {
+        sender: info.sender.clone().into(),
+        amount,
+        msg,
+    };
+
     let res = Response::new()
         .add_attribute("action", "send")
         .add_attribute("from", &info.sender)
         .add_attribute("to", &contract)
         .add_attribute("amount", amount)
         .add_message(
-            Cw20ReceiveMsg {
-                sender: info.sender.into(),
-                amount,
-                msg,
+            WasmMsg::Execute {
+                contract_addr: contract.into(),
+                msg: cw20_receive_msg.into_json_binary()?,
+                funds: info.funds,
             }
-            .into_cosmos_msg(contract)?,
         );
     Ok(res)
 }
