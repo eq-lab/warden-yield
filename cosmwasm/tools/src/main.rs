@@ -66,7 +66,11 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Stake { token, amount, fee_amount } => process_stake(token, amount, *fee_amount),
+        Commands::Stake {
+            token,
+            amount,
+            fee_amount,
+        } => process_stake(token, amount, *fee_amount),
         Commands::StakeResponse {
             token,
             stake_id,
@@ -101,7 +105,9 @@ fn main() {
 
 fn process_stake(token: &String, amount: &u128, fee_amount: u128) {
     let token_details = get_token_details(&token);
-    let msg = ExecuteMsg::Stake { fee_amount: fee_amount.into() };
+    let msg = ExecuteMsg::Stake {
+        fee_amount: fee_amount.into(),
+    };
     let encoded = to_json_binary(&msg).unwrap();
 
     println!("Inner call: {}", to_json_string(&msg).unwrap());

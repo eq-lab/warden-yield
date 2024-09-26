@@ -19,7 +19,9 @@ pub fn try_init_stake(
     let fund = info.funds.first().unwrap();
 
     if fee_amount >= fund.amount {
-        return Err(ContractError::CustomError("Fee amount should be less than attached amount".into()));
+        return Err(ContractError::CustomError(
+            "Fee amount should be less than attached amount".into(),
+        ));
     }
 
     let stake_amount = fund.amount - fee_amount;
