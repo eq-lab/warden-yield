@@ -110,13 +110,19 @@ impl Module for IbcModuleMock {
             1 => {
                 // unstake
                 assert_eq!(gmp_message.type_, GmpMsgType::Pure as i64);
-                assert_eq!(amount.amount, Uint128::from(crate::tests::utils::constants::AXELAR_FEE));
+                assert_eq!(
+                    amount.amount,
+                    Uint128::from(crate::tests::utils::constants::AXELAR_FEE)
+                );
                 assert_eq!(fee_amount, amount.amount);
             }
             2 => {
                 // reinit
                 assert_eq!(gmp_message.type_, GmpMsgType::Pure as i64);
-                assert_eq!(amount.amount, Uint128::from(crate::tests::utils::constants::AXELAR_FEE));
+                assert_eq!(
+                    amount.amount,
+                    Uint128::from(crate::tests::utils::constants::AXELAR_FEE)
+                );
                 assert_eq!(fee_amount, amount.amount);
             }
             _ => bail!("Wrong action type"),

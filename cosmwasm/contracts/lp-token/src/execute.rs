@@ -156,13 +156,11 @@ pub fn execute_send(
         .add_attribute("from", &info.sender)
         .add_attribute("to", &contract)
         .add_attribute("amount", amount)
-        .add_message(
-            WasmMsg::Execute {
-                contract_addr: contract.into(),
-                msg: cw20_receive_msg.into_json_binary()?,
-                funds: info.funds,
-            }
-        );
+        .add_message(WasmMsg::Execute {
+            contract_addr: contract.into(),
+            msg: cw20_receive_msg.into_json_binary()?,
+            funds: info.funds,
+        });
     Ok(res)
 }
 
