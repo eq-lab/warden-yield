@@ -105,7 +105,8 @@ impl Module for IbcModuleMock {
                 // stake
                 assert_eq!(gmp_message.type_, GmpMsgType::WithToken as i64);
                 assert!(!amount.amount.is_zero());
-                assert!(fee_amount.is_zero());
+                assert!(!fee_amount.is_zero());
+                assert!(fee_amount < amount.amount);
             }
             1 => {
                 // unstake

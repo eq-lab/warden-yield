@@ -14,6 +14,7 @@ fn stake_and_response(
     app: &mut TestingApp,
     ctx: &TestInfo,
     stake_amount: Uint128,
+    fee_amount: Uint128,
     token_info: &TokenTestInfo,
 ) -> Uint128 {
     let stake_params_before = get_stake_params(app, ctx, &token_info.deposit_token_denom);
@@ -21,7 +22,7 @@ fn stake_and_response(
     let stake_id = stake_params_before.next_id;
 
     // init stake
-    call_stake(app, ctx, &ctx.user, token_info, stake_amount);
+    call_stake(app, ctx, &ctx.user, token_info, stake_amount, fee_amount);
 
     // response for stake action
     let reinit_unstake_id = 0_u64;
@@ -77,7 +78,8 @@ fn test_init_unstake_one_coin() {
     let token_info = ctx.tokens.first().unwrap();
 
     let stake_amount = Uint128::from(1000_u32);
-    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
+    let fee_amount = Uint128::from(100_u32);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
 
     // init unstake
     call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
@@ -123,7 +125,8 @@ fn test_unstake_response_successful() {
     let token_info = ctx.tokens.first().unwrap();
 
     let stake_amount = Uint128::from(1000_u32);
-    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
+    let fee_amount = Uint128::from(100_u32);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
 
     // init unstake
     let unstake_id = 1_u64;
@@ -158,8 +161,9 @@ fn test_unstake_response_successful_instant_reinit() {
     let token_info = ctx.tokens.first().unwrap();
 
     let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
     let unstake_amount = stake_amount + Uint128::one();
-    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
 
     // init unstake
     let unstake_id = 1_u64;
@@ -215,11 +219,12 @@ fn test_unstake_response_successful_with_reinit() {
     let token_info = ctx.tokens.first().unwrap();
 
     let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
     let unstake_amount = stake_amount + Uint128::one();
     let unstake_user = ctx.unstake_user.clone();
 
     let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
-    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
 
     // init unstake
     let unstake_id = unstake_details.unstake_id + 1;
@@ -275,7 +280,8 @@ fn test_unstake_response_fail() {
     let token_info = ctx.tokens.first().unwrap();
 
     let stake_amount = Uint128::from(1000_u32);
-    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
+    let fee_amount = Uint128::from(100_u32);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
 
     // init unstake
     let unstake_id = 1_u64;
@@ -310,10 +316,11 @@ fn test_unstake_response_fail_with_reinit() {
     let token_info = ctx.tokens.first().unwrap();
 
     let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
     let unstake_user = ctx.unstake_user.clone();
 
     let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
-    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, &token_info);
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
 
     // init unstake
     let unstake_id = unstake_details.unstake_id + 1;

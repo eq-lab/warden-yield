@@ -9,6 +9,7 @@ pub fn try_init_stake(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    fee_amount: Uint128,
 ) -> Result<Response, ContractError> {
     if info.funds.len() != 1 {
         return Err(ContractError::CustomError(
@@ -17,9 +18,12 @@ pub fn try_init_stake(
     }
     let fund = info.funds.first().unwrap();
 
-    if fund.amount.is_zero() {
-        return Err(ContractError::ZeroTokenAmount);
+    if fee_amount >= fund.amount {
+        return Err(ContractError::CustomError("Fee amount should be less than attached amount".into()));
     }
+
+    let stake_amount = fund.amount - fee_amount;
+
     let token_config = TOKEN_CONFIG
         .may_load(deps.storage, &fund.denom)?
         .ok_or(ContractError::UnknownToken(fund.denom.clone()))?;
@@ -38,7 +42,7 @@ pub fn try_init_stake(
         (&fund.denom, stake_id),
         &StakeItem {
             user: info.sender.clone(),
-            token_amount: fund.amount,
+            token_amount: stake_amount,
             action_stage: StakeActionStage::WaitingExecution,
             lp_token_amount: None,
         },
@@ -56,7 +60,7 @@ pub fn try_init_stake(
 
     // update stake stats
     let mut stake_stats = STAKE_STATS.load(deps.storage, &fund.denom)?;
-    stake_stats.pending_stake += Uint256::from(fund.amount);
+    stake_stats.pending_stake += Uint256::from(stake_amount);
     STAKE_STATS.save(deps.storage, &fund.denom, &stake_stats)?;
 
     let stake_payload = encode_stake_payload(stake_id);
@@ -68,7 +72,7 @@ pub fn try_init_stake(
         fund,
         &token_config,
         stake_payload,
-        Uint128::zero(),
+        fee_amount,
     )?;
 
     Ok(response.add_event(
@@ -78,7 +82,8 @@ pub fn try_init_stake(
             .add_attribute("token_symbol", token_config.deposit_token_symbol)
             .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
             .add_attribute("dest_chain", token_config.chain)
-            .add_attribute("token_amount", fund.amount)
+            .add_attribute("token_amount", stake_amount)
+            .add_attribute("fee", fee_amount)
             .add_attribute("payload", "0x".to_owned() + &payload_hex_str),
     ))
 }
