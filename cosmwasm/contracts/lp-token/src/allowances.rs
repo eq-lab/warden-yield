@@ -160,7 +160,6 @@ pub fn execute_transfer_from(
 
 pub fn execute_burn_from(
     deps: DepsMut,
-
     env: Env,
     info: MessageInfo,
     owner: String,

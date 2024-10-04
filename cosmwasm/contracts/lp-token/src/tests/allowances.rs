@@ -253,6 +253,17 @@ fn transfer_from_respects_limits() {
     let start = Uint128::new(999999);
     do_instantiate(deps.as_mut(), &owner, start);
 
+    // no allowance fail
+    let transfer = Uint128::new(44444);
+    let msg = ExecuteMsg::TransferFrom {
+        owner: owner.clone(),
+        recipient: rcpt.clone(),
+        amount: transfer,
+    };
+    let info = message_info(&Addr::unchecked(spender.clone()), &[]);
+    let env = mock_env();
+    assert_eq!(execute(deps.as_mut(), env, info, msg), Err(ContractError::NoAllowance {  }));
+
     // provide an allowance
     let allow1 = Uint128::new(77777);
     let msg = ExecuteMsg::IncreaseAllowance {
@@ -604,6 +615,18 @@ fn no_past_expiration() {
     );
 
     // decrease with height expiration at next block height
+    let expires = Expiration::AtHeight(env.block.height - 1);
+    let allow = Uint128::new(7777);
+    let msg = ExecuteMsg::DecreaseAllowance {
+        spender: spender.clone(),
+        amount: allow,
+        expires: Some(expires),
+    };
+    assert_eq!(
+        Err(ContractError::InvalidExpiration {}),
+        execute(deps.as_mut(), env.clone(), info.clone(), msg)
+    );
+
     let expires = Expiration::AtHeight(env.block.height + 1);
     let allow = Uint128::new(7777);
     let msg = ExecuteMsg::DecreaseAllowance {

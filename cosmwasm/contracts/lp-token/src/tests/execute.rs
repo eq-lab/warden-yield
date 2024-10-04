@@ -654,6 +654,25 @@ fn others_cannot_burn() {
     let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
     assert_eq!(err, ContractError::Unauthorized {});
 }
+
+#[test]
+fn others_cannot_burn_with_minter() {
+    let mut deps = mock_dependencies();
+
+    let user = deps.api.addr_make("user").to_string();
+    let minter = deps.api.addr_make("minter").to_string();
+
+    do_instantiate_with_minter(deps.as_mut(), &user, Uint128::new(1234), &minter, None);
+
+    let info = message_info(&Addr::unchecked(user.clone()), &[]);
+    let env = mock_env();
+    let msg = ExecuteMsg::Burn {
+        amount: Uint128::new(1),
+    };
+    let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
+    assert_eq!(err, ContractError::Unauthorized {});
+}
+
 #[test]
 fn send() {
     let mut deps = mock_dependencies_with_balance(&coins(2, "token"));
@@ -868,6 +887,55 @@ mod marketing {
 
         let creator = deps.api.addr_make("creator");
         let marketing = deps.api.addr_make("marketing");
+
+        let instantiate_msg = InstantiateMsg {
+            name: "Cash Token".to_string(),
+            symbol: "CASH".to_string(),
+            decimals: 9,
+            initial_balances: vec![],
+            mint: None,
+            marketing: Some(InstantiateMarketingInfo {
+                project: Some("Project".to_owned()),
+                description: Some("Description".to_owned()),
+                marketing: None,
+                logo: Some(Logo::Url("url".to_owned())),
+            }),
+        };
+
+        let info = message_info(&creator, &[]);
+
+        instantiate(deps.as_mut(), mock_env(), info.clone(), instantiate_msg).unwrap();
+
+        let err = execute(
+            deps.as_mut(),
+            mock_env(),
+            info,
+            ExecuteMsg::UpdateMarketing {
+                project: Some("New project".to_owned()),
+                description: Some("Better description".to_owned()),
+                marketing: Some(creator.to_string()),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(err, ContractError::Unauthorized {});
+
+        // Ensure marketing didn't change
+        assert_eq!(
+            query_marketing_info(deps.as_ref()).unwrap(),
+            MarketingInfoResponse {
+                project: Some("Project".to_owned()),
+                description: Some("Description".to_owned()),
+                marketing: None,
+                logo: Some(LogoInfo::Url("url".to_owned())),
+            }
+        );
+
+        let err = query_download_logo(deps.as_ref()).unwrap_err();
+        assert!(
+            matches!(err, StdError::NotFound { .. }),
+            "Expected StdError::NotFound, received {err}",
+        );
 
         let instantiate_msg = InstantiateMsg {
             name: "Cash Token".to_string(),
