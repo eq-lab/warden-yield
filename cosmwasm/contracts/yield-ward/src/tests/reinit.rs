@@ -68,7 +68,6 @@ fn test_reinit() {
 fn test_reinit_wrong_funds() {
     let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
     let token_info = ctx.tokens.get(0).unwrap();
-    let unstake_user = &ctx.unstake_user;
 
     let coin = cosmwasm_std::coin(
         crate::tests::utils::constants::AXELAR_FEE,
@@ -77,7 +76,7 @@ fn test_reinit_wrong_funds() {
     let funds = vec![coin.clone(), coin];
 
     let reinit_result = app.execute(
-        unstake_user.clone(),
+        ctx.unstake_user,
         cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
             contract_addr: ctx.yield_ward_address.to_string(),
             msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::Reinit {
@@ -88,5 +87,11 @@ fn test_reinit_wrong_funds() {
         }),
     );
 
-    assert!(reinit_result.is_err());
+    match reinit_result {
+        Ok(_) => panic!("Stake passed with wrong funds length"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            "Custom Error: Wrong number of tokens attached to reinit call"
+        ),
+    }
 }
