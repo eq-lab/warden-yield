@@ -1,3 +1,4 @@
+mod admin_actions;
 mod encoding;
 mod instantiate;
 mod lpt;

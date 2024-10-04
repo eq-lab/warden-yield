@@ -1,6 +1,7 @@
 use crate::encoding::{
-    decode_reinit_response_payload, decode_stake_response_payload, decode_unstake_response_payload,
-    encode_reinit_payload, encode_stake_payload, encode_unstake_payload,
+    decode_payload_action_type, decode_reinit_response_payload, decode_stake_response_payload,
+    decode_unstake_response_payload, encode_reinit_payload, encode_stake_payload,
+    encode_unstake_payload,
 };
 use crate::types::{ReinitResponseData, StakeResponseData, Status, UnstakeResponseData};
 use cosmwasm_std::{Binary, Uint128};
@@ -33,6 +34,12 @@ fn test_decode_stake_response() {
 }
 
 #[test]
+fn test_decode_stake_response_wrong_length() {
+    let payload: Vec<u8> = vec![0_u8];
+    assert!(decode_stake_response_payload(payload.as_slice()).is_none());
+}
+
+#[test]
 fn test_decode_unstake_response() {
     let status = Status::Success; // 1 byte = 8 bit
     let unstake_id = 1337_u64; // 8 = 64 bit
@@ -57,6 +64,12 @@ fn test_decode_unstake_response() {
 }
 
 #[test]
+fn test_decode_unstake_response_wrong_length() {
+    let payload: Vec<u8> = vec![0_u8];
+    assert!(decode_unstake_response_payload(payload.as_slice()).is_none());
+}
+
+#[test]
 fn test_decode_reinit_response() {
     let reinit_unstake_id = 2007_u64; // 8 = 64 bit
 
@@ -65,6 +78,12 @@ fn test_decode_reinit_response() {
     // println!("Bytes: {:?}", payload);
     let data = decode_reinit_response_payload(payload.as_slice()).unwrap();
     assert_eq!(data, ReinitResponseData { reinit_unstake_id });
+}
+
+#[test]
+fn test_decode_reinit_response_wrong_length() {
+    let payload: Vec<u8> = vec![0_u8];
+    assert!(decode_reinit_response_payload(payload.as_slice()).is_none());
 }
 
 #[test]
@@ -106,4 +125,10 @@ fn binary_to_hex_string(arr: Binary) -> String {
             .collect::<Vec<_>>()
             .join("")
             .as_str()
+}
+
+#[test]
+fn test_decode_action_type_wrong_byte() {
+    let payload: Vec<u8> = vec![3_u8];
+    assert!(decode_payload_action_type(&Binary::from(payload)).is_none());
 }
