@@ -1,0 +1,9 @@
+[default-config]
+locked = true
+debug = false
+verbose = false
+exclude-files = [
+    "tools/*",
+    "lp-token/src/tests/*",
+    "yield-ward/src/tests/*",   
+]
