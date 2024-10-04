@@ -424,8 +424,8 @@ fn test_wrong_unstake_response() {
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
             anyhow!(ContractError::InvalidMessagePayload)
-            .root_cause()
-            .to_string()
+                .root_cause()
+                .to_string()
         ),
     }
 
@@ -521,6 +521,41 @@ fn test_wrong_unstake_response() {
         ),
     }
 
+    let wrong_denom_value = ctx.tokens.get(1).unwrap().deposit_token_denom.clone();
+
+    response_payload = create_unstake_response_payload(UnstakeResponseData {
+        status: Status::Success,
+        unstake_id: 1,
+        reinit_unstake_id: 1,
+    });
+
+    let wrong_denom = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: cosmwasm_std::coins(1000, wrong_denom_value.clone()),
+        }),
+    );
+
+    match wrong_denom {
+        Ok(_) => panic!("unstake response passed with wrong denom"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::InvalidToken {
+                actual: wrong_denom_value,
+                expected: coin.denom
+            })
+            .root_cause()
+            .to_string()
+        ),
+    }
+
     response_payload = create_unstake_response_payload(UnstakeResponseData {
         status: Status::Success,
         unstake_id: 1,
@@ -539,7 +574,8 @@ fn test_wrong_unstake_response() {
             .unwrap(),
             funds: vec![],
         }),
-    ).unwrap();
+    )
+    .unwrap();
 
     let wrong_stage = app.execute(
         ctx.axelar.clone(),
@@ -559,7 +595,7 @@ fn test_wrong_unstake_response() {
         Ok(_) => panic!("unstake response passed at a wrong stage"),
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
-            anyhow!(ContractError::UnstakeRequestInvalidStage{
+            anyhow!(ContractError::UnstakeRequestInvalidStage {
                 symbol: token_info.deposit_token_symbol.clone(),
                 unstake_id: 1,
             })

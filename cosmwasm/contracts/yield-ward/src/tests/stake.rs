@@ -7,7 +7,7 @@ use crate::tests::utils::query::{
 };
 use crate::types::{StakeActionStage, Status, UnstakeActionStage};
 use crate::ContractError;
-use cosmwasm_std::{Uint128, Uint256};
+use cosmwasm_std::{coins, Uint128, Uint256};
 use cw_multi_test::error::anyhow;
 use cw_multi_test::Executor;
 
@@ -729,6 +729,43 @@ fn test_wrong_stake_response() {
             anyhow!(ContractError::CustomError(
                 "Stake response: reinit_unstake_id == 0 and status is Success, but message have tokens".into()
             ))
+            .root_cause()
+            .to_string()
+        ),
+    }
+
+    let wrong_denom = ctx.tokens.get(1).unwrap().deposit_token_denom.clone();
+
+    response_payload =
+        super::utils::calldata::create_stake_response_payload(crate::types::StakeResponseData {
+            status: Status::Fail,
+            stake_id: 1,
+            reinit_unstake_id: 0,
+            lp_token_amount: 1000_u64.into(),
+        });
+
+    let wrong_denom_passed = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: coins(1000, wrong_denom.clone()),
+        }),
+    );
+
+    match wrong_denom_passed {
+        Ok(_) => panic!("stake response passed with wrong denom"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::InvalidToken {
+                actual: wrong_denom,
+                expected: coin.denom
+            })
             .root_cause()
             .to_string()
         ),
