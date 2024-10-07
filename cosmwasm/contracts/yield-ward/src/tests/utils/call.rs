@@ -118,6 +118,7 @@ pub fn call_stake(
     from: &Addr,
     token_info: &TokenTestInfo,
     amount: Uint128,
+    fee_amount: Uint128,
 ) {
     let balance_before = get_bank_token_balance(app, &token_info.deposit_token_denom, &from);
     assert!(balance_before >= amount);
@@ -126,8 +127,11 @@ pub fn call_stake(
         from.clone(),
         Wasm(WasmMsg::Execute {
             contract_addr: ctx.yield_ward_address.to_string(),
-            msg: to_json_binary(&ExecuteMsg::Stake).unwrap(),
-            funds: coins(amount.u128(), token_info.deposit_token_denom.to_string()),
+            msg: to_json_binary(&ExecuteMsg::Stake { fee_amount }).unwrap(),
+            funds: coins(
+                (amount + fee_amount).u128(),
+                token_info.deposit_token_denom.to_string(),
+            ),
         }),
     )
     .unwrap();
@@ -157,7 +161,10 @@ pub fn call_unstake(
                 msg: to_json_binary(&Cw20ActionMsg::Unstake).unwrap(),
             })
             .unwrap(),
-            funds: vec![],
+            funds: coins(
+                crate::tests::utils::constants::AXELAR_FEE,
+                token_info.deposit_token_denom.to_string(),
+            ),
         }),
     )
     .unwrap();
@@ -411,9 +418,10 @@ pub fn call_stake_and_unstake(
 ) -> UnstakeDetails {
     let stake_id = get_stake_params(app, ctx, &token_info.deposit_token_denom).next_id;
     let stake_amount = Uint128::from(14000_u128);
+    let fee_amount = Uint128::from(1000_u128);
 
     // init stake
-    call_stake(app, ctx, &user, token_info, stake_amount);
+    call_stake(app, ctx, &user, token_info, stake_amount, fee_amount);
 
     let reinit_unstake_id = 0;
     let lp_token_amount = Uint128::from(1001_u128);

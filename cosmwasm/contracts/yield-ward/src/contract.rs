@@ -61,7 +61,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Stake => try_init_stake(deps, env, info),
+        ExecuteMsg::Stake { fee_amount } => try_init_stake(deps, env, info, fee_amount),
         ExecuteMsg::Receive(msg) => try_receive_cw20(deps, env, info, msg),
         ExecuteMsg::Reinit { token_denom } => try_reinit(deps, env, info, token_denom),
         ExecuteMsg::MintLpToken {

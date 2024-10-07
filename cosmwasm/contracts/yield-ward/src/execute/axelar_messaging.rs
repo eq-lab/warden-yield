@@ -1,8 +1,8 @@
-use cosmwasm_std::{Binary, Coin, Deps, Env, IbcMsg, MessageInfo, Response};
+use cosmwasm_std::{Binary, Coin, Deps, Env, IbcMsg, Response, Uint128};
 use serde_json_wasm::to_string;
 
 use crate::{
-    msg::{GmpMessage, GmpMsgType},
+    msg::{Fee, GmpMessage, GmpMsgType},
     state::AXELAR_CONFIG,
     types::TokenConfig,
     ContractError,
@@ -11,28 +11,24 @@ use crate::{
 pub fn send_message_evm(
     deps: Deps,
     env: Env,
-    info: &MessageInfo,
+    fund: &Coin,
     token_config: &TokenConfig,
     payload: Binary,
+    fee_amount: Uint128,
 ) -> Result<Response, ContractError> {
     let axelar_config = AXELAR_CONFIG
         .load(deps.storage)
         .map_err(|_| ContractError::CustomError("Failed to load axelar config".into()))?;
 
-    // info.funds.len() == 0 -- revert
-    // info.funds.len == 2 -- stake call
-    // info.funds.len == 1 -- unstake or reinit call
-    // info.funds.len() > 2 -- revert
-    // or some other limits: depends on the axelar fee token
-    // TODO axelar fee: seems like some checks, similar to the above ones, are required
-    let fund = info.funds.first();
-
-    // TODO axelar fee: in ward tokens)? subtract from coin amount?
-    // Feels like the `type_` value can be actually defined by info.funds length
-    let (transfer, fee, type_) = match fund {
-        Some(coin) => (coin, None, GmpMsgType::WithToken as i64),
-        None => (&Coin::new(0_u64, "ward"), None, GmpMsgType::Pure as i64),
+    let type_ = match fund.amount == fee_amount {
+        true => GmpMsgType::Pure as i64,
+        false => GmpMsgType::WithToken as i64,
     };
+
+    let fee = Some(Fee {
+        amount: fee_amount.to_string(),
+        recipient: axelar_config.axelar_fee_recipient_address,
+    });
 
     let gmp_message: GmpMessage = GmpMessage {
         destination_chain: token_config.chain.clone(),
@@ -52,7 +48,7 @@ pub fn send_message_evm(
     let ibc_message = IbcMsg::Transfer {
         channel_id: axelar_config.axelar_channel_id,
         to_address: axelar_config.axelar_gateway_cosmos_address,
-        amount: transfer.clone(),
+        amount: fund.clone(),
         timeout: env
             .block
             .time

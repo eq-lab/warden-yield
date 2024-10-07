@@ -17,10 +17,24 @@ pub fn try_reinit(
 ) -> Result<Response, ContractError> {
     let token_config = TOKEN_CONFIG.load(deps.storage, &token_denom)?;
 
+    if info.funds.len() != 1 {
+        return Err(ContractError::CustomError(
+            "Wrong number of tokens attached to reinit call".to_string(),
+        ));
+    }
+
+    let fund = info.funds.first().unwrap();
     let reinit_payload = encode_reinit_payload();
     let payload_hex_str = to_hex(&reinit_payload);
 
-    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, reinit_payload)?;
+    let response = send_message_evm(
+        deps.as_ref(),
+        env,
+        fund,
+        &token_config,
+        reinit_payload,
+        fund.amount,
+    )?;
 
     Ok(response.add_event(
         Event::new("reinit").add_attribute("payload", "0x".to_owned() + &payload_hex_str),

@@ -16,7 +16,9 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Stake,
+    Stake {
+        fee_amount: Uint128,
+    },
     Receive(Cw20ReceiveMsg),
     Reinit {
         token_denom: TokenDenom,

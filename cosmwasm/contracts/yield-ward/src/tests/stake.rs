@@ -11,10 +11,18 @@ fn test_init_stake_one_coin() {
     let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
 
     let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
     let token_info = ctx.tokens.first().unwrap();
 
     // init stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
 
     // check states
     let stake_params = get_stake_params(&app, &ctx, &token_info.deposit_token_denom);
@@ -54,14 +62,30 @@ fn test_stake_in_two_tx() {
 
     let token_info = ctx.tokens.first().unwrap();
     let stake_amount_1 = Uint128::from(1000_u32);
+    let fee_amount_1 = Uint128::from(100_u32);
     let stake_amount_2 = Uint128::from(2000_u32);
+    let fee_amount_2 = Uint128::from(200_u32);
     let staked_total = stake_amount_1 + stake_amount_2;
 
     // init first stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount_1);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount_1,
+        fee_amount_1,
+    );
 
     // init second stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount_2);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount_2,
+        fee_amount_2,
+    );
 
     // check stats
     let stake_stats = get_stake_stats(&app, &ctx, &token_info.deposit_token_denom);
@@ -113,10 +137,18 @@ fn test_stake_response_successful() {
 
     let token_info = ctx.tokens.first().unwrap();
     let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
     let lp_token_amount = stake_amount + Uint128::one();
 
     // init stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
 
     let stake_id = 1_u64;
     let reinit_unstake_id = 0;
@@ -172,13 +204,21 @@ fn test_stake_response_successful_with_reinit() {
 
     let token_info = ctx.tokens.first().unwrap();
     let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
     let lp_token_amount = stake_amount + Uint128::one();
 
     let unstake_user = ctx.unstake_user.clone();
     let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
 
     // init stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
     let stake_id = 2_u64;
 
     // response for stake action
@@ -258,10 +298,18 @@ fn test_stake_response_fail() {
     let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
 
     let stake_amount = Uint128::from(1000_u128);
+    let fee_amount = Uint128::from(100_u32);
     let token_info = ctx.tokens.first().unwrap();
 
     // init stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
 
     // response for stake action
     let stake_id = 1_u64;
@@ -317,12 +365,20 @@ fn test_stake_response_fail_with_reinit() {
     let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
 
     let stake_amount = Uint128::from(1000_u128);
+    let fee_amount = Uint128::from(100_u32);
     let token_info = ctx.tokens.get(0).unwrap();
     let unstake_user = ctx.unstake_user.clone();
     let unstake_details = call_stake_and_unstake(&mut app, &ctx, &unstake_user, &token_info);
 
     // init stake
-    call_stake(&mut app, &ctx, &ctx.user, token_info, stake_amount);
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
 
     // response for stake action
     let stake_id = 2_u64;
