@@ -128,7 +128,7 @@ fn test_disallow_mint() {
 
     let disallow_mint_msg = Wasm(WasmMsg::Execute {
         contract_addr: test_info.yield_ward_address.to_string(),
-        msg: to_json_binary(&ExecuteMsg::DisallowMint).unwrap(),
+        msg: to_json_binary(&ExecuteMsg::DisallowMint {}).unwrap(),
         funds: vec![],
     });
     app.execute(test_info.admin.clone(), disallow_mint_msg)
