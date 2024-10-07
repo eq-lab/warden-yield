@@ -602,5 +602,32 @@ fn test_wrong_unstake_response() {
             .root_cause()
             .to_string()
         ),
+    };
+
+    let invalid_payload = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: create_unstake_response_payload(UnstakeResponseData {
+                    status: Status::Fail,
+                    unstake_id: 1,
+                    reinit_unstake_id: 1,
+                }),
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    );
+
+    match invalid_payload {
+        Ok(_) => panic!("unstake response passed with invalid payload"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            "Custom Error: Unstake response: status = Fail, but unstake_id == reinit_unstake_id"
+                .to_string()
+        ),
     }
 }
