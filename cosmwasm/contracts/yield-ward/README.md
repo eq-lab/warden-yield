@@ -35,6 +35,18 @@ Run unit tests:
 cargo unit-test
 ```
 
+Test coverage:
+
+```bash
+cargo tarpaulin
+```
+
+If `tarpaulin` is missing, then
+
+```bash
+cargo install cargo-tarpaulin
+```
+
 ### Deploying
 
 TODO

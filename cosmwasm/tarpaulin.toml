@@ -1,0 +1,12 @@
+[default-config]
+locked = true
+debug = false
+verbose = false
+exclude = []
+exclude-files = [
+    "contracts/lp-token/src/bin/schema.rs",
+    "contracts/lp-token/src/tests/*",
+    "contracts/yield-ward/src/bin/schema.rs",
+    "contracts/yield-ward/src/tests/*",
+    "tools/*",
+]

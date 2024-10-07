@@ -178,6 +178,33 @@ pub fn call_unstake(
     );
 }
 
+pub fn call_reinit(app: &mut TestingApp, ctx: &TestInfo, from: &Addr, token_info: &TokenTestInfo) {
+    let balance_before = get_bank_token_balance(app, &token_info.deposit_token_denom, &from);
+    assert!(balance_before >= Uint128::from(crate::tests::utils::constants::AXELAR_FEE));
+
+    app.execute(
+        from.clone(),
+        Wasm(WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: to_json_binary(&ExecuteMsg::Reinit {
+                token_denom: token_info.deposit_token_denom.to_string(),
+            })
+            .unwrap(),
+            funds: coins(
+                crate::tests::utils::constants::AXELAR_FEE,
+                token_info.deposit_token_denom.to_string(),
+            ),
+        }),
+    )
+    .unwrap();
+
+    let balance_after = get_bank_token_balance(app, &token_info.deposit_token_denom, &from);
+    assert_eq!(
+        balance_before - balance_after,
+        Uint128::from(crate::tests::utils::constants::AXELAR_FEE)
+    );
+}
+
 pub fn call_stake_response(
     app: &mut TestingApp,
     ctx: &TestInfo,

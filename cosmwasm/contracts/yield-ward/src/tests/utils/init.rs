@@ -114,6 +114,7 @@ pub fn instantiate_yield_ward_contract_with_tokens() -> (TestingApp, TestInfo) {
             api.addr_make(&admin_str.to_string());
             let user = api.addr_make(&user_str.to_string());
             let unstake_user = api.addr_make(&unstake_user_str.to_string());
+            let axelar = api.addr_make(&axelar_str.to_string());
             api.addr_make(&axelar_str.to_string());
 
             let coins: Vec<Coin> = tokens
@@ -131,8 +132,9 @@ pub fn instantiate_yield_ward_contract_with_tokens() -> (TestingApp, TestInfo) {
 
             router
                 .bank
-                .init_balance(storage, &unstake_user, coins)
+                .init_balance(storage, &unstake_user, coins.clone())
                 .unwrap();
+            router.bank.init_balance(storage, &axelar, coins).unwrap();
         });
 
     let admin = app.api().addr_make(&admin_str.to_string());

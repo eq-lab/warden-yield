@@ -4,11 +4,17 @@ use crate::tests::utils::call::{
 };
 use crate::tests::utils::init::instantiate_yield_ward_contract_with_tokens;
 use crate::tests::utils::query::{
-    get_stake_item, get_stake_params, get_stake_stats, get_unstake_item, get_unstake_params,
+    get_stake_item, get_stake_params, get_stake_stats, get_token_config, get_unstake_item,
+    get_unstake_params,
 };
 use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo};
-use crate::types::{StakeActionStage, Status, UnstakeActionStage};
-use cosmwasm_std::{Uint128, Uint256};
+use crate::types::{StakeActionStage, Status, UnstakeActionStage, UnstakeResponseData};
+use crate::ContractError;
+use cosmwasm_std::{Binary, Uint128, Uint256};
+use cw_multi_test::error::anyhow;
+use cw_multi_test::Executor;
+
+use super::utils::calldata::create_unstake_response_payload;
 
 fn stake_and_response(
     app: &mut TestingApp,
@@ -347,4 +353,254 @@ fn test_unstake_response_fail_with_reinit() {
             pending_unstake_lp_token_amount: Uint256::zero()
         }
     );
+}
+
+#[test]
+fn test_unstake_wrong_number_of_tokens() {
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
+    let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
+
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
+
+    let token_config = get_token_config(&app, &ctx, &token_info.deposit_token_denom);
+    let unstake_result = app.execute(
+        ctx.user,
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: token_config.lpt_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&cw20::Cw20ExecuteMsg::Send {
+                contract: ctx.yield_ward_address.to_string(),
+                amount: lp_token_amount,
+                msg: cosmwasm_std::to_json_binary(&crate::msg::Cw20ActionMsg::Unstake).unwrap(),
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    );
+
+    match unstake_result {
+        Ok(_) => panic!("Unstake passed with wrong funds length"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::CustomError(
+                "Wrong number of tokens attached to unstake call".into()
+            ))
+            .root_cause()
+            .to_string()
+        ),
+    }
+}
+
+#[test]
+fn test_wrong_unstake_response() {
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+    let token_info = ctx.tokens.first().unwrap();
+
+    let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
+
+    let lp_token_amount = stake_and_response(&mut app, &ctx, stake_amount, fee_amount, &token_info);
+
+    call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
+
+    let invalid_payload = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: Binary::from([0]),
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    );
+
+    match invalid_payload {
+        Ok(_) => panic!("unstake response passed with invalid payload"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::InvalidMessagePayload)
+                .root_cause()
+                .to_string()
+        ),
+    }
+
+    let mut response_payload = create_unstake_response_payload(UnstakeResponseData {
+        status: Status::Success,
+        unstake_id: 1,
+        reinit_unstake_id: 0,
+    });
+
+    let coin = cosmwasm_std::coin(1000_u64.into(), token_info.deposit_token_denom.to_string());
+
+    let wrong_funds_len = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload.clone(),
+            })
+            .unwrap(),
+            funds: vec![coin.clone(), coin.clone()],
+        }),
+    );
+
+    match wrong_funds_len {
+        Ok(_) => panic!("unstake response passed with wrong funds length"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::CustomError(
+                "Unstake response has too much coins in message".into()
+            ))
+            .root_cause()
+            .to_string()
+        ),
+    }
+
+    let zero_reinit_id = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: vec![coin.clone()],
+        }),
+    );
+
+    match zero_reinit_id {
+        Ok(_) => panic!("unstake response passed with wrong funds length"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::CustomError(
+                "Unstake response: reinit_unstake_id == 0, but message have tokens".into()
+            ))
+            .root_cause()
+            .to_string()
+        ),
+    }
+
+    response_payload = create_unstake_response_payload(UnstakeResponseData {
+        status: Status::Success,
+        unstake_id: 1,
+        reinit_unstake_id: 1,
+    });
+
+    let non_zero_reinit_id = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    );
+
+    match non_zero_reinit_id {
+        Ok(_) => panic!("unstake response passed with zero funds length and non-zero reinit id"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::CustomError(
+                "Unstake response: reinit_unstake_id != 0, but message have no tokens".into()
+            ))
+            .root_cause()
+            .to_string()
+        ),
+    }
+
+    let wrong_denom_value = ctx.tokens.get(1).unwrap().deposit_token_denom.clone();
+
+    response_payload = create_unstake_response_payload(UnstakeResponseData {
+        status: Status::Success,
+        unstake_id: 1,
+        reinit_unstake_id: 1,
+    });
+
+    let wrong_denom = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: cosmwasm_std::coins(1000, wrong_denom_value.clone()),
+        }),
+    );
+
+    match wrong_denom {
+        Ok(_) => panic!("unstake response passed with wrong denom"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::InvalidToken {
+                actual: wrong_denom_value,
+                expected: coin.denom
+            })
+            .root_cause()
+            .to_string()
+        ),
+    }
+
+    response_payload = create_unstake_response_payload(UnstakeResponseData {
+        status: Status::Success,
+        unstake_id: 1,
+        reinit_unstake_id: 0,
+    });
+
+    app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload.clone(),
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    )
+    .unwrap();
+
+    let wrong_stage = app.execute(
+        ctx.axelar.clone(),
+        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload.clone(),
+            })
+            .unwrap(),
+            funds: vec![],
+        }),
+    );
+
+    match wrong_stage {
+        Ok(_) => panic!("unstake response passed at a wrong stage"),
+        Err(err) => assert_eq!(
+            err.root_cause().to_string(),
+            anyhow!(ContractError::UnstakeRequestInvalidStage {
+                symbol: token_info.deposit_token_symbol.clone(),
+                unstake_id: 1,
+            })
+            .root_cause()
+            .to_string()
+        ),
+    }
 }
