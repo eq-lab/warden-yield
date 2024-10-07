@@ -17,21 +17,6 @@ pub struct TokenConfig {
     pub lpt_address: Addr,
 }
 
-pub enum ReplyType {
-    LpMint = 1,
-}
-
-impl TryFrom<&u64> for ReplyType {
-    type Error = ();
-
-    fn try_from(value: &u64) -> Result<Self, Self::Error> {
-        match value {
-            1 => Ok(ReplyType::LpMint),
-            _ => Err(()),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct StakeResponseData {
     pub status: Status,

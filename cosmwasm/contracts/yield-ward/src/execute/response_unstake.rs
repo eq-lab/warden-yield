@@ -111,6 +111,14 @@ fn ensure_unstake_response_is_valid(
     token_denom: &str,
     unstake_response: &UnstakeResponseData,
 ) -> Result<(), ContractError> {
+    if unstake_response.status == Status::Fail
+        && unstake_response.unstake_id == unstake_response.reinit_unstake_id
+    {
+        return Err(ContractError::CustomError(
+            "Unstake response: status = Fail, but unstake_id == reinit_unstake_id".to_string(),
+        ));
+    }
+
     match info.funds.len() {
         0 => {
             if unstake_response.reinit_unstake_id != 0 {

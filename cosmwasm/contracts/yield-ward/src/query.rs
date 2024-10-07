@@ -1,11 +1,11 @@
 use crate::msg::{
-    GetContractConfigResponse, GetQueueParamsResponse, GetStakeItemResponse, GetStakeStatsResponse,
-    GetTokenDenomByLptAddressResponse, GetTokenDenomBySourceResponse, GetTokensConfigsResponse,
-    GetUnstakeItemResponse,
+    GetAxelarConfigResponse, GetContractConfigResponse, GetQueueParamsResponse,
+    GetStakeItemResponse, GetStakeStatsResponse, GetTokenDenomByLptAddressResponse,
+    GetTokenDenomBySourceResponse, GetTokensConfigsResponse, GetUnstakeItemResponse,
 };
 use crate::state::{
-    CONTRACT_CONFIG, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG, TOKEN_DENOM_BY_LPT_ADDRESS,
-    TOKEN_DENOM_BY_SOURCE, UNSTAKES, UNSTAKE_PARAMS,
+    AXELAR_CONFIG, CONTRACT_CONFIG, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG,
+    TOKEN_DENOM_BY_LPT_ADDRESS, TOKEN_DENOM_BY_SOURCE, UNSTAKES, UNSTAKE_PARAMS,
 };
 use crate::types::TokenDenom;
 use cosmwasm_std::{Deps, Order, StdResult};
@@ -13,6 +13,11 @@ use cosmwasm_std::{Deps, Order, StdResult};
 pub fn query_contract_config(deps: Deps) -> StdResult<GetContractConfigResponse> {
     let config = CONTRACT_CONFIG.load(deps.storage)?;
     Ok(GetContractConfigResponse { config })
+}
+
+pub fn query_axelar_config(deps: Deps) -> StdResult<GetAxelarConfigResponse> {
+    let axelar_config = AXELAR_CONFIG.load(deps.storage)?;
+    Ok(GetAxelarConfigResponse { axelar_config })
 }
 
 pub fn query_tokens_configs(deps: Deps) -> StdResult<GetTokensConfigsResponse> {
