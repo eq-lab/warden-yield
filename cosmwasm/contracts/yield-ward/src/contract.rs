@@ -1,8 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -17,13 +15,11 @@ use crate::execute::response::try_handle_response;
 use crate::execute::stake::try_init_stake;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_all_tokens_denoms_by_lpt_address, query_all_tokens_denoms_by_source,
+    query_all_tokens_denoms_by_lpt_address, query_all_tokens_denoms_by_source, query_axelar_config,
     query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
     query_tokens_configs, query_unstake_item, query_unstake_params,
 };
-use crate::reply::handle_lp_token_mint_reply;
 use crate::state::{ContractConfigState, AXELAR_CONFIG, CONTRACT_CONFIG};
-use crate::types::ReplyType;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "warden-yield";
@@ -110,7 +106,7 @@ pub fn execute(
             source_address,
             payload,
         } => try_handle_response(deps, env, info, source_chain, source_address, payload),
-        ExecuteMsg::DisallowMint => try_disallow_mint(deps, env, info),
+        ExecuteMsg::DisallowMint {} => try_disallow_mint(deps, env, info),
     }
 }
 
@@ -118,6 +114,7 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ContractConfig {} => to_json_binary(&query_contract_config(deps)?),
+        QueryMsg::AxelarConfig {} => to_json_binary(&query_axelar_config(deps)?),
         QueryMsg::TokensConfigs {} => to_json_binary(&query_tokens_configs(deps)?),
         QueryMsg::StakeStats {} => to_json_binary(&query_stake_stats(deps)?),
         QueryMsg::StakeParams { token_denom } => {
@@ -142,14 +139,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match ReplyType::try_from(&msg.id) {
-        Ok(ReplyType::LpMint) => handle_lp_token_mint_reply(deps, env, msg),
-        _ => Err(ContractError::UnrecognizedReply(msg.id)),
-    }
-}
-
-#[entry_point]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // No state migrations performed, just returned a Response
     Ok(Response::default())

@@ -55,7 +55,7 @@ pub enum ExecuteMsg {
         source_address: String,
         payload: Binary,
     },
-    DisallowMint,
+    DisallowMint {},
 }
 
 #[cw_serde]
@@ -63,6 +63,8 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     #[returns(GetContractConfigResponse)]
     ContractConfig {},
+    #[returns(GetAxelarConfigResponse)]
+    AxelarConfig {},
     #[returns(GetTokensConfigsResponse)]
     TokensConfigs {},
     #[returns(GetStakeStatsResponse)]
@@ -119,6 +121,11 @@ pub struct GetTokenDenomBySourceResponse {
 #[cw_serde]
 pub struct GetTokenDenomByLptAddressResponse {
     pub tokens_denoms: Vec<(Addr, TokenDenom)>,
+}
+
+#[cw_serde]
+pub struct GetAxelarConfigResponse {
+    pub axelar_config: AxelarConfigState,
 }
 
 #[cw_serde]

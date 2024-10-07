@@ -5,7 +5,6 @@ mod execute;
 pub mod helpers;
 pub mod msg;
 mod query;
-mod reply;
 pub mod state;
 #[cfg(test)]
 mod tests;
