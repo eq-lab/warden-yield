@@ -1,22 +1,25 @@
 use crate::msg::InstantiateMsg;
+use crate::state::AxelarConfigState;
 use crate::tests::utils::call::call_add_token;
 use crate::tests::utils::query::get_bank_token_balance;
-use crate::tests::utils::types::{TestInfo, TokenTestInfo};
+use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo};
 use cosmwasm_std::{Addr, Coin, Uint128};
 use cw20::MinterResponse;
-use cw_multi_test::{App, AppResponse, BasicApp, ContractWrapper, Executor};
+use cw_multi_test::{AppBuilder, AppResponse, ContractWrapper, Executor};
 use lp_token::contract::{
     execute as lp_token_execute, instantiate as lp_token_instantiate, query as lp_token_query,
     InstantiateMsg as Cw20InstantiateMsg,
 };
 
-fn store_lp_token_code(app: &mut App) -> u64 {
+use crate::tests::mocks::ibc_module_mock::IbcModuleMock;
+
+fn store_lp_token_code(app: &mut TestingApp) -> u64 {
     let lp_token_code =
         ContractWrapper::new(lp_token_execute, lp_token_instantiate, lp_token_query);
     app.store_code(Box::new(lp_token_code))
 }
 
-fn store_yield_ward_code(app: &mut App) -> u64 {
+fn store_yield_ward_code(app: &mut TestingApp) -> u64 {
     let yield_ward_code = ContractWrapper::new(
         crate::contract::execute,
         crate::contract::instantiate,
@@ -26,7 +29,7 @@ fn store_yield_ward_code(app: &mut App) -> u64 {
 }
 
 pub fn _instantiate_cw20(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     cw20_code_id: u64,
     name: &String,
@@ -56,8 +59,10 @@ pub fn _instantiate_cw20(
     cw20_address
 }
 
-pub fn instantiate_yield_ward_contract_without_tokens() -> (BasicApp, TestInfo) {
-    let mut app = App::default();
+pub fn instantiate_yield_ward_contract_without_tokens() -> (TestingApp, TestInfo) {
+    let mut app = AppBuilder::new()
+        .with_ibc(IbcModuleMock::new())
+        .build(cw_multi_test::no_init);
 
     let lp_token_code_id = store_lp_token_code(&mut app);
     let yield_ward_code_id = store_yield_ward_code(&mut app);
@@ -74,6 +79,7 @@ pub fn instantiate_yield_ward_contract_without_tokens() -> (BasicApp, TestInfo) 
             &InstantiateMsg {
                 axelar: axelar.clone(),
                 lp_token_code_id,
+                axelar_config: get_axelar_config(),
             },
             &[],
             "YieldWard",
@@ -94,7 +100,7 @@ pub fn instantiate_yield_ward_contract_without_tokens() -> (BasicApp, TestInfo) 
     (app, test_info)
 }
 
-pub fn instantiate_yield_ward_contract_with_tokens() -> (BasicApp, TestInfo) {
+pub fn instantiate_yield_ward_contract_with_tokens() -> (TestingApp, TestInfo) {
     let admin_str = "admin";
     let user_str = "user";
     let unstake_user_str = "unstake_user";
@@ -102,30 +108,32 @@ pub fn instantiate_yield_ward_contract_with_tokens() -> (BasicApp, TestInfo) {
     let deposit_token_mint_amount = Uint128::new(5000000000_u128);
 
     let tokens = get_tokens_info();
-    let mut app = App::new(|router, api, storage| {
-        api.addr_make(&admin_str.to_string());
-        let user = api.addr_make(&user_str.to_string());
-        let unstake_user = api.addr_make(&unstake_user_str.to_string());
-        api.addr_make(&axelar_str.to_string());
+    let mut app = AppBuilder::new()
+        .with_ibc(IbcModuleMock::new())
+        .build(|router, api, storage| {
+            api.addr_make(&admin_str.to_string());
+            let user = api.addr_make(&user_str.to_string());
+            let unstake_user = api.addr_make(&unstake_user_str.to_string());
+            api.addr_make(&axelar_str.to_string());
 
-        let coins: Vec<Coin> = tokens
-            .iter()
-            .map(|x| Coin {
-                denom: x.deposit_token_denom.to_string(),
-                amount: deposit_token_mint_amount,
-            })
-            .collect();
+            let coins: Vec<Coin> = tokens
+                .iter()
+                .map(|x| Coin {
+                    denom: x.deposit_token_denom.to_string(),
+                    amount: deposit_token_mint_amount,
+                })
+                .collect();
 
-        router
-            .bank
-            .init_balance(storage, &user, coins.clone())
-            .unwrap();
+            router
+                .bank
+                .init_balance(storage, &user, coins.clone())
+                .unwrap();
 
-        router
-            .bank
-            .init_balance(storage, &unstake_user, coins)
-            .unwrap();
-    });
+            router
+                .bank
+                .init_balance(storage, &unstake_user, coins)
+                .unwrap();
+        });
 
     let admin = app.api().addr_make(&admin_str.to_string());
     let user = app.api().addr_make(&user_str.to_string());
@@ -150,6 +158,7 @@ pub fn instantiate_yield_ward_contract_with_tokens() -> (BasicApp, TestInfo) {
             &InstantiateMsg {
                 axelar: axelar.clone(),
                 lp_token_code_id,
+                axelar_config: get_axelar_config(),
             },
             &[],
             "YieldWard",
@@ -197,8 +206,8 @@ pub fn get_tokens_info() -> Vec<TokenTestInfo> {
             is_unstake_enabled: true,
             symbol: "LPT-zero".to_string(),
             name: "LP token 0".to_string(),
-            chain: "Ethereum".to_string(),
-            evm_yield_contract: "0x0000000000000000000000000000000000000077".to_string(),
+            chain: super::constants::EVM_DESTINATION_CHAIN_TAG.to_string(),
+            evm_yield_contract: super::constants::YIELD_WARD_EVM_ADDRESS.to_string(),
             evm_address: "0x0000000000000000000000000000000000000007".to_string(),
         },
         TokenTestInfo {
@@ -209,9 +218,17 @@ pub fn get_tokens_info() -> Vec<TokenTestInfo> {
             is_unstake_enabled: true,
             symbol: "LPT-one".to_string(),
             name: "LP token 1".to_string(),
-            chain: "Ethereum".to_string(),
+            chain: super::constants::EVM_DESTINATION_CHAIN_TAG.to_string(),
             evm_yield_contract: "0x0000000000000000000000000000000000010077".to_string(),
             evm_address: "0x0000000000000000000000000000000000010007".to_string(),
         },
     ]
+}
+
+fn get_axelar_config() -> AxelarConfigState {
+    AxelarConfigState {
+        axelar_channel_id: super::constants::AXELAR_CHANNEL_ID.into(),
+        axelar_gateway_cosmos_address: super::constants::AXELAR_GATEWAY_COSMOS_ADDRESS.into(),
+        ibc_timeout_seconds: super::constants::IBC_TIMEOUT_SECONDS,
+    }
 }

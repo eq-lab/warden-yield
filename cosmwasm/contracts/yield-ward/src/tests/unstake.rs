@@ -6,13 +6,12 @@ use crate::tests::utils::init::instantiate_yield_ward_contract_with_tokens;
 use crate::tests::utils::query::{
     get_stake_item, get_stake_params, get_stake_stats, get_unstake_item, get_unstake_params,
 };
-use crate::tests::utils::types::{TestInfo, TokenTestInfo};
+use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo};
 use crate::types::{StakeActionStage, Status, UnstakeActionStage};
 use cosmwasm_std::{Uint128, Uint256};
-use cw_multi_test::BasicApp;
 
 fn stake_and_response(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     stake_amount: Uint128,
     token_info: &TokenTestInfo,

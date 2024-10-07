@@ -1,4 +1,5 @@
 pub mod add_token;
+pub mod axelar_messaging;
 pub mod common;
 pub mod configs;
 pub mod mint_lpt;

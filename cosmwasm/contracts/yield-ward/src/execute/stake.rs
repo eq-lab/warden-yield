@@ -1,4 +1,5 @@
 use crate::encoding::encode_stake_payload;
+use crate::execute::axelar_messaging::send_message_evm;
 use crate::state::{QueueParams, StakeItem, STAKES, STAKE_PARAMS, STAKE_STATS, TOKEN_CONFIG};
 use crate::types::StakeActionStage;
 use crate::ContractError;
@@ -6,7 +7,7 @@ use cosmwasm_std::{to_hex, Coin, DepsMut, Env, Event, MessageInfo, Response, Uin
 
 pub fn try_init_stake(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     if info.funds.len() != 1 {
@@ -61,11 +62,12 @@ pub fn try_init_stake(
     stake_stats.pending_stake += Uint256::from(*token_amount);
     STAKE_STATS.save(deps.storage, token_denom, &stake_stats)?;
 
-    let payload = encode_stake_payload(stake_id);
-    // todo: send tokens to Axelar
-    let payload_hex_str = to_hex(payload);
+    let stake_payload = encode_stake_payload(stake_id);
+    let payload_hex_str = to_hex(&stake_payload);
 
-    Ok(Response::new().add_event(
+    let response = send_message_evm(deps.as_ref(), env, &info, &token_config, stake_payload)?;
+
+    Ok(response.add_event(
         Event::new("stake")
             .add_attribute("stake_id", stake_id.to_string())
             .add_attribute("sender", info.sender)

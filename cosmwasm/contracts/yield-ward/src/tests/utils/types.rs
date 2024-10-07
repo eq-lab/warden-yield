@@ -1,5 +1,19 @@
-use crate::types::TokenDenom;
-use cosmwasm_std::{Addr, Uint128};
+use crate::{tests::mocks::ibc_module_mock::IbcModuleMock, types::TokenDenom};
+use cosmwasm_std::{Addr, Empty, Uint128};
+use cw_multi_test::{App, FailingModule};
+
+pub type TestingApp<ExecC = Empty, QueryC = Empty> = App<
+    cw_multi_test::BankKeeper,
+    cosmwasm_std::testing::MockApi,
+    cosmwasm_std::testing::MockStorage,
+    cw_multi_test::FailingModule<ExecC, QueryC, Empty>,
+    cw_multi_test::WasmKeeper<ExecC, QueryC>,
+    FailingModule<Empty, Empty, Empty>,
+    FailingModule<Empty, Empty, Empty>,
+    IbcModuleMock,
+    cw_multi_test::GovFailingModule,
+    cw_multi_test::StargateFailing,
+>;
 
 pub struct TestInfo {
     pub lp_token_code_id: u64,

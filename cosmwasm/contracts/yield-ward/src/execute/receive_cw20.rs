@@ -23,7 +23,7 @@ pub fn try_receive_cw20(
             }
             let deposit_token_denom =
                 find_deposit_token_denom_by_lpt_address(deps.as_ref(), &info.sender)?;
-            try_init_unstake(deps, env, user, deposit_token_denom, msg.amount)
+            try_init_unstake(deps, env, info, user, deposit_token_denom, msg.amount)
         }
     }
 }

@@ -4,16 +4,15 @@ use crate::msg::{
     GetUnstakeItemResponse, QueryMsg,
 };
 use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
-use crate::tests::utils::types::TestInfo;
+use crate::tests::utils::types::{TestInfo, TestingApp};
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_std::BankQuery::Balance;
 use cosmwasm_std::QueryRequest::Bank;
 use cosmwasm_std::{Addr, Uint128};
-use cw_multi_test::BasicApp;
 use lp_token::contract::QueryMsg as Cw20QueryMsg;
 use std::collections::HashMap;
 
-pub fn get_contract_config(app: &BasicApp, ctx: &TestInfo) -> ContractConfigState {
+pub fn get_contract_config(app: &TestingApp, ctx: &TestInfo) -> ContractConfigState {
     let response: GetContractConfigResponse = app
         .wrap()
         .query_wasm_smart(
@@ -25,7 +24,7 @@ pub fn get_contract_config(app: &BasicApp, ctx: &TestInfo) -> ContractConfigStat
     response.config
 }
 
-pub fn get_stake_params(app: &BasicApp, ctx: &TestInfo, token_denom: &TokenDenom) -> QueueParams {
+pub fn get_stake_params(app: &TestingApp, ctx: &TestInfo, token_denom: &TokenDenom) -> QueueParams {
     let response: GetQueueParamsResponse = app
         .wrap()
         .query_wasm_smart(
@@ -39,7 +38,11 @@ pub fn get_stake_params(app: &BasicApp, ctx: &TestInfo, token_denom: &TokenDenom
     response.params
 }
 
-pub fn get_unstake_params(app: &BasicApp, ctx: &TestInfo, token_denom: &TokenDenom) -> QueueParams {
+pub fn get_unstake_params(
+    app: &TestingApp,
+    ctx: &TestInfo,
+    token_denom: &TokenDenom,
+) -> QueueParams {
     let response: GetQueueParamsResponse = app
         .wrap()
         .query_wasm_smart(
@@ -54,7 +57,7 @@ pub fn get_unstake_params(app: &BasicApp, ctx: &TestInfo, token_denom: &TokenDen
 }
 
 pub fn get_stake_item(
-    app: &BasicApp,
+    app: &TestingApp,
     ctx: &TestInfo,
     token_denom: &TokenDenom,
     id: u64,
@@ -74,7 +77,7 @@ pub fn get_stake_item(
 }
 
 pub fn get_unstake_item(
-    app: &BasicApp,
+    app: &TestingApp,
     ctx: &TestInfo,
     token_denom: &TokenDenom,
     id: u64,
@@ -93,7 +96,10 @@ pub fn get_unstake_item(
     response.map(|x| x.item)
 }
 
-pub fn get_all_stake_stats(app: &BasicApp, ctx: &TestInfo) -> HashMap<TokenDenom, StakeStatsItem> {
+pub fn get_all_stake_stats(
+    app: &TestingApp,
+    ctx: &TestInfo,
+) -> HashMap<TokenDenom, StakeStatsItem> {
     let response: GetStakeStatsResponse = app
         .wrap()
         .query_wasm_smart(ctx.yield_ward_address.to_string(), &QueryMsg::StakeStats {})
@@ -103,13 +109,20 @@ pub fn get_all_stake_stats(app: &BasicApp, ctx: &TestInfo) -> HashMap<TokenDenom
     stats
 }
 
-pub fn get_stake_stats(app: &BasicApp, ctx: &TestInfo, token_denom: &TokenDenom) -> StakeStatsItem {
+pub fn get_stake_stats(
+    app: &TestingApp,
+    ctx: &TestInfo,
+    token_denom: &TokenDenom,
+) -> StakeStatsItem {
     let stake_stats = get_all_stake_stats(app, ctx);
 
     stake_stats[token_denom].clone()
 }
 
-pub fn get_all_tokens_configs(app: &BasicApp, ctx: &TestInfo) -> HashMap<TokenDenom, TokenConfig> {
+pub fn get_all_tokens_configs(
+    app: &TestingApp,
+    ctx: &TestInfo,
+) -> HashMap<TokenDenom, TokenConfig> {
     let response: GetTokensConfigsResponse = app
         .wrap()
         .query_wasm_smart(
@@ -123,7 +136,7 @@ pub fn get_all_tokens_configs(app: &BasicApp, ctx: &TestInfo) -> HashMap<TokenDe
 }
 
 pub fn get_token_denom_by_source(
-    app: &BasicApp,
+    app: &TestingApp,
     ctx: &TestInfo,
 ) -> HashMap<(String, String), TokenDenom> {
     let response: GetTokenDenomBySourceResponse = app
@@ -143,7 +156,10 @@ pub fn get_token_denom_by_source(
         .collect()
 }
 
-pub fn get_token_denom_by_lpt_address(app: &BasicApp, ctx: &TestInfo) -> HashMap<Addr, TokenDenom> {
+pub fn get_token_denom_by_lpt_address(
+    app: &TestingApp,
+    ctx: &TestInfo,
+) -> HashMap<Addr, TokenDenom> {
     let response: GetTokenDenomByLptAddressResponse = app
         .wrap()
         .query_wasm_smart(
@@ -155,13 +171,13 @@ pub fn get_token_denom_by_lpt_address(app: &BasicApp, ctx: &TestInfo) -> HashMap
     response.tokens_denoms.into_iter().collect()
 }
 
-pub fn get_token_config(app: &BasicApp, ctx: &TestInfo, token_denom: &String) -> TokenConfig {
+pub fn get_token_config(app: &TestingApp, ctx: &TestInfo, token_denom: &String) -> TokenConfig {
     let token_config = get_all_tokens_configs(app, ctx);
 
     token_config[token_denom].clone()
 }
 
-pub fn get_cw20_balance(app: &BasicApp, cw20_address: &Addr, account: &Addr) -> Uint128 {
+pub fn get_cw20_balance(app: &TestingApp, cw20_address: &Addr, account: &Addr) -> Uint128 {
     let response: cw20::BalanceResponse = app
         .wrap()
         .query_wasm_smart(
@@ -175,7 +191,11 @@ pub fn get_cw20_balance(app: &BasicApp, cw20_address: &Addr, account: &Addr) -> 
     response.balance
 }
 
-pub fn get_bank_token_balance(app: &BasicApp, token_denom: &TokenDenom, account: &Addr) -> Uint128 {
+pub fn get_bank_token_balance(
+    app: &TestingApp,
+    token_denom: &TokenDenom,
+    account: &Addr,
+) -> Uint128 {
     let balance: cosmwasm_std::BalanceResponse = app
         .wrap()
         .query(&Bank(Balance {

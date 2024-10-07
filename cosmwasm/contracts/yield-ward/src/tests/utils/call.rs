@@ -7,7 +7,7 @@ use crate::tests::utils::query::{
     get_bank_token_balance, get_cw20_balance, get_stake_item, get_stake_params, get_stake_stats,
     get_token_config, get_unstake_item, get_unstake_params,
 };
-use crate::tests::utils::types::{TestInfo, TokenTestInfo, UnstakeDetails};
+use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo, UnstakeDetails};
 use crate::types::{
     ReinitResponseData, StakeResponseData, Status, TokenConfig, TokenDenom, UnstakeActionStage,
     UnstakeResponseData,
@@ -16,10 +16,10 @@ use cosmwasm_std::CosmosMsg::Wasm;
 use cosmwasm_std::{coins, to_json_binary, Addr, Uint128, Uint256, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 use cw_multi_test::BankSudo::Mint;
-use cw_multi_test::{AppResponse, BasicApp, Executor, SudoMsg};
+use cw_multi_test::{AppResponse, Executor, SudoMsg};
 
 pub fn call_add_token(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     test_info: &TestInfo,
     lpt: &TokenTestInfo,
 ) -> AppResponse {
@@ -47,7 +47,7 @@ pub fn call_add_token(
 }
 
 pub fn call_update_token_config(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     test_info: &TestInfo,
     token_denom: &TokenDenom,
     token_config: &TokenConfig,
@@ -68,7 +68,7 @@ pub fn call_update_token_config(
 }
 
 pub fn _call_mint_cw20(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     cw20_address: &Addr,
     recipient: &Addr,
@@ -95,7 +95,7 @@ pub fn _call_mint_cw20(
 }
 
 pub fn call_mint_bank_token(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     token_denom: &TokenDenom,
     recipient: &Addr,
     amount: Uint128,
@@ -113,7 +113,7 @@ pub fn call_mint_bank_token(
 }
 
 pub fn call_stake(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     from: &Addr,
     token_info: &TokenTestInfo,
@@ -134,7 +134,7 @@ pub fn call_stake(
 }
 
 pub fn call_unstake(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     from: &Addr,
     token_info: &TokenTestInfo,
@@ -172,7 +172,7 @@ pub fn call_unstake(
 }
 
 pub fn call_stake_response(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     token_info: &TokenTestInfo,
     status: Status,
@@ -272,7 +272,7 @@ pub fn call_stake_response(
 }
 
 pub fn call_unstake_response(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     token_info: &TokenTestInfo,
     status: Status,
@@ -368,7 +368,7 @@ pub fn call_unstake_response(
 }
 
 pub fn call_reinit_response(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     token_info: &TokenTestInfo,
     reinit_unstake_id: u64,
@@ -404,7 +404,7 @@ pub fn call_reinit_response(
 }
 
 pub fn call_stake_and_unstake(
-    app: &mut BasicApp,
+    app: &mut TestingApp,
     ctx: &TestInfo,
     user: &Addr,
     token_info: &TokenTestInfo,

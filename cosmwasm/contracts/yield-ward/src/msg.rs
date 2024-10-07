@@ -1,4 +1,6 @@
-use crate::state::{ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
+use crate::state::{
+    AxelarConfigState, ContractConfigState, QueueParams, StakeItem, StakeStatsItem, UnstakeItem,
+};
 use crate::types::{TokenConfig, TokenDenom};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Uint128};
@@ -9,6 +11,7 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     pub axelar: Addr,
     pub lp_token_code_id: u64,
+    pub axelar_config: AxelarConfigState,
 }
 
 #[cw_serde]
@@ -38,11 +41,13 @@ pub enum ExecuteMsg {
     UpdateContractConfig {
         contract_config: ContractConfigState,
     },
+    UpdateAxelarConfig {
+        axelar_config: AxelarConfigState,
+    },
     UpdateTokenConfig {
         token_denom: TokenDenom,
         config: TokenConfig,
     },
-
     HandleResponse {
         source_chain: String,
         source_address: String,
@@ -123,4 +128,27 @@ pub struct MsgLpTokenMintResponse {}
 #[cw_serde]
 pub enum Cw20ActionMsg {
     Unstake,
+}
+
+// https://github.com/axelarnetwork/evm-cosmos-gmp-sample/blob/main/native-integration/README.md#cosmos---evm
+pub enum GmpMsgType {
+    Pure = 1,
+    WithToken = 2,
+    PureTokenTransfer = 3,
+}
+
+#[cw_serde]
+pub struct Fee {
+    pub amount: String,
+    pub recipient: String,
+}
+
+#[cw_serde]
+pub struct GmpMessage {
+    pub destination_chain: String,
+    pub destination_address: String,
+    pub payload: Binary,
+    #[serde(rename = "type")]
+    pub type_: i64,
+    pub fee: Option<Fee>,
 }

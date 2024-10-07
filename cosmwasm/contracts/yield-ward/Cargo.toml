@@ -36,6 +36,7 @@ cosmwasm-std = { version = "2.0.1", features = [
     "cosmwasm_1_4",
     # Enable this if you only deploy to chains that have CosmWasm 1.4 or higher
     # "cosmwasm_1_4",
+    "stargate"
 ] }
 cw-storage-plus = "2.0.0"
 cw2 = "2.0.0"
@@ -44,10 +45,11 @@ schemars = "0.8.16"
 serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.58" }
 protobuf = { version = "3.5.0", features = ["with-bytes"] }
+serde-json-wasm = "1.0.1"
 
 [dependencies.lp-token]
 package = "lp-token"
 path = "../lp-token"
 
 [dev-dependencies]
-cw-multi-test = { version = "2.1.1", features = ["cosmwasm_1_4"] }
+cw-multi-test = { version = "2.1.1", features = ["cosmwasm_1_4", "stargate"] }

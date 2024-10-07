@@ -1,7 +1,7 @@
 use crate::helpers::assert_msg_sender_is_admin;
 use crate::state::{
-    ContractConfigState, CONTRACT_CONFIG, TOKEN_CONFIG, TOKEN_DENOM_BY_LPT_ADDRESS,
-    TOKEN_DENOM_BY_SOURCE,
+    AxelarConfigState, ContractConfigState, AXELAR_CONFIG, CONTRACT_CONFIG, TOKEN_CONFIG,
+    TOKEN_DENOM_BY_LPT_ADDRESS, TOKEN_DENOM_BY_SOURCE,
 };
 use crate::types::TokenConfig;
 use crate::ContractError;
@@ -63,6 +63,19 @@ pub fn try_update_contract_config(
     assert_msg_sender_is_admin(deps.as_ref(), &info)?;
 
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
+
+    Ok(Response::default())
+}
+
+pub fn try_update_axelar_config(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    axelar_config: AxelarConfigState,
+) -> Result<Response, ContractError> {
+    assert_msg_sender_is_admin(deps.as_ref(), &info)?;
+
+    AXELAR_CONFIG.save(deps.storage, &axelar_config)?;
 
     Ok(Response::default())
 }

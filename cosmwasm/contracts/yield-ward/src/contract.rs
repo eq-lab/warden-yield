@@ -7,7 +7,9 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::execute::add_token::try_add_token;
-use crate::execute::configs::{try_update_contract_config, try_update_token_config};
+use crate::execute::configs::{
+    try_update_axelar_config, try_update_contract_config, try_update_token_config,
+};
 use crate::execute::mint_lpt::{try_disallow_mint, try_mint_lp_token};
 use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
@@ -20,7 +22,7 @@ use crate::query::{
     query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::reply::handle_lp_token_mint_reply;
-use crate::state::{ContractConfigState, CONTRACT_CONFIG};
+use crate::state::{ContractConfigState, AXELAR_CONFIG, CONTRACT_CONFIG};
 use crate::types::ReplyType;
 
 // version info for migration info
@@ -44,6 +46,7 @@ pub fn instantiate(
         is_mint_allowed: true,
     };
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
+    AXELAR_CONFIG.save(deps.storage, &msg.axelar_config)?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -98,6 +101,9 @@ pub fn execute(
         } => try_update_token_config(deps, env, info, token_denom, config),
         ExecuteMsg::UpdateContractConfig { contract_config } => {
             try_update_contract_config(deps, env, info, contract_config)
+        }
+        ExecuteMsg::UpdateAxelarConfig { axelar_config } => {
+            try_update_axelar_config(deps, env, info, axelar_config)
         }
         ExecuteMsg::HandleResponse {
             source_chain,
