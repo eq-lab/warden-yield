@@ -117,7 +117,7 @@ abstract contract WardenHandler is Initializable {
     argTypeArray[0] = 'bytes';
 
     bytes memory gmpPayload;
-    gmpPayload = abi.encode('handle_response', argNameArray, argTypeArray, argValues);
+    gmpPayload = abi.encode('handle_response', argNameArray, argTypeArray, abi.encode(argValues));
 
     return abi.encodePacked(uint32(1), gmpPayload);
   }
