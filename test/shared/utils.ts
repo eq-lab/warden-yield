@@ -116,7 +116,9 @@ function decodeArgValues(payload: BytesLike): string {
   const gmpPayload = ethers.dataSlice(payload, 4);
 
   const decoded = abiCoder.decode(['string', 'string[]', 'string[]', 'bytes'], gmpPayload, false);
-  return decoded.at(3);
+  const abiEncodedArgs = decoded.at(3);
+  const args = abiCoder.decode(['bytes'], abiEncodedArgs).at(0);
+  return args;
 }
 
 export function decodeWardenStakeResponse(payload: BytesLike): WardenStakeResponse {
