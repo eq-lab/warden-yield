@@ -1,8 +1,3 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use cw2::set_contract_version;
-
 use crate::error::ContractError;
 use crate::execute::add_token::try_add_token;
 use crate::execute::configs::{
@@ -13,13 +8,19 @@ use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
 use crate::execute::response::try_handle_response;
 use crate::execute::stake::try_init_stake;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, IbcLifecycleComplete, InstantiateMsg, MigrateMsg, QueryMsg, SudoMsg};
 use crate::query::{
     query_all_tokens_denoms_by_lpt_address, query_all_tokens_denoms_by_source, query_axelar_config,
     query_contract_config, query_stake_item, query_stake_params, query_stake_stats,
     query_tokens_configs, query_unstake_item, query_unstake_params,
 };
 use crate::state::{ContractConfigState, AXELAR_CONFIG, CONTRACT_CONFIG};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+};
+use cw2::set_contract_version;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "warden-yield";
@@ -142,4 +143,53 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     // No state migrations performed, just returned a Response
     Ok(Response::default())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(_deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+    let details = match msg {
+        SudoMsg::IbcLifecycleComplete(IbcLifecycleComplete::IbcAck {
+            channel,
+            sequence,
+            ack,
+            success,
+        }) => format!(
+            "IbcAck. channel: {}, seq: {}, ack: {}, success: {}",
+            channel, sequence, ack, success,
+        ),
+
+        SudoMsg::IbcLifecycleComplete(IbcLifecycleComplete::IbcTimeout { channel, sequence }) => {
+            format!("IbcTimeout. channel: {}, seq: {}", channel, sequence)
+        }
+    };
+
+    return Ok(
+        Response::new().add_event(Event::new("sudo_called").add_attribute("details", details))
+    );
+    // match msg {
+    //     SudoMsg::IbcLifecycleComplete(IbcLifecycleComplete::IbcAck {
+    //         channel,
+    //         sequence,
+    //         ack: _,
+    //         success,
+    //     }) => execute_receive_lifecycle_completion(
+    //         deps,
+    //         "execute_receive_ack",
+    //         IbcSendMessageStatus::AckFailure,
+    //         &channel,
+    //         sequence,
+    //         success,
+    //     ),
+    //
+    //     SudoMsg::IbcLifecycleComplete(IbcLifecycleComplete::IbcTimeout { channel, sequence }) => {
+    //         execute_receive_lifecycle_completion(
+    //             deps,
+    //             "execute_receive_timeout",
+    //             IbcSendMessageStatus::TimedOut,
+    //             &channel,
+    //             sequence,
+    //             false,
+    //         )
+    //     }
+    // }
 }

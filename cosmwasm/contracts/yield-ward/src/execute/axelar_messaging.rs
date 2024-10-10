@@ -36,6 +36,7 @@ pub fn send_message_evm(
         payload,
         type_,
         fee,
+        ibc_callback: env.contract.address.to_string(),
     };
 
     let memo = to_string(&gmp_message).ok();
