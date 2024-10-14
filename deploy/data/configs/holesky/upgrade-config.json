@@ -1,0 +1,26 @@
+{
+  "ethConnection": {
+    "chainId": 17000,
+    "ethOptions": {
+      "gasLimit": 1000000
+    }
+  },
+  "aaveYield": {
+    "underlyingToken": "0xaEFb0BCD84Db9081A06A0746EBe611b085513C73",
+    "wardenHandler": {
+      "axelarGateway": "0xd8e671D276E0B6828B88F29Aaee840b03E452fdA",
+      "axelarGasService": "0xd8e671D276E0B6828B88F29Aaee840b03E452fdA",
+      "wardenChain": "warden",
+      "wardenContractAddress": "warden-cosm-wasm-address"
+    }
+  },
+  "ethYield": {
+    "lidoWithdrawalQueue": "0xc7cc160b58F8Bb0baC94b80847E2CF2800565C50",
+    "wardenHandler": {
+      "axelarGateway": "0xd8e671D276E0B6828B88F29Aaee840b03E452fdA",
+      "axelarGasService": "0xd8e671D276E0B6828B88F29Aaee840b03E452fdA",
+      "wardenChain": "warden",
+      "wardenContractAddress": "warden-cosm-wasm-address"
+    }
+  }
+}

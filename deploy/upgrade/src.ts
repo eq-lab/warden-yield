@@ -37,7 +37,6 @@ export async function upgradeWardenYield(
     logger
   ).createDeploymentStore();
 
-
   if (config.ethYield !== undefined) {
     await upgradeEthYield(signer, config.ethYield, config.ethConnection, hre, stateStore, deploymentStore);
   }
@@ -81,7 +80,6 @@ async function upgradeEthYield(
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(ethYieldProxyAddress);
   console.log(`EthYield proxy: ${ethYieldProxyAddress}, implementation: ${implementationAddress}`);
 
-
   stateStore.setById('ethYield-proxy', <DeployState>{ address: ethYieldProxyAddress });
   stateStore.setById('ethYield-impl', <DeployState>{ address: implementationAddress });
   deploymentStore.setById('ethYield', <DeploymentState>{
@@ -123,7 +121,6 @@ async function upgradeAaveYield(
 
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(aaveYieldProxyAddress);
   console.log(`AaveYield proxy: ${aaveYieldProxyAddress}, implementation: ${implementationAddress}`);
-
 
   stateStore.setById('aaveYield-proxy', <DeployState>{ address: aaveYieldProxyAddress });
   stateStore.setById('aaveYield-impl', <DeployState>{ address: implementationAddress });

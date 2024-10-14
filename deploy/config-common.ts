@@ -43,14 +43,17 @@ export async function assertTokenConfig(token: TokenConfig, provider: Provider):
   }
 }
 
-export async function assertWardenHandlerConfigValidity(config: WardenHandlerConfig, provider: Provider): Promise<void> {
+export async function assertWardenHandlerConfigValidity(
+  config: WardenHandlerConfig,
+  provider: Provider
+): Promise<void> {
   if (!isAddress(config.axelarGasService)) {
     throw new Error(`Invalid axelarGasService address: ${config.axelarGasService}`);
   }
 
   const axelarGasService = IAxelarGasService__factory.connect(config.axelarGasService, provider);
   await axelarGasService.gasCollector(); // throws an error if address has no right method hash
-  
+
   if (!isAddress(config.axelarGateway)) {
     throw new Error(`Invalid axelarGateway address: ${config.axelarGasService}`);
   }

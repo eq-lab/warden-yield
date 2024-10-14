@@ -134,4 +134,3 @@ export function generateStateFileName(dirName: string): string {
   }
   return fileName;
 }
-
