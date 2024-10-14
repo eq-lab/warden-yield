@@ -39,6 +39,7 @@ abstract contract WardenHandler is Initializable {
   struct WardenHandlerData {
     address axelarGateway;
     address axelarGasService;
+    string evmChainName;
     string wardenChain;
     string wardenContractAddress;
   }
@@ -77,6 +78,7 @@ abstract contract WardenHandler is Initializable {
   function __WardenHandler_init(
     address axelarGateway,
     address axelarGasService,
+    string calldata evmChainName,
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) internal onlyInitializing {
@@ -86,6 +88,7 @@ abstract contract WardenHandler is Initializable {
     WardenHandlerData storage $ = _getWardenHandlerData();
     $.axelarGateway = axelarGateway;
     $.axelarGasService = axelarGasService;
+    $.evmChainName = evmChainName;
     $.wardenChain = wardenChain;
     $.wardenContractAddress = wardenContractAddress;
   }
@@ -109,15 +112,28 @@ abstract contract WardenHandler is Initializable {
 
   /// @notice Encode warden payload
   /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
-  function _createResponse(bytes memory argValues) private pure returns (bytes memory) {
-    string[] memory argNameArray = new string[](1);
-    argNameArray[0] = 'response_data';
+  function _createResponse(
+    bytes memory argValues,
+    address sourceAddress,
+    string memory sourceChain
+  ) private pure returns (bytes memory) {
+    bytes[] memory argNameArray = new bytes[](3);
+    argNameArray[0] = 'source_chain';
+    argNameArray[1] = 'source_address';
+    argNameArray[2] = 'payload';
 
-    string[] memory argTypeArray = new string[](1);
-    argTypeArray[0] = 'bytes';
+    bytes[] memory argTypeArray = new bytes[](3);
+    argTypeArray[0] = 'string';
+    argTypeArray[1] = 'address';
+    argTypeArray[2] = 'bytes';
 
     bytes memory gmpPayload;
-    gmpPayload = abi.encode('handle_response', argNameArray, argTypeArray, abi.encode(argValues));
+    gmpPayload = abi.encode(
+      'handle_response',
+      argNameArray,
+      argTypeArray,
+      abi.encode(sourceChain, sourceAddress, argValues)
+    );
 
     return abi.encodePacked(uint32(1), gmpPayload);
   }
@@ -125,7 +141,12 @@ abstract contract WardenHandler is Initializable {
   /// @notice Encode stake response
   /// @param stakeId Stake identifier
   /// @param stakeResult Stake result
-  function _createStakeResponse(uint64 stakeId, StakeResult memory stakeResult) private pure returns (bytes memory) {
+  function _createStakeResponse(
+    uint64 stakeId,
+    StakeResult memory stakeResult,
+    address sourceAddress,
+    string memory sourceChain
+  ) private pure returns (bytes memory) {
     return
       _createResponse(
         abi.encodePacked(
@@ -134,7 +155,9 @@ abstract contract WardenHandler is Initializable {
           stakeId,
           stakeResult.reinitUnstakeId,
           stakeResult.lpAmount
-        )
+        ),
+        sourceAddress,
+        sourceChain
       );
   }
 
@@ -145,15 +168,26 @@ abstract contract WardenHandler is Initializable {
   function _createUnstakeResponse(
     Status status,
     uint64 unstakeId,
-    uint64 reinitUnstakeId
+    uint64 reinitUnstakeId,
+    address sourceAddress,
+    string memory sourceChain
   ) private pure returns (bytes memory) {
-    return _createResponse(abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId));
+    return
+      _createResponse(
+        abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId),
+        sourceAddress,
+        sourceChain
+      );
   }
 
   /// @notice Encode reinit response
   /// @param reinitUnstakeId Reinited unstake identifier
-  function _createReinitResponse(uint64 reinitUnstakeId) private pure returns (bytes memory) {
-    return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId));
+  function _createReinitResponse(
+    uint64 reinitUnstakeId,
+    address sourceAddress,
+    string memory sourceChain
+  ) private pure returns (bytes memory) {
+    return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId), sourceAddress, sourceChain);
   }
 
   ///@notice Handle stake request, should be implemented in Yield contract
@@ -196,12 +230,20 @@ abstract contract WardenHandler is Initializable {
     uint128 tokenAmount;
     bytes memory response;
 
+    address evmSourceAddress = address(this);
+
     if (request.actionType == ActionType.Unstake) {
       UnstakeResult memory unstakeResult = _handleUnstakeRequest(request.actionId, request.lpAmount);
 
       tokenAddress = unstakeResult.unstakeTokenAddress;
       tokenAmount = unstakeResult.unstakeTokenAmount;
-      response = _createUnstakeResponse(unstakeResult.status, request.actionId, unstakeResult.reinitUnstakeId);
+      response = _createUnstakeResponse(
+        unstakeResult.status,
+        request.actionId,
+        unstakeResult.reinitUnstakeId,
+        evmSourceAddress,
+        $.evmChainName
+      );
     } else if (request.actionType == ActionType.Reinit) {
       ReinitResult memory reinitResult = _handleReinitRequest();
       if (reinitResult.tokenAmount == 0) {
@@ -210,7 +252,7 @@ abstract contract WardenHandler is Initializable {
 
       tokenAddress = reinitResult.tokenAddress;
       tokenAmount = reinitResult.tokenAmount;
-      response = _createReinitResponse(reinitResult.reinitUnstakeId);
+      response = _createReinitResponse(reinitResult.reinitUnstakeId, evmSourceAddress, $.evmChainName);
     } else {
       revert InvalidActionType();
     }
@@ -266,8 +308,10 @@ abstract contract WardenHandler is Initializable {
 
     StakeResult memory stakeResult = _handleStakeRequest(request.actionId, amount);
 
+    address evmSourceAddress = address(this);
+
     // Response to Warden
-    bytes memory response = _createStakeResponse(request.actionId, stakeResult);
+    bytes memory response = _createStakeResponse(request.actionId, stakeResult, evmSourceAddress, $.evmChainName);
 
     // amount to return could contain withdrawn amount and stake amount when stake failed
     // TODO can be moved to `_handleStakeRequest`
@@ -300,7 +344,7 @@ abstract contract WardenHandler is Initializable {
       return; // no response for empty reinit
     }
 
-    bytes memory response = _createReinitResponse(reinitResult.reinitUnstakeId);
+    bytes memory response = _createReinitResponse(reinitResult.reinitUnstakeId, address(this), $.evmChainName);
     string memory tokenSymbol = IERC20Metadata(reinitResult.tokenAddress).symbol();
     string memory wardenChain = $.wardenChain;
     string memory wardenContractAddress = $.wardenContractAddress;

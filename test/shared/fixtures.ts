@@ -35,7 +35,7 @@ import {
   TestAaveYield__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
-import { EthAddressData, WardenChain, WardenContractAddress } from './utils';
+import { EVM_CHAIN_NAME, EthAddressData, WardenChain, WardenContractAddress } from './utils';
 
 export async function deployToken(owner: SignerWithAddress): Promise<MintableERC20> {
   return new MintableERC20__factory().connect(owner).deploy('test token', 'TT');
@@ -87,7 +87,14 @@ export async function upgradeAaveYieldContractToV2(
   await upgrades.upgradeProxy(aaveYield, new TestAaveYield__factory().connect(owner), {
     call: {
       fn: 'initializeV2',
-      args: [underlyingTokenAddress, axelarGateway, axelarGasService, WardenChain, WardenContractAddress],
+      args: [
+        underlyingTokenAddress,
+        axelarGateway,
+        axelarGasService,
+        EVM_CHAIN_NAME,
+        WardenChain,
+        WardenContractAddress,
+      ],
     },
   });
 
@@ -254,6 +261,7 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
         EthAddressData.lidoWithdrawalQueue,
         await axelarGateway.getAddress(),
         EthAddressData.axelarGasService,
+        EVM_CHAIN_NAME,
         WardenChain,
         WardenContractAddress,
       ],

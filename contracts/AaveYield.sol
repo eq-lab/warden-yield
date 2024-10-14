@@ -31,6 +31,7 @@ contract AaveYield is
     address underlyingToken,
     address axelarGateway,
     address axelarGasService,
+    string calldata evmChainName,
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
@@ -39,7 +40,7 @@ contract AaveYield is
       underlyingToken,
       _getBalanceFromScaled(_getStakingDataStorage()._totalShares[underlyingToken])
     );
-    __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
+    __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
   }
 
   /// @dev method called during the contract upgrade

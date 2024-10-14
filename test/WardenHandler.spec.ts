@@ -10,6 +10,7 @@ import {
   Status,
 } from './shared/warden-handler-fixtures';
 import {
+  EVM_CHAIN_NAME,
   decodeWardenReinitResponse,
   decodeWardenStakeResponse,
   decodeWardenUnstakeResponse,
@@ -121,6 +122,8 @@ describe('WardenHandler', () => {
       const wardenResponse = await axelarGateway.callContractPayload();
 
       const stakeResponse = decodeWardenStakeResponse(wardenResponse);
+      expect(stakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(stakeResponse.sourceAddress).to.be.eq(wardenHandler.target);
       expect(stakeResponse.status).to.equal(stakeResult.status);
       expect(stakeResponse.actionType).to.equal(stakeResult.actionType);
       expect(stakeResponse.actionId).to.equal(stakeResult.actionId);
@@ -161,6 +164,8 @@ describe('WardenHandler', () => {
       const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
       const stakeResponse = decodeWardenStakeResponse(wardenResponse);
+      expect(stakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(stakeResponse.sourceAddress).to.be.eq(wardenHandler.target);
       expect(stakeResponse.status).to.equal(stakeResult.status);
       expect(stakeResponse.actionType).to.equal(stakeResult.actionType);
       expect(stakeResponse.actionId).to.equal(stakeResult.actionId);
@@ -202,6 +207,8 @@ describe('WardenHandler', () => {
       const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
       const stakeResponse = decodeWardenStakeResponse(wardenResponse);
+      expect(stakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(stakeResponse.sourceAddress).to.be.eq(wardenHandler.target);
       expect(stakeResponse.status).to.equal(stakeResult.status);
       expect(stakeResponse.actionType).to.equal(stakeResult.actionType);
       expect(stakeResponse.actionId).to.equal(stakeResult.actionId);
@@ -286,6 +293,8 @@ describe('WardenHandler', () => {
       const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
       const unstakeResponse = decodeWardenUnstakeResponse(wardenResponse);
+      expect(unstakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(unstakeResponse.sourceAddress).to.be.eq(wardenHandler.target);
       expect(unstakeResponse.status).to.equal(unstakeResult.status);
       expect(unstakeResponse.actionType).to.equal(ActionType.Unstake);
       expect(unstakeResponse.actionId).to.equal(unstakeId);
@@ -314,6 +323,8 @@ describe('WardenHandler', () => {
       const wardenResponse = await axelarGateway.callContractWithTokenPayload();
 
       const reinitResponse = decodeWardenReinitResponse(wardenResponse);
+      expect(reinitResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(reinitResponse.sourceAddress).to.be.eq(wardenHandler.target);
       expect(reinitResponse.actionType).to.equal(ActionType.Reinit);
       expect(reinitResponse.reinitUnstakeId).to.equal(reinitResult.reinitUnstakeId);
     });
@@ -365,6 +376,8 @@ describe('WardenHandler', () => {
 
       const wardenResponse = await axelarGateway.callContractWithTokenPayload();
       const reinitResponse = decodeWardenReinitResponse(wardenResponse);
+      expect(reinitResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(reinitResponse.sourceAddress).to.be.eq(wardenHandler.target);
       expect(reinitResponse.actionType).to.equal(ActionType.Reinit);
       expect(reinitResponse.reinitUnstakeId).to.equal(reinitResult.reinitUnstakeId);
     });

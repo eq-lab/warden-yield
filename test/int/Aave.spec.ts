@@ -16,6 +16,7 @@ import {
   encodeStakeAction,
   encodeUnstakeAction,
   EthAddressData,
+  EVM_CHAIN_NAME,
   setTokenBalance,
   WardenChain,
   WardenContractAddress,
@@ -115,6 +116,8 @@ async function stake(
   expect(axelarGatewayEvent.args[2]).to.be.eq(WardenContractAddress);
 
   const stakeResponse = decodeWardenStakeResponse(axelarGatewayEvent.args[4]);
+  expect(stakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+  expect(stakeResponse.sourceAddress).to.be.eq(aaveYield.target);
   expect(stakeResponse.actionType).to.be.eq(ActionType.Stake);
   expect(stakeResponse.status).to.be.eq(Status.Success);
   expect(stakeResponse.lpAmount).to.be.closeTo(lpAmount, 1);
@@ -168,6 +171,8 @@ async function withdraw(
   expect(axelarGatewayEvent.args[6]).to.be.eq(lpUnderlyingBalance);
 
   const unstakeResponse = decodeWardenUnstakeResponse(axelarGatewayEvent.args[4]);
+  expect(unstakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+  expect(unstakeResponse.sourceAddress).to.be.eq(aaveYield.target);
   expect(unstakeResponse.actionType).to.be.eq(ActionType.Unstake);
   expect(unstakeResponse.status).to.be.eq(Status.Success);
   expect(unstakeResponse.reinitUnstakeId).to.be.eq(unstakeId);
