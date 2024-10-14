@@ -150,9 +150,7 @@ abstract contract WardenHandler is Initializable {
 
   /// @notice Encode warden payload
   /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
-  function _createResponse(
-    bytes memory argValues
-  ) private view returns (bytes memory) {
+  function _createResponse(bytes memory argValues) private view returns (bytes memory) {
     WardenHandlerData storage $ = _getWardenHandlerData();
     bytes memory gmpPayload = abi.encode(
       'handle_response',
@@ -167,10 +165,7 @@ abstract contract WardenHandler is Initializable {
   /// @notice Encode stake response
   /// @param stakeId Stake identifier
   /// @param stakeResult Stake result
-  function _createStakeResponse(
-    uint64 stakeId,
-    StakeResult memory stakeResult
-  ) private view returns (bytes memory) {
+  function _createStakeResponse(uint64 stakeId, StakeResult memory stakeResult) private view returns (bytes memory) {
     return
       _createResponse(
         abi.encodePacked(
@@ -192,17 +187,12 @@ abstract contract WardenHandler is Initializable {
     uint64 unstakeId,
     uint64 reinitUnstakeId
   ) private view returns (bytes memory) {
-    return
-      _createResponse(
-        abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId)
-      );
+    return _createResponse(abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId));
   }
 
   /// @notice Encode reinit response
   /// @param reinitUnstakeId Reinited unstake identifier
-  function _createReinitResponse(
-    uint64 reinitUnstakeId
-  ) private view returns (bytes memory) {
+  function _createReinitResponse(uint64 reinitUnstakeId) private view returns (bytes memory) {
     return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId));
   }
 
@@ -251,11 +241,7 @@ abstract contract WardenHandler is Initializable {
 
       tokenAddress = unstakeResult.unstakeTokenAddress;
       tokenAmount = unstakeResult.unstakeTokenAmount;
-      response = _createUnstakeResponse(
-        unstakeResult.status,
-        request.actionId,
-        unstakeResult.reinitUnstakeId
-      );
+      response = _createUnstakeResponse(unstakeResult.status, request.actionId, unstakeResult.reinitUnstakeId);
     } else if (request.actionType == ActionType.Reinit) {
       ReinitResult memory reinitResult = _handleReinitRequest();
       if (reinitResult.tokenAmount == 0) {
