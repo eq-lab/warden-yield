@@ -110,7 +110,7 @@ abstract contract WardenHandler is Initializable {
       });
   }
 
-  /// @return argNames bytes, representing dynamic array with elements: `source_chain`, `source_address`, `payload`
+  /// @return argNames bytes, representing dynamic array of strings ['source_chain', 'source_address', 'payload']
   /// @dev This approach optimizes gas usage by avoiding working with dynamic arrays and strings
   function _getArgNames() private pure returns (bytes memory argNames) {
     assembly {
@@ -129,7 +129,7 @@ abstract contract WardenHandler is Initializable {
     }
   }
 
-  /// @return argTypes bytes, representing dynamic array with elements: `string`, `address`, `bytes`
+  /// @return argTypes bytes, representing dynamic array of strings ['string', 'address', 'bytes']
   /// @dev This approach optimizes gas usage by avoiding working with dynamic arrays and strings
   function _getArgTypes() private pure returns (bytes memory argTypes) {
     assembly {
