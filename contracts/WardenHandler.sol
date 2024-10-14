@@ -110,29 +110,55 @@ abstract contract WardenHandler is Initializable {
       });
   }
 
+  /// @return argNames bytes, representing dynamic array with elements: `source_chain`, `source_address`, `payload`
+  /// @dev This approach optimizes gas usage by avoiding working with dynamic arrays and strings
+  function _getArgNames() private pure returns (bytes memory argNames) {
+    assembly {
+      argNames := mload(0x40)
+      mstore(0x40, add(argNames, 0x160))
+      mstore(add(argNames, 0x20), 0x0000000000000000000000000000000000000000000000000000000000000020)
+      mstore(add(argNames, 0x40), 0x0000000000000000000000000000000000000000000000000000000000000003)
+      mstore(add(argNames, 0x60), 0x0000000000000000000000000000000000000000000000000000000000000060)
+      mstore(add(argNames, 0x80), 0x00000000000000000000000000000000000000000000000000000000000000a0)
+      mstore(add(argNames, 0xa0), 0x00000000000000000000000000000000000000000000000000000000000000e0)
+      mstore(add(argNames, 0xc0), 0x000000000000000000000000000000000000000000000000000000000000000c)
+      mstore(add(argNames, 0xe0), 0x736f757263655f636861696e0000000000000000000000000000000000000000)
+      mstore(add(argNames, 0x100), 0x000000000000000000000000000000000000000000000000000000000000000e)
+      mstore(add(argNames, 0x120), 0x736f757263655f61646472657373000000000000000000000000000000000000)
+      mstore(add(argNames, 0x140), 0x0000000000000000000000000000000000000000000000000000000000000007)
+    }
+  }
+
+  /// @return argTypes bytes, representing dynamic array with elements: `string`, `address`, `bytes`
+  /// @dev This approach optimizes gas usage by avoiding working with dynamic arrays and strings
+  function _getArgTypes() private pure returns (bytes memory argTypes) {
+    assembly {
+      argTypes := mload(0x40)
+      mstore(0x40, add(argTypes, 0x160))
+      mstore(add(argTypes, 0x20), 0x0000000000000000000000000000000000000000000000000000000000000020)
+      mstore(add(argTypes, 0x40), 0x0000000000000000000000000000000000000000000000000000000000000003)
+      mstore(add(argTypes, 0x60), 0x0000000000000000000000000000000000000000000000000000000000000060)
+      mstore(add(argTypes, 0x80), 0x00000000000000000000000000000000000000000000000000000000000000a0)
+      mstore(add(argTypes, 0xa0), 0x00000000000000000000000000000000000000000000000000000000000000e0)
+      mstore(add(argTypes, 0xc0), 0x0000000000000000000000000000000000000000000000000000000000000006)
+      mstore(add(argTypes, 0xe0), 0x737472696e670000000000000000000000000000000000000000000000000000)
+      mstore(add(argTypes, 0x100), 0x0000000000000000000000000000000000000000000000000000000000000007)
+      mstore(add(argTypes, 0x120), 0x6164647265737300000000000000000000000000000000000000000000000000)
+      mstore(add(argTypes, 0x140), 0x0000000000000000000000000000000000000000000000000000000000000005)
+    }
+  }
+
   /// @notice Encode warden payload
   /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
   function _createResponse(
-    bytes memory argValues,
-    address sourceAddress,
-    string memory sourceChain
-  ) private pure returns (bytes memory) {
-    bytes[] memory argNameArray = new bytes[](3);
-    argNameArray[0] = 'source_chain';
-    argNameArray[1] = 'source_address';
-    argNameArray[2] = 'payload';
-
-    bytes[] memory argTypeArray = new bytes[](3);
-    argTypeArray[0] = 'string';
-    argTypeArray[1] = 'address';
-    argTypeArray[2] = 'bytes';
-
-    bytes memory gmpPayload;
-    gmpPayload = abi.encode(
+    bytes memory argValues
+  ) private view returns (bytes memory) {
+    WardenHandlerData storage $ = _getWardenHandlerData();
+    bytes memory gmpPayload = abi.encode(
       'handle_response',
-      argNameArray,
-      argTypeArray,
-      abi.encode(sourceChain, sourceAddress, argValues)
+      _getArgNames(),
+      _getArgTypes(),
+      abi.encode($.evmChainName, address(this), argValues)
     );
 
     return abi.encodePacked(uint32(1), gmpPayload);
@@ -143,10 +169,8 @@ abstract contract WardenHandler is Initializable {
   /// @param stakeResult Stake result
   function _createStakeResponse(
     uint64 stakeId,
-    StakeResult memory stakeResult,
-    address sourceAddress,
-    string memory sourceChain
-  ) private pure returns (bytes memory) {
+    StakeResult memory stakeResult
+  ) private view returns (bytes memory) {
     return
       _createResponse(
         abi.encodePacked(
@@ -155,9 +179,7 @@ abstract contract WardenHandler is Initializable {
           stakeId,
           stakeResult.reinitUnstakeId,
           stakeResult.lpAmount
-        ),
-        sourceAddress,
-        sourceChain
+        )
       );
   }
 
@@ -168,26 +190,20 @@ abstract contract WardenHandler is Initializable {
   function _createUnstakeResponse(
     Status status,
     uint64 unstakeId,
-    uint64 reinitUnstakeId,
-    address sourceAddress,
-    string memory sourceChain
-  ) private pure returns (bytes memory) {
+    uint64 reinitUnstakeId
+  ) private view returns (bytes memory) {
     return
       _createResponse(
-        abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId),
-        sourceAddress,
-        sourceChain
+        abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId)
       );
   }
 
   /// @notice Encode reinit response
   /// @param reinitUnstakeId Reinited unstake identifier
   function _createReinitResponse(
-    uint64 reinitUnstakeId,
-    address sourceAddress,
-    string memory sourceChain
-  ) private pure returns (bytes memory) {
-    return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId), sourceAddress, sourceChain);
+    uint64 reinitUnstakeId
+  ) private view returns (bytes memory) {
+    return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId));
   }
 
   ///@notice Handle stake request, should be implemented in Yield contract
@@ -230,8 +246,6 @@ abstract contract WardenHandler is Initializable {
     uint128 tokenAmount;
     bytes memory response;
 
-    address evmSourceAddress = address(this);
-
     if (request.actionType == ActionType.Unstake) {
       UnstakeResult memory unstakeResult = _handleUnstakeRequest(request.actionId, request.lpAmount);
 
@@ -240,9 +254,7 @@ abstract contract WardenHandler is Initializable {
       response = _createUnstakeResponse(
         unstakeResult.status,
         request.actionId,
-        unstakeResult.reinitUnstakeId,
-        evmSourceAddress,
-        $.evmChainName
+        unstakeResult.reinitUnstakeId
       );
     } else if (request.actionType == ActionType.Reinit) {
       ReinitResult memory reinitResult = _handleReinitRequest();
@@ -252,7 +264,7 @@ abstract contract WardenHandler is Initializable {
 
       tokenAddress = reinitResult.tokenAddress;
       tokenAmount = reinitResult.tokenAmount;
-      response = _createReinitResponse(reinitResult.reinitUnstakeId, evmSourceAddress, $.evmChainName);
+      response = _createReinitResponse(reinitResult.reinitUnstakeId);
     } else {
       revert InvalidActionType();
     }
@@ -308,10 +320,8 @@ abstract contract WardenHandler is Initializable {
 
     StakeResult memory stakeResult = _handleStakeRequest(request.actionId, amount);
 
-    address evmSourceAddress = address(this);
-
     // Response to Warden
-    bytes memory response = _createStakeResponse(request.actionId, stakeResult, evmSourceAddress, $.evmChainName);
+    bytes memory response = _createStakeResponse(request.actionId, stakeResult);
 
     // amount to return could contain withdrawn amount and stake amount when stake failed
     // TODO can be moved to `_handleStakeRequest`
@@ -344,7 +354,7 @@ abstract contract WardenHandler is Initializable {
       return; // no response for empty reinit
     }
 
-    bytes memory response = _createReinitResponse(reinitResult.reinitUnstakeId, address(this), $.evmChainName);
+    bytes memory response = _createReinitResponse(reinitResult.reinitUnstakeId);
     string memory tokenSymbol = IERC20Metadata(reinitResult.tokenAddress).symbol();
     string memory wardenChain = $.wardenChain;
     string memory wardenContractAddress = $.wardenContractAddress;

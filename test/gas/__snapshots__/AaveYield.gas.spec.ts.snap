@@ -1,5 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`AaveYield gas user stake 1`] = `970570`;
+exports[`AaveYield gas user stake 1`] = `638960`;
 
-exports[`AaveYield gas user unstake 1`] = `903219`;
+exports[`AaveYield gas user unstake 1`] = `571608`;
