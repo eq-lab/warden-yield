@@ -8,9 +8,10 @@ export const config = {
       {
         version: '0.8.26',
         settings: {
+          viaIR: true,
           optimizer: {
             enabled: true,
-            runs: 1000,
+            runs: 10000,
           },
         },
       },

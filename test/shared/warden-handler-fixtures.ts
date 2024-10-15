@@ -6,6 +6,7 @@ import {
   TestAxelarGateway__factory,
   TestWardenHandler__factory,
 } from '../../typechain-types';
+import { EVM_CHAIN_NAME } from './utils';
 
 export const WardenChain = 'warden';
 export const WardenContractAddress = 'warden-contract-1';
@@ -36,6 +37,7 @@ export async function testWardenHandlerFixture() {
   await wardenHandler.initialize(
     await axelarGateway.getAddress(),
     await axelarGasService.getAddress(),
+    EVM_CHAIN_NAME,
     WardenChain,
     WardenContractAddress
   );

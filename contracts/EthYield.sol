@@ -45,6 +45,7 @@ contract EthYield is
     address lidoWithdrawQueue,
     address axelarGateway,
     address axelarGasService,
+    string calldata evmChainName,
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
@@ -52,7 +53,7 @@ contract EthYield is
     IStrategy strategy = IStrategy(_getEigenLayerInteractorDataStorage().strategy);
     __YieldStorage_initV2(weth, strategy.sharesToUnderlyingView(_getStakingDataStorage()._totalShares[weth]));
     __LidoInteractor_initV2(lidoWithdrawQueue);
-    __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
+    __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
   }
 
   /// @dev method called during the contract upgrade

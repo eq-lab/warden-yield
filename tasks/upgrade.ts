@@ -33,7 +33,7 @@ task('task:upgrade', 'Deploy Yield proxies and implementations')
     let signer: Signer;
     if (taskArgs.isPrivateKey) {
       signer = new hre.ethers.Wallet(taskArgs.creatorKey, provider);
-      console.log(`Signer from private key: ${await signer.getAddress()}`)
+      console.log(`Signer from private key: ${await signer.getAddress()}`);
     } else if (dryRun) {
       console.log(`Impersonating signer: ${taskArgs.creatorKey}`);
       signer = await hre.ethers.getImpersonatedSigner(taskArgs.creatorKey);

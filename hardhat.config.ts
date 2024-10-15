@@ -4,7 +4,6 @@ import 'hardhat-contract-sizer';
 
 import './tasks/deploy';
 import './tasks/upgrade';
-import './tasks/bridge-mock';
 
 import * as defaultConfig from './hardhat.common';
 

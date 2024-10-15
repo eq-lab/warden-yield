@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
-import { EthAddressData } from '../shared/utils';
+import { EVM_CHAIN_NAME, EthAddressData } from '../shared/utils';
 import {
   AaveYield__factory,
   ERC20__factory,
@@ -54,7 +54,14 @@ describe('Upgrade errors', () => {
       upgrades.upgradeProxy(ethYield, new EthYield__factory().connect(owner), {
         call: {
           fn: 'initializeV2',
-          args: [ethers.ZeroAddress, axelarGateway, axelarGasService, wardenChain, wardenContractAddress],
+          args: [
+            ethers.ZeroAddress,
+            axelarGateway,
+            axelarGasService,
+            EVM_CHAIN_NAME,
+            wardenChain,
+            wardenContractAddress,
+          ],
         },
       })
     ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'ZeroAddress');
@@ -73,7 +80,7 @@ describe('Upgrade errors', () => {
       upgrades.upgradeProxy(ethYield, new EthYield__factory().connect(owner), {
         call: {
           fn: 'initializeV2',
-          args: [lidoQueue, axelarGateway, ethers.ZeroAddress, wardenChain, wardenContractAddress],
+          args: [lidoQueue, axelarGateway, ethers.ZeroAddress, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
         },
       })
     ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'InvalidAddress');
@@ -97,7 +104,7 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(ethYield, new EthYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [lidoQueue, axelarGateway, axelarGasService, wardenChain, wardenContractAddress],
+        args: [lidoQueue, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
       },
     });
 
@@ -125,7 +132,7 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(aaveYieldUsdc, new AaveYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [underlyingToken, axelarGateway, axelarGasService, wardenChain, wardenContractAddress],
+        args: [underlyingToken, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
       },
     });
 
@@ -154,7 +161,7 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(aaveYieldUsdt, new AaveYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [underlyingToken, axelarGateway, axelarGasService, wardenChain, wardenContractAddress],
+        args: [underlyingToken, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
       },
     });
 

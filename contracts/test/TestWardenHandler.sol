@@ -11,10 +11,11 @@ contract TestWardenHandler is WardenHandler {
   function initialize(
     address axelarGateway,
     address axelarGasService,
+    string calldata evmChainName,
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external initializer {
-    __WardenHandler_init(axelarGateway, axelarGasService, wardenChain, wardenContractAddress);
+    __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
   }
 
   function setStakeResult(WardenHandler.StakeResult calldata stakeResult) external {

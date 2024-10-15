@@ -4,6 +4,7 @@ import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther, parseUnits } from 'ethers';
 import {
+  EVM_CHAIN_NAME,
   EthAddressData,
   WardenChain,
   WardenContractAddress,
@@ -74,6 +75,8 @@ describe('EthYield stake', () => {
     expect(axelarGatewayEvent.args[2]).to.be.eq(WardenContractAddress);
 
     const stakeResponse = decodeWardenStakeResponse(axelarGatewayEvent.args[4]);
+    expect(stakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+    expect(stakeResponse.sourceAddress).to.be.eq(ethYield.target);
     expect(stakeResponse.actionType).to.be.eq(ActionType.Stake);
     expect(stakeResponse.status).to.be.eq(Status.Success);
     expect(stakeResponse.lpAmount).to.be.eq(lpTokenAmount);
@@ -131,6 +134,8 @@ describe('EthYield stake', () => {
       expect(axelarGatewayEvent.args[2]).to.be.eq(WardenContractAddress);
 
       const stakeResponse = decodeWardenStakeResponse(axelarGatewayEvent.args[4]);
+      expect(stakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+      expect(stakeResponse.sourceAddress).to.be.eq(ethYield.target);
       expect(stakeResponse.actionType).to.be.eq(ActionType.Stake);
       expect(stakeResponse.status).to.be.eq(Status.Success);
       expect(stakeResponse.lpAmount).to.be.closeTo(lpTokenAmount, 1);
@@ -191,6 +196,8 @@ describe('EthYield withdraw', () => {
     expect(elElement.blockNumber).to.be.eq(elWithdrawStartEvent.blockNumber);
 
     const unstakeResponse = decodeWardenUnstakeResponse(await axelarGateway.callContractPayload());
+    expect(unstakeResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+    expect(unstakeResponse.sourceAddress).to.be.eq(ethYield.target);
     expect(unstakeResponse.actionType).to.be.eq(ActionType.Unstake);
     expect(unstakeResponse.status).to.be.eq(Status.Success);
     expect(unstakeResponse.reinitUnstakeId).to.be.eq(0);
@@ -232,6 +239,8 @@ describe('EthYield withdraw', () => {
     expect(axelarGatewayWithdrawEvent.args[6]).to.be.eq(expectedOutput);
 
     const reinitResponse = decodeWardenReinitResponse(axelarGatewayWithdrawEvent.args[4]);
+    expect(reinitResponse.sourceChain).to.be.eq(EVM_CHAIN_NAME);
+    expect(reinitResponse.sourceAddress).to.be.eq(ethYield.target);
     expect(reinitResponse.actionType).to.be.eq(ActionType.Reinit);
     expect(reinitResponse.reinitUnstakeId).to.be.eq(unstakeId);
   });

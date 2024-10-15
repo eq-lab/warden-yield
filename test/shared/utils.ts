@@ -5,6 +5,7 @@ import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { ActionType } from './warden-handler-fixtures';
 
 export const USER_WARDEN_ADDRESS = 'warden1234';
+export const EVM_CHAIN_NAME = 'ethereum-test';
 
 export const WardenChain = 'warden';
 export const WardenContractAddress = 'warden-cosm-wasm-address';
@@ -104,6 +105,8 @@ export function encodeWardenPayload(actionType: number, actionId: number, lpAmou
 }
 
 type WardenStakeResponse = {
+  sourceChain: string;
+  sourceAddress: string;
   actionType: number;
   status: number;
   actionId: number;
@@ -111,29 +114,33 @@ type WardenStakeResponse = {
   reinitUnstakeId: number;
 };
 
-function decodeArgValues(payload: BytesLike): string {
+function decodeArgValues(payload: BytesLike): { sourceChain: string; sourceAddress: string; payload: string } {
   const abiCoder = ethers.AbiCoder.defaultAbiCoder();
   const gmpPayload = ethers.dataSlice(payload, 4);
 
   const decoded = abiCoder.decode(['string', 'string[]', 'string[]', 'bytes'], gmpPayload, false);
   const abiEncodedArgs = decoded.at(3);
-  const args = abiCoder.decode(['bytes'], abiEncodedArgs).at(0);
-  return args;
+  const args = abiCoder.decode(decoded.at(2), abiEncodedArgs);
+  return { sourceChain: args.at(0), sourceAddress: args.at(1), payload: args.at(2) };
 }
 
 export function decodeWardenStakeResponse(payload: BytesLike): WardenStakeResponse {
-  const argValues = decodeArgValues(payload);
+  const decoded = decodeArgValues(payload);
 
   return {
-    actionType: ethers.getNumber(ethers.dataSlice(argValues, 0, 1)), //actionType 1 byte
-    status: ethers.getNumber(ethers.dataSlice(argValues, 1, 2)), // status 1 byte
-    actionId: ethers.getNumber(ethers.dataSlice(argValues, 2, 10)), //actionId 8 byte
-    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(argValues, 10, 18)), //reinitUnstakeId 8 byte
-    lpAmount: ethers.getBigInt(ethers.dataSlice(argValues, 18, 34)), //lpAmount 16 byte
+    sourceAddress: decoded.sourceAddress,
+    sourceChain: decoded.sourceChain,
+    actionType: ethers.getNumber(ethers.dataSlice(decoded.payload, 0, 1)), //actionType 1 byte
+    status: ethers.getNumber(ethers.dataSlice(decoded.payload, 1, 2)), // status 1 byte
+    actionId: ethers.getNumber(ethers.dataSlice(decoded.payload, 2, 10)), //actionId 8 byte
+    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(decoded.payload, 10, 18)), //reinitUnstakeId 8 byte
+    lpAmount: ethers.getBigInt(ethers.dataSlice(decoded.payload, 18, 34)), //lpAmount 16 byte
   };
 }
 
 type WardenUnstakeResponse = {
+  sourceChain: string;
+  sourceAddress: string;
   actionType: number;
   status: number;
   actionId: number;
@@ -141,25 +148,32 @@ type WardenUnstakeResponse = {
 };
 
 export function decodeWardenUnstakeResponse(payload: BytesLike): WardenUnstakeResponse {
-  const argValues = decodeArgValues(payload);
+  const decoded = decodeArgValues(payload);
 
   return {
-    actionType: ethers.getNumber(ethers.dataSlice(argValues, 0, 1)), //actionType 1 byte
-    status: ethers.getNumber(ethers.dataSlice(argValues, 1, 2)), // status 1 byte
-    actionId: ethers.getNumber(ethers.dataSlice(argValues, 2, 10)), //actionId 8 byte
-    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(argValues, 10, 18)), //reinitUnstakeId 8 byte
+    sourceAddress: decoded.sourceAddress,
+    sourceChain: decoded.sourceChain,
+    actionType: ethers.getNumber(ethers.dataSlice(decoded.payload, 0, 1)), //actionType 1 byte
+    status: ethers.getNumber(ethers.dataSlice(decoded.payload, 1, 2)), // status 1 byte
+    actionId: ethers.getNumber(ethers.dataSlice(decoded.payload, 2, 10)), //actionId 8 byte
+    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(decoded.payload, 10, 18)), //reinitUnstakeId 8 byte
   };
 }
 
 type WardenReinitResponse = {
+  sourceChain: string;
+  sourceAddress: string;
   actionType: number;
   reinitUnstakeId: number;
 };
 
 export function decodeWardenReinitResponse(payload: BytesLike): WardenReinitResponse {
-  const argValues = decodeArgValues(payload);
+  const decoded = decodeArgValues(payload);
+
   return {
-    actionType: ethers.getNumber(ethers.dataSlice(argValues, 0, 1)), //actionType 1 byte
-    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(argValues, 1, 9)), //reinitUnstakeId 8 byte
+    sourceAddress: decoded.sourceAddress,
+    sourceChain: decoded.sourceChain,
+    actionType: ethers.getNumber(ethers.dataSlice(decoded.payload, 0, 1)), //actionType 1 byte
+    reinitUnstakeId: ethers.getNumber(ethers.dataSlice(decoded.payload, 1, 9)), //reinitUnstakeId 8 byte
   };
 }

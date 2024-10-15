@@ -39,6 +39,7 @@ abstract contract WardenHandler is Initializable {
   struct WardenHandlerData {
     address axelarGateway;
     address axelarGasService;
+    string evmChainName;
     string wardenChain;
     string wardenContractAddress;
   }
@@ -77,6 +78,7 @@ abstract contract WardenHandler is Initializable {
   function __WardenHandler_init(
     address axelarGateway,
     address axelarGasService,
+    string calldata evmChainName,
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) internal onlyInitializing {
@@ -86,6 +88,7 @@ abstract contract WardenHandler is Initializable {
     WardenHandlerData storage $ = _getWardenHandlerData();
     $.axelarGateway = axelarGateway;
     $.axelarGasService = axelarGasService;
+    $.evmChainName = evmChainName;
     $.wardenChain = wardenChain;
     $.wardenContractAddress = wardenContractAddress;
   }
@@ -109,15 +112,25 @@ abstract contract WardenHandler is Initializable {
 
   /// @notice Encode warden payload
   /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
-  function _createResponse(bytes memory argValues) private pure returns (bytes memory) {
-    string[] memory argNameArray = new string[](1);
-    argNameArray[0] = 'response_data';
+  function _createResponse(bytes memory argValues) private view returns (bytes memory) {
+    WardenHandlerData storage $ = _getWardenHandlerData();
+    string[] memory argNameArray = new string[](3);
+    argNameArray[0] = 'source_chain';
+    argNameArray[1] = 'source_address';
+    argNameArray[2] = 'payload';
 
-    string[] memory argTypeArray = new string[](1);
-    argTypeArray[0] = 'bytes';
+    string[] memory argTypeArray = new string[](3);
+    argTypeArray[0] = 'string';
+    argTypeArray[1] = 'address';
+    argTypeArray[2] = 'bytes';
 
     bytes memory gmpPayload;
-    gmpPayload = abi.encode('handle_response', argNameArray, argTypeArray, abi.encode(argValues));
+    gmpPayload = abi.encode(
+      'handle_response',
+      argNameArray,
+      argTypeArray,
+      abi.encode($.evmChainName, address(this), argValues)
+    );
 
     return abi.encodePacked(uint32(1), gmpPayload);
   }
@@ -125,7 +138,7 @@ abstract contract WardenHandler is Initializable {
   /// @notice Encode stake response
   /// @param stakeId Stake identifier
   /// @param stakeResult Stake result
-  function _createStakeResponse(uint64 stakeId, StakeResult memory stakeResult) private pure returns (bytes memory) {
+  function _createStakeResponse(uint64 stakeId, StakeResult memory stakeResult) private view returns (bytes memory) {
     return
       _createResponse(
         abi.encodePacked(
@@ -146,13 +159,13 @@ abstract contract WardenHandler is Initializable {
     Status status,
     uint64 unstakeId,
     uint64 reinitUnstakeId
-  ) private pure returns (bytes memory) {
+  ) private view returns (bytes memory) {
     return _createResponse(abi.encodePacked(ActionType.Unstake, status, unstakeId, reinitUnstakeId));
   }
 
   /// @notice Encode reinit response
   /// @param reinitUnstakeId Reinited unstake identifier
-  function _createReinitResponse(uint64 reinitUnstakeId) private pure returns (bytes memory) {
+  function _createReinitResponse(uint64 reinitUnstakeId) private view returns (bytes memory) {
     return _createResponse(abi.encodePacked(ActionType.Reinit, reinitUnstakeId));
   }
 
