@@ -5,7 +5,7 @@ use crate::helpers::find_token_by_message_source;
 use crate::state::{
     QueueParams, StakeStatsItem, STAKE_STATS, TOKEN_CONFIG, UNSTAKES, UNSTAKE_PARAMS,
 };
-use crate::types::{TokenDenom, UnstakeActionStage};
+use crate::types::{TokenConfig, TokenDenom, UnstakeActionStage};
 use crate::ContractError;
 use cosmwasm_std::{to_hex, BankMsg, DepsMut, Env, Event, MessageInfo, Response, Uint128, Uint256};
 
@@ -37,12 +37,16 @@ pub fn try_reinit(
     )?;
 
     Ok(response.add_event(
-        Event::new("reinit").add_attribute("payload", "0x".to_owned() + &payload_hex_str),
+        Event::new("reinit")
+            .add_attribute("chain", token_config.chain)
+            .add_attribute("yield_contract", token_config.evm_yield_contract)
+            .add_attribute("payload", "0x".to_owned() + &payload_hex_str),
     ))
 }
 
 pub fn handle_reinit(
     deps: DepsMut,
+    token_config: &TokenConfig,
     deposit_token_denom: &TokenDenom,
     token_amount: Uint128,
     reinit_unstake_id: u64,
@@ -86,8 +90,9 @@ pub fn handle_reinit(
         bank_transfer_msg,
         Event::new("unstake_finished")
             .add_attribute("unstake_id", reinit_unstake_id.to_string())
-            .add_attribute("token", deposit_token_denom)
-            .add_attribute("lp_amount", unstake_item.lp_token_amount)
+            .add_attribute("chain", &token_config.chain)
+            .add_attribute("yield_contract", &token_config.evm_yield_contract)
+            .add_attribute("lpt_amount", unstake_item.lp_token_amount)
             .add_attribute("token_amount", token_amount)
             .add_attribute("total_token_amount", unstake_item.token_amount.unwrap()),
     ))
@@ -113,7 +118,7 @@ pub fn try_handle_reinit_response(
         ));
     }
 
-    let (token_denom, _token_config) =
+    let (token_denom, token_config) =
         find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
 
     if token_denom != coin.denom {
@@ -129,6 +134,7 @@ pub fn try_handle_reinit_response(
     let stake_stats = STAKE_STATS.load(deps.storage, &token_denom)?;
     let (bank_transfer_msg, event) = handle_reinit(
         deps,
+        &token_config,
         &token_denom,
         coin.amount,
         reinit_response_data.reinit_unstake_id,

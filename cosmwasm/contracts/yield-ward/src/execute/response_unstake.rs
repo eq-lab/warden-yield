@@ -53,7 +53,9 @@ pub fn try_handle_unstake_response(
             .add_event(
                 Event::new("unstake_registered")
                     .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-                    .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string()),
+                    .add_attribute("chain", &token_config.chain)
+                    .add_attribute("yield_contract", &token_config.evm_yield_contract)
+                    .add_attribute("lpt_amount", unstake_item.lp_token_amount.to_string()),
             );
     } else {
         // update token stats
@@ -77,7 +79,9 @@ pub fn try_handle_unstake_response(
             .add_event(
                 Event::new("unstake_failed")
                     .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-                    .add_attribute("lp_amount", unstake_item.lp_token_amount.to_string()),
+                    .add_attribute("chain", &token_config.chain)
+                    .add_attribute("yield_contract", &token_config.evm_yield_contract)
+                    .add_attribute("lpt_amount", unstake_item.lp_token_amount.to_string()),
             );
     }
 
@@ -93,6 +97,7 @@ pub fn try_handle_unstake_response(
         let coin = info.funds.first().unwrap();
         let (bank_transfer_msg, reinit_event) = handle_reinit(
             deps,
+            &token_config,
             &token_denom,
             coin.amount,
             unstake_response.reinit_unstake_id,
