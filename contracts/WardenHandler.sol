@@ -19,6 +19,7 @@ abstract contract WardenHandler is Initializable {
   error InvalidSourceChain();
   error InvalidActionType();
   error AmountTooBig();
+  error Debug(bytes);
 
   enum ActionType {
     Stake, //0
@@ -114,25 +115,47 @@ abstract contract WardenHandler is Initializable {
   /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
   function _createResponse(bytes memory argValues) private view returns (bytes memory) {
     WardenHandlerData storage $ = _getWardenHandlerData();
-    string[] memory argNameArray = new string[](3);
-    argNameArray[0] = 'source_chain';
-    argNameArray[1] = 'source_address';
-    argNameArray[2] = 'payload';
+    bytes memory abiEncodedWardenData = abi.encode($.evmChainName, address(this), argValues);
+    uint256 dataLength = abiEncodedWardenData.length;
+    // if (dataLength > 0) revert Debug(abiEncodedWardenData);
 
-    string[] memory argTypeArray = new string[](3);
-    argTypeArray[0] = 'string';
-    argTypeArray[1] = 'address';
-    argTypeArray[2] = 'bytes';
+    bytes memory gmpMessage = new bytes(0x360 + dataLength);
+    assembly {
+      // mstore(0x40, add(gmpMessage, 0x340))
+      mstore(add(gmpMessage, 0x20), 0x0000000000000000000000000000000000000000000000000000000000000080)
+      mstore(add(gmpMessage, 0x40), 0x00000000000000000000000000000000000000000000000000000000000000c0)
+      mstore(add(gmpMessage, 0x60), 0x0000000000000000000000000000000000000000000000000000000000000200)
+      mstore(add(gmpMessage, 0x80), 0x0000000000000000000000000000000000000000000000000000000000000340)
+      mstore(add(gmpMessage, 0xa0), 0x000000000000000000000000000000000000000000000000000000000000000f)
+      mstore(add(gmpMessage, 0xc0), 0x68616e646c655f726573706f6e73650000000000000000000000000000000000)
+      mstore(add(gmpMessage, 0xe0), 0x0000000000000000000000000000000000000000000000000000000000000003)
+      mstore(add(gmpMessage, 0x100), 0x0000000000000000000000000000000000000000000000000000000000000060)
+      mstore(add(gmpMessage, 0x120), 0x00000000000000000000000000000000000000000000000000000000000000a0)
+      mstore(add(gmpMessage, 0x140), 0x00000000000000000000000000000000000000000000000000000000000000e0)
+      mstore(add(gmpMessage, 0x160), 0x000000000000000000000000000000000000000000000000000000000000000c)
+      mstore(add(gmpMessage, 0x180), 0x736f757263655f636861696e0000000000000000000000000000000000000000)
+      mstore(add(gmpMessage, 0x1a0), 0x000000000000000000000000000000000000000000000000000000000000000e)
+      mstore(add(gmpMessage, 0x1c0), 0x736f757263655f61646472657373000000000000000000000000000000000000)
+      mstore(add(gmpMessage, 0x1e0), 0x0000000000000000000000000000000000000000000000000000000000000007)
+      mstore(add(gmpMessage, 0x200), 0x7061796c6f616400000000000000000000000000000000000000000000000000)
 
-    bytes memory gmpPayload;
-    gmpPayload = abi.encode(
-      'handle_response',
-      argNameArray,
-      argTypeArray,
-      abi.encode($.evmChainName, address(this), argValues)
-    );
+      mstore(add(gmpMessage, 0x220), 0x0000000000000000000000000000000000000000000000000000000000000003)
+      mstore(add(gmpMessage, 0x240), 0x0000000000000000000000000000000000000000000000000000000000000060)
+      mstore(add(gmpMessage, 0x260), 0x00000000000000000000000000000000000000000000000000000000000000a0)
+      mstore(add(gmpMessage, 0x280), 0x00000000000000000000000000000000000000000000000000000000000000e0)
+      mstore(add(gmpMessage, 0x2a0), 0x0000000000000000000000000000000000000000000000000000000000000006)
+      mstore(add(gmpMessage, 0x2c0), 0x737472696e670000000000000000000000000000000000000000000000000000)
+      mstore(add(gmpMessage, 0x2e0), 0x0000000000000000000000000000000000000000000000000000000000000007)
+      mstore(add(gmpMessage, 0x300), 0x6164647265737300000000000000000000000000000000000000000000000000)
+      mstore(add(gmpMessage, 0x320), 0x0000000000000000000000000000000000000000000000000000000000000005)
+      mstore(add(gmpMessage, 0x340), 0x6279746573000000000000000000000000000000000000000000000000000000)
 
-    return abi.encodePacked(uint32(1), gmpPayload);
+      for { let i := 0 } lt(i, add(dataLength, 0x20)) { i := add(i, 0x20) } {
+        mstore(add(add(gmpMessage, 0x360), i), mload(add(abiEncodedWardenData, i)))
+      }
+
+    }
+   return abi.encodePacked(uint32(1), gmpMessage);
   }
 
   /// @notice Encode stake response
