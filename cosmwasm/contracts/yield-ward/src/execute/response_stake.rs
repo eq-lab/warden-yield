@@ -50,8 +50,8 @@ pub fn try_handle_stake_response(
         response = response.add_message(lp_mint_msg).add_event(
             Event::new("stake_success")
                 .add_attribute("stake_id", stake_response.stake_id.to_string())
-                .add_attribute("chain", token_config.chain.clone())
-                .add_attribute("yield_contract", token_config.evm_yield_contract.clone())
+                .add_attribute("chain", &token_config.chain)
+                .add_attribute("yield_contract", &token_config.evm_yield_contract)
                 .add_attribute("lpt_amount", stake_response.lp_token_amount)
                 .add_attribute("token_amount", stake_amount),
         );
@@ -73,8 +73,8 @@ pub fn try_handle_stake_response(
             .add_event(
                 Event::new("stake_failed")
                     .add_attribute("stake_id", stake_response.stake_id.to_string())
-                    .add_attribute("chain", token_config.chain.clone())
-                    .add_attribute("yield_contract", token_config.evm_yield_contract.clone())
+                    .add_attribute("chain", &token_config.chain)
+                    .add_attribute("yield_contract", &token_config.evm_yield_contract)
                     .add_attribute("token_amount", stake_amount),
             );
     }

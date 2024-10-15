@@ -90,8 +90,8 @@ pub fn handle_reinit(
         bank_transfer_msg,
         Event::new("unstake_finished")
             .add_attribute("unstake_id", reinit_unstake_id.to_string())
-            .add_attribute("chain", token_config.chain.clone())
-            .add_attribute("yield_contract", token_config.evm_yield_contract.clone())
+            .add_attribute("chain", &token_config.chain)
+            .add_attribute("yield_contract", &token_config.evm_yield_contract)
             .add_attribute("lpt_amount", unstake_item.lp_token_amount)
             .add_attribute("token_amount", token_amount)
             .add_attribute("total_token_amount", unstake_item.token_amount.unwrap()),

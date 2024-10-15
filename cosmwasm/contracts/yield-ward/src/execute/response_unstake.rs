@@ -53,8 +53,8 @@ pub fn try_handle_unstake_response(
             .add_event(
                 Event::new("unstake_registered")
                     .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-                    .add_attribute("chain", token_config.chain.clone())
-                    .add_attribute("yield_contract", token_config.evm_yield_contract.clone())
+                    .add_attribute("chain", &token_config.chain)
+                    .add_attribute("yield_contract", &token_config.evm_yield_contract)
                     .add_attribute("lpt_amount", unstake_item.lp_token_amount.to_string()),
             );
     } else {
@@ -79,8 +79,8 @@ pub fn try_handle_unstake_response(
             .add_event(
                 Event::new("unstake_failed")
                     .add_attribute("unstake_id", unstake_response.unstake_id.to_string())
-                    .add_attribute("chain", token_config.chain.clone())
-                    .add_attribute("yield_contract", token_config.evm_yield_contract.clone())
+                    .add_attribute("chain", &token_config.chain)
+                    .add_attribute("yield_contract", &token_config.evm_yield_contract)
                     .add_attribute("lpt_amount", unstake_item.lp_token_amount.to_string()),
             );
     }
