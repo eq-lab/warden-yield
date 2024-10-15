@@ -64,9 +64,8 @@ pub fn try_init_unstake(
         Event::new("unstake")
             .add_attribute("unstake_id", unstake_id.to_string())
             .add_attribute("sender", user)
-            .add_attribute("token_symbol", token_config.deposit_token_symbol)
-            .add_attribute("evm_yield_contract", token_config.evm_yield_contract)
-            .add_attribute("dest_chain", token_config.chain)
+            .add_attribute("chain", token_config.chain)
+            .add_attribute("yield_contract", token_config.evm_yield_contract)
             .add_attribute("lpt_amount", lpt_amount)
             .add_attribute("payload", "0x".to_owned() + &payload_hex_str),
     ))

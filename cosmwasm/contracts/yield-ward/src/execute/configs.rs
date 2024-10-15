@@ -48,10 +48,8 @@ pub fn try_update_token_config(
         TOKEN_DENOM_BY_LPT_ADDRESS.save(deps.storage, &config.lpt_address, &token_denom)?;
     }
 
-    Ok(Response::new().add_event(
-        Event::new("update_token_config")
-            .add_attribute("token_symbol", config.deposit_token_symbol),
-    ))
+    Ok(Response::new()
+        .add_event(Event::new("update_token_config").add_attribute("token_denom", token_denom)))
 }
 
 pub fn try_update_contract_config(
