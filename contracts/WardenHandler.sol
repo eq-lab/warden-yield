@@ -110,52 +110,25 @@ abstract contract WardenHandler is Initializable {
       });
   }
 
-  /// @return argNames bytes, representing dynamic array of strings ['source_chain', 'source_address', 'payload']
-  /// @dev This approach optimizes gas usage by avoiding working with dynamic arrays and strings
-  function _getArgNames() private pure returns (bytes memory argNames) {
-    assembly {
-      argNames := mload(0x40)
-      mstore(0x40, add(argNames, 0x160))
-      mstore(add(argNames, 0x20), 0x0000000000000000000000000000000000000000000000000000000000000020)
-      mstore(add(argNames, 0x40), 0x0000000000000000000000000000000000000000000000000000000000000003)
-      mstore(add(argNames, 0x60), 0x0000000000000000000000000000000000000000000000000000000000000060)
-      mstore(add(argNames, 0x80), 0x00000000000000000000000000000000000000000000000000000000000000a0)
-      mstore(add(argNames, 0xa0), 0x00000000000000000000000000000000000000000000000000000000000000e0)
-      mstore(add(argNames, 0xc0), 0x000000000000000000000000000000000000000000000000000000000000000c)
-      mstore(add(argNames, 0xe0), 0x736f757263655f636861696e0000000000000000000000000000000000000000)
-      mstore(add(argNames, 0x100), 0x000000000000000000000000000000000000000000000000000000000000000e)
-      mstore(add(argNames, 0x120), 0x736f757263655f61646472657373000000000000000000000000000000000000)
-      mstore(add(argNames, 0x140), 0x0000000000000000000000000000000000000000000000000000000000000007)
-    }
-  }
-
-  /// @return argTypes bytes, representing dynamic array of strings ['string', 'address', 'bytes']
-  /// @dev This approach optimizes gas usage by avoiding working with dynamic arrays and strings
-  function _getArgTypes() private pure returns (bytes memory argTypes) {
-    assembly {
-      argTypes := mload(0x40)
-      mstore(0x40, add(argTypes, 0x160))
-      mstore(add(argTypes, 0x20), 0x0000000000000000000000000000000000000000000000000000000000000020)
-      mstore(add(argTypes, 0x40), 0x0000000000000000000000000000000000000000000000000000000000000003)
-      mstore(add(argTypes, 0x60), 0x0000000000000000000000000000000000000000000000000000000000000060)
-      mstore(add(argTypes, 0x80), 0x00000000000000000000000000000000000000000000000000000000000000a0)
-      mstore(add(argTypes, 0xa0), 0x00000000000000000000000000000000000000000000000000000000000000e0)
-      mstore(add(argTypes, 0xc0), 0x0000000000000000000000000000000000000000000000000000000000000006)
-      mstore(add(argTypes, 0xe0), 0x737472696e670000000000000000000000000000000000000000000000000000)
-      mstore(add(argTypes, 0x100), 0x0000000000000000000000000000000000000000000000000000000000000007)
-      mstore(add(argTypes, 0x120), 0x6164647265737300000000000000000000000000000000000000000000000000)
-      mstore(add(argTypes, 0x140), 0x0000000000000000000000000000000000000000000000000000000000000005)
-    }
-  }
-
   /// @notice Encode warden payload
   /// @dev About Evm -> CosmWasm messages https://docs.axelar.dev/dev/cosmos-gmp#messages-from-evm-to-cosmwasm
   function _createResponse(bytes memory argValues) private view returns (bytes memory) {
     WardenHandlerData storage $ = _getWardenHandlerData();
-    bytes memory gmpPayload = abi.encode(
+    string[] memory argNameArray = new string[](3);
+    argNameArray[0] = 'source_chain';
+    argNameArray[1] = 'source_address';
+    argNameArray[2] = 'payload';
+
+    string[] memory argTypeArray = new string[](3);
+    argTypeArray[0] = 'string';
+    argTypeArray[1] = 'address';
+    argTypeArray[2] = 'bytes';
+
+    bytes memory gmpPayload;
+    gmpPayload = abi.encode(
       'handle_response',
-      _getArgNames(),
-      _getArgTypes(),
+      argNameArray,
+      argTypeArray,
       abi.encode($.evmChainName, address(this), argValues)
     );
 

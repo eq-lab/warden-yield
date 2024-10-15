@@ -120,7 +120,7 @@ function decodeArgValues(payload: BytesLike): { sourceChain: string; sourceAddre
 
   const decoded = abiCoder.decode(['string', 'string[]', 'string[]', 'bytes'], gmpPayload, false);
   const abiEncodedArgs = decoded.at(3);
-  const args = abiCoder.decode(['string', 'address', 'bytes'], abiEncodedArgs);
+  const args = abiCoder.decode(decoded.at(2), abiEncodedArgs);
   return { sourceChain: args.at(0), sourceAddress: args.at(1), payload: args.at(2) };
 }
 
