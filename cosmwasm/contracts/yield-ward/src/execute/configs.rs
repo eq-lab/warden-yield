@@ -40,10 +40,7 @@ pub fn try_update_token_config(
         TOKEN_DENOM_BY_SOURCE.remove(deps.storage, (source_chain_old, source_address_old));
         TOKEN_DENOM_BY_SOURCE.save(
             deps.storage,
-            (
-                config.chain.as_str(),
-                config_evm_yield_contract.as_str(),
-            ),
+            (config.chain.as_str(), config_evm_yield_contract.as_str()),
             &token_denom,
         )?;
     }
