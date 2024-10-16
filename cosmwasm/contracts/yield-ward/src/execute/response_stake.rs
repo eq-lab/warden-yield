@@ -125,6 +125,7 @@ fn ensure_stake_response_is_valid(
     token_denom: &str,
     stake_response: &StakeResponseData,
 ) -> Result<(), ContractError> {
+    // response comes via IbcMsg::Transfer hence Axelar attaches 1 AXL token if there are non other already
     if info.funds.len() != 1 {
         return Err(ContractError::CustomError(
             "Stake response: message has wrong funds length".to_string(),
@@ -132,22 +133,20 @@ fn ensure_stake_response_is_valid(
     }
 
     let coin = info.funds.first().unwrap();
-    match token_denom == coin.denom {
-        false => {
-            if stake_response.reinit_unstake_id != 0 || stake_response.status == Status::Fail {
-                return Err(ContractError::InvalidToken {
-                    expected: token_denom.to_owned(),
-                    actual: coin.denom.clone(),
-                });
-            }
-        }
-        true => {
-            if stake_response.reinit_unstake_id == 0 && stake_response.status == Status::Success {
-                return Err(ContractError::CustomError(
-                    "Stake response: reinit_unstake_id == 0 and status is Success, but message returned tokens".to_string(),
-                ));
-            }
-        }
+    let is_stake_token = token_denom == coin.denom;
+    let has_reinit = stake_response.reinit_unstake_id != 0;
+
+    if is_stake_token && !has_reinit && stake_response.status == Status::Success {
+        return Err(ContractError::CustomError(
+            "Stake response: reinit_unstake_id == 0 and status is Success, but message returned tokens".to_string(),
+        ));
+    }
+
+    if !is_stake_token && (has_reinit || stake_response.status == Status::Fail) {
+        return Err(ContractError::InvalidToken {
+            expected: token_denom.to_owned(),
+            actual: coin.denom.clone(),
+        });
     }
 
     Ok(())

@@ -124,6 +124,7 @@ fn ensure_unstake_response_is_valid(
         ));
     }
 
+    // response comes via IbcMsg::Transfer hence Axelar attaches 1 AXL token if there are non other already
     if info.funds.len() != 1 {
         return Err(ContractError::CustomError(
             "Unstake response: message has wrong funds length".to_string(),
@@ -131,23 +132,20 @@ fn ensure_unstake_response_is_valid(
     }
 
     let coin = info.funds.first().unwrap();
-    match token_denom == coin.denom {
-        false => {
-            if unstake_response.reinit_unstake_id != 0 {
-                return Err(ContractError::InvalidToken {
-                    expected: token_denom.to_owned(),
-                    actual: coin.denom.clone(),
-                });
-            }
-        }
-        true => {
-            if unstake_response.reinit_unstake_id == 0 {
-                return Err(ContractError::CustomError(
-                    "Unstake response: reinit_unstake_id == 0, but message returned tokens"
-                        .to_string(),
-                ));
-            }
-        }
+    let is_stake_token = token_denom == coin.denom;
+    let has_reinit = unstake_response.reinit_unstake_id != 0;
+
+    if is_stake_token && !has_reinit {
+        return Err(ContractError::CustomError(
+            "Unstake response: reinit_unstake_id == 0, but message returned tokens".to_string(),
+        ));
+    }
+
+    if !is_stake_token && has_reinit {
+        return Err(ContractError::InvalidToken {
+            expected: token_denom.to_owned(),
+            actual: coin.denom.clone(),
+        });
     }
 
     Ok(())
