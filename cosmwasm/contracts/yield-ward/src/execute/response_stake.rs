@@ -125,7 +125,7 @@ fn ensure_stake_response_is_valid(
     token_denom: &str,
     stake_response: &StakeResponseData,
 ) -> Result<(), ContractError> {
-    // response comes via IbcMsg::Transfer hence Axelar attaches 1 AXL token if there are non other already
+    // response comes via IbcMsg::Transfer hence Axelar attaches 1 AXL token if there is none other already
     if info.funds.len() != 1 {
         return Err(ContractError::CustomError(
             "Stake response: message has wrong funds length".to_string(),
