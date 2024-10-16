@@ -161,7 +161,10 @@ fn test_wrong_reinit_response() {
         Ok(_) => panic!("Reinit response passed with wrong denom"),
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
-            anyhow!(ContractError::InvalidToken{ actual: wrong_denom_value, expected: coin.denom })
+            anyhow!(ContractError::InvalidToken {
+                actual: wrong_denom_value,
+                expected: coin.denom
+            })
             .root_cause()
             .to_string()
         ),
@@ -185,9 +188,9 @@ fn test_wrong_reinit_response() {
         Ok(_) => panic!("Reinit response passed with invalid payload"),
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
-            anyhow!(ContractError::InvalidMessagePayload{ })
-            .root_cause()
-            .to_string()
+            anyhow!(ContractError::InvalidMessagePayload {})
+                .root_cause()
+                .to_string()
         ),
     }
 }

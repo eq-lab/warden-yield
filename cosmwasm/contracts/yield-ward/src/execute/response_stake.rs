@@ -19,7 +19,7 @@ pub fn try_handle_stake_response(
         decode_stake_response_payload(payload).ok_or(ContractError::InvalidMessagePayload)?;
 
     let (token_denom, token_config) =
-        find_token_by_message_source(deps.as_ref(), &source_chain, &source_address)?;
+        find_token_by_message_source(deps.as_ref(), &source_chain, &source_address.to_lowercase())?;
 
     ensure_stake_response_is_valid(&info, &token_denom, &stake_response)?;
 
