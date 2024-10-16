@@ -262,7 +262,10 @@ fn transfer_from_respects_limits() {
     };
     let info = message_info(&Addr::unchecked(spender.clone()), &[]);
     let env = mock_env();
-    assert_eq!(execute(deps.as_mut(), env, info, msg), Err(ContractError::NoAllowance {  }));
+    assert_eq!(
+        execute(deps.as_mut(), env, info, msg),
+        Err(ContractError::NoAllowance {})
+    );
 
     // provide an allowance
     let allow1 = Uint128::new(77777);

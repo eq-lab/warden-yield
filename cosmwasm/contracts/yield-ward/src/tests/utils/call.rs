@@ -266,7 +266,7 @@ pub fn call_stake_response(
             })
             .unwrap(),
             funds: match return_amount.u128() {
-                0_u128 => vec![],
+                0_u128 => coins(1, &ctx.tokens.get(1).unwrap().deposit_token_denom),
                 _ => coins(
                     return_amount.u128(),
                     token_info.deposit_token_denom.to_string(),
@@ -360,7 +360,7 @@ pub fn call_unstake_response(
             })
             .unwrap(),
             funds: match unstake_amount.u128() {
-                0_u128 => vec![],
+                0_u128 => coins(1, &ctx.tokens.get(1).unwrap().deposit_token_denom),
                 _ => coins(
                     unstake_amount.u128(),
                     token_info.deposit_token_denom.to_string(),

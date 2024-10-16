@@ -34,11 +34,13 @@ pub fn try_update_token_config(
         )
         .ok_or(ContractError::UnknownToken(token_denom.clone()))?;
 
-    if source_chain_old != config.chain || source_address_old != config.evm_yield_contract {
+    let config_evm_yield_contract = config.evm_yield_contract.to_lowercase();
+
+    if source_chain_old != config.chain || source_address_old != config_evm_yield_contract {
         TOKEN_DENOM_BY_SOURCE.remove(deps.storage, (source_chain_old, source_address_old));
         TOKEN_DENOM_BY_SOURCE.save(
             deps.storage,
-            (config.chain.as_str(), config.evm_yield_contract.as_str()),
+            (config.chain.as_str(), config_evm_yield_contract.as_str()),
             &token_denom,
         )?;
     }

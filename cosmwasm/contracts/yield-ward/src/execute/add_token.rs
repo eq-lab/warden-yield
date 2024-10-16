@@ -53,7 +53,11 @@ pub fn try_add_token(
         },
     )?;
 
-    TOKEN_DENOM_BY_SOURCE.save(deps.storage, (&chain, &evm_yield_contract), &token_denom)?;
+    TOKEN_DENOM_BY_SOURCE.save(
+        deps.storage,
+        (&chain, &evm_yield_contract.to_lowercase()),
+        &token_denom,
+    )?;
 
     let msg = to_json_binary(&LpInstantiateMsg {
         name: lpt_name,
@@ -98,8 +102,8 @@ pub fn try_add_token(
             is_stake_enabled,
             is_unstake_enabled,
             chain,
-            evm_yield_contract,
-            evm_address,
+            evm_yield_contract: evm_yield_contract.to_lowercase(),
+            evm_address: evm_address.to_lowercase(),
             lpt_symbol,
             lpt_address,
         },
