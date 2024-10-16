@@ -10,7 +10,7 @@ use crate::tests::utils::query::{
 use crate::tests::utils::types::{TestInfo, TestingApp, TokenTestInfo};
 use crate::types::{StakeActionStage, Status, UnstakeActionStage, UnstakeResponseData};
 use crate::ContractError;
-use cosmwasm_std::{Binary, Uint128, Uint256};
+use cosmwasm_std::{coins, Binary, Uint128, Uint256};
 use cw_multi_test::error::anyhow;
 use cw_multi_test::Executor;
 
@@ -405,6 +405,8 @@ fn test_wrong_unstake_response() {
 
     call_unstake(&mut app, &ctx, &ctx.user, token_info, lp_token_amount);
 
+    let non_stake_denom = &ctx.tokens.get(1).unwrap().deposit_token_denom.clone();
+
     let invalid_payload = app.execute(
         ctx.axelar.clone(),
         cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
@@ -415,7 +417,7 @@ fn test_wrong_unstake_response() {
                 payload: Binary::from([0]),
             })
             .unwrap(),
-            funds: vec![],
+            funds: coins(1, non_stake_denom),
         }),
     );
 
@@ -456,7 +458,7 @@ fn test_wrong_unstake_response() {
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
             anyhow!(ContractError::CustomError(
-                "Unstake response has too much coins in message".into()
+                "Unstake response: message has wrong funds length".into()
             ))
             .root_cause()
             .to_string()
@@ -478,11 +480,11 @@ fn test_wrong_unstake_response() {
     );
 
     match zero_reinit_id {
-        Ok(_) => panic!("unstake response passed with wrong funds length"),
+        Ok(_) => panic!("successful unstake response returns staking tokens with zero reinit id"),
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
             anyhow!(ContractError::CustomError(
-                "Unstake response: reinit_unstake_id == 0, but message have tokens".into()
+                "Unstake response: reinit_unstake_id == 0, but message returned tokens".into()
             ))
             .root_cause()
             .to_string()
@@ -505,51 +507,17 @@ fn test_wrong_unstake_response() {
                 payload: response_payload,
             })
             .unwrap(),
-            funds: vec![],
+            funds: coins(1, non_stake_denom),
         }),
     );
 
     match non_zero_reinit_id {
-        Ok(_) => panic!("unstake response passed with zero funds length and non-zero reinit id"),
-        Err(err) => assert_eq!(
-            err.root_cause().to_string(),
-            anyhow!(ContractError::CustomError(
-                "Unstake response: reinit_unstake_id != 0, but message have no tokens".into()
-            ))
-            .root_cause()
-            .to_string()
-        ),
-    }
-
-    let wrong_denom_value = ctx.tokens.get(1).unwrap().deposit_token_denom.clone();
-
-    response_payload = create_unstake_response_payload(UnstakeResponseData {
-        status: Status::Success,
-        unstake_id: 1,
-        reinit_unstake_id: 1,
-    });
-
-    let wrong_denom = app.execute(
-        ctx.axelar.clone(),
-        cosmwasm_std::CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
-            contract_addr: ctx.yield_ward_address.to_string(),
-            msg: cosmwasm_std::to_json_binary(&crate::msg::ExecuteMsg::HandleResponse {
-                source_chain: token_info.chain.to_string(),
-                source_address: token_info.evm_yield_contract.to_string(),
-                payload: response_payload,
-            })
-            .unwrap(),
-            funds: cosmwasm_std::coins(1000, wrong_denom_value.clone()),
-        }),
-    );
-
-    match wrong_denom {
-        Ok(_) => panic!("unstake response passed with wrong denom"),
+        Ok(_) => panic!("unstake response passed non-staking coin and non-zero reinit id"),
         Err(err) => assert_eq!(
             err.root_cause().to_string(),
             anyhow!(ContractError::InvalidToken {
-                actual: wrong_denom_value,
-                expected: coin.denom
+                actual: non_stake_denom.into(),
+                expected: coin.denom.clone()
             })
             .root_cause()
             .to_string()
@@ -572,7 +540,7 @@ fn test_wrong_unstake_response() {
                 payload: response_payload.clone(),
             })
             .unwrap(),
-            funds: vec![],
+            funds: coins(1, non_stake_denom),
         }),
     )
     .unwrap();
@@ -587,7 +555,7 @@ fn test_wrong_unstake_response() {
                 payload: response_payload.clone(),
             })
             .unwrap(),
-            funds: vec![],
+            funds: coins(1, non_stake_denom),
         }),
     );
 
