@@ -45,7 +45,7 @@ fn test_init_stake_one_coin() {
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
-            action_stage: StakeActionStage::WaitingExecution,
+            action_stage: StakeActionStage::Execution,
             lp_token_amount: None
         }
     );
@@ -119,7 +119,7 @@ fn test_stake_in_two_tx() {
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount_1,
-            action_stage: StakeActionStage::WaitingExecution,
+            action_stage: StakeActionStage::Execution,
             lp_token_amount: None
         }
     );
@@ -130,7 +130,7 @@ fn test_stake_in_two_tx() {
         StakeItem {
             user: ctx.user,
             token_amount: stake_amount_2,
-            action_stage: StakeActionStage::WaitingExecution,
+            action_stage: StakeActionStage::Execution,
             lp_token_amount: None
         }
     );
@@ -197,7 +197,7 @@ fn test_stake_response_successful() {
         StakeItem {
             user: ctx.user,
             token_amount: stake_amount,
-            action_stage: StakeActionStage::Executed,
+            action_stage: StakeActionStage::Success,
             lp_token_amount: Some(lp_token_amount)
         }
     );
@@ -265,7 +265,7 @@ fn test_stake_response_successful_with_reinit() {
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
-            action_stage: StakeActionStage::Executed,
+            action_stage: StakeActionStage::Success,
             lp_token_amount: Some(lp_token_amount)
         }
     );
@@ -292,7 +292,7 @@ fn test_stake_response_successful_with_reinit() {
         UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
-            action_stage: UnstakeActionStage::Executed,
+            action_stage: UnstakeActionStage::Success,
             token_amount: Some(unstake_details.unstake_token_amount)
         }
     );
@@ -359,7 +359,7 @@ fn test_stake_response_fail() {
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
-            action_stage: StakeActionStage::Failed,
+            action_stage: StakeActionStage::Fail,
             lp_token_amount: None
         }
     );
@@ -426,7 +426,7 @@ fn test_stake_response_fail_with_reinit() {
         StakeItem {
             user: ctx.user.clone(),
             token_amount: stake_amount,
-            action_stage: StakeActionStage::Failed,
+            action_stage: StakeActionStage::Fail,
             lp_token_amount: None
         }
     );
@@ -453,7 +453,7 @@ fn test_stake_response_fail_with_reinit() {
         UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
-            action_stage: UnstakeActionStage::Executed,
+            action_stage: UnstakeActionStage::Success,
             token_amount: Some(unstake_details.unstake_token_amount)
         }
     );

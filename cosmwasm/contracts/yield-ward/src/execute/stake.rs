@@ -45,7 +45,7 @@ pub fn try_init_stake(
         &StakeItem {
             user: info.sender.clone(),
             token_amount: stake_amount,
-            action_stage: StakeActionStage::WaitingExecution,
+            action_stage: StakeActionStage::Execution,
             lp_token_amount: None,
         },
     )?;

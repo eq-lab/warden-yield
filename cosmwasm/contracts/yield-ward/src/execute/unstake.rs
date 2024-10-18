@@ -37,7 +37,7 @@ pub fn try_init_unstake(
         &UnstakeItem {
             user: user.clone(),
             lp_token_amount: lpt_amount,
-            action_stage: UnstakeActionStage::WaitingRegistration,
+            action_stage: UnstakeActionStage::Execution,
             token_amount: None,
         },
     )?;

@@ -37,7 +37,7 @@ pub fn try_handle_stake_response(
 
         STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-        stake_item.action_stage = StakeActionStage::Executed;
+        stake_item.action_stage = StakeActionStage::Success;
         stake_item.lp_token_amount = Some(stake_response.lp_token_amount);
 
         // CW20 LP mint message
@@ -61,7 +61,7 @@ pub fn try_handle_stake_response(
 
         STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
-        stake_item.action_stage = StakeActionStage::Failed;
+        stake_item.action_stage = StakeActionStage::Fail;
 
         // return funds to user
         response = response

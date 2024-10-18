@@ -495,7 +495,7 @@ pub fn call_stake_and_unstake(
         UnstakeItem {
             user: user.clone(),
             lp_token_amount,
-            action_stage: UnstakeActionStage::Registered,
+            action_stage: UnstakeActionStage::Queued,
             token_amount: None
         }
     );

@@ -26,7 +26,7 @@ pub fn try_handle_unstake_response(
         UNSTAKES.load(deps.storage, (&token_denom, unstake_response.unstake_id))?;
 
     // todo: discuss it
-    if unstake_item.action_stage != UnstakeActionStage::WaitingRegistration {
+    if unstake_item.action_stage != UnstakeActionStage::Execution {
         return Err(ContractError::UnstakeRequestInvalidStage {
             symbol: token_config.deposit_token_symbol,
             unstake_id: unstake_response.unstake_id,
@@ -42,7 +42,7 @@ pub fn try_handle_unstake_response(
         STAKE_STATS.save(deps.storage, &token_denom, &stake_stats)?;
 
         // update action stage
-        unstake_item.action_stage = UnstakeActionStage::Registered;
+        unstake_item.action_stage = UnstakeActionStage::Queued;
 
         // burn LPT from contract balance
         response = response
@@ -68,7 +68,7 @@ pub fn try_handle_unstake_response(
         UNSTAKE_PARAMS.save(deps.storage, &token_denom, &unstake_params)?;
 
         // update action stage
-        unstake_item.action_stage = UnstakeActionStage::Failed;
+        unstake_item.action_stage = UnstakeActionStage::Fail;
 
         response = response
             .add_message(create_cw20_transfer_msg(
