@@ -5,8 +5,7 @@ use crate::query::{query_balance, query_token_info};
 use crate::ContractError;
 use cosmwasm_std::testing::{message_info, mock_dependencies_with_balance, mock_env};
 use cosmwasm_std::{
-    attr, coins, Addr, Binary, CosmosMsg, Deps, DepsMut, StdError, SubMsg, Timestamp, Uint128,
-    WasmMsg,
+    coins, Addr, Binary, CosmosMsg, Deps, DepsMut, StdError, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use cw20::{AllowanceResponse, Cw20Coin, Cw20ReceiveMsg, TokenInfoResponse};
 use cw_utils::Expiration;
@@ -288,7 +287,7 @@ fn transfer_from_respects_limits() {
     let info = message_info(&Addr::unchecked(spender.clone()), &[]);
     let env = mock_env();
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
-    assert_eq!(res.attributes[0], attr("action", "transfer_from"));
+    assert_eq!(res.events[0].ty, "transfer_from");
 
     // make sure money arrived
     assert_eq!(
@@ -368,7 +367,7 @@ fn burn_from_respects_limits() {
     let info = message_info(&Addr::unchecked(spender.clone()), &[]);
     let env = mock_env();
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
-    assert_eq!(res.attributes[0], attr("action", "burn_from"));
+    assert_eq!(res.events[0].ty, "burn_from");
 
     // make sure money burnt
     assert_eq!(
@@ -450,7 +449,7 @@ fn send_from_respects_limits() {
     let info = message_info(&Addr::unchecked(spender.clone()), &[]);
     let env = mock_env();
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
-    assert_eq!(res.attributes[0], attr("action", "send_from"));
+    assert_eq!(res.events[0].ty, "send_from");
     assert_eq!(1, res.messages.len());
 
     // we record this as sent by the one who requested, not the one who was paying

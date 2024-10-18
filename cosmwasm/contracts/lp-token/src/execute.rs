@@ -1,7 +1,9 @@
 use crate::logo::verify_logo;
 use crate::state::{MinterData, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO};
 use crate::ContractError;
-use cosmwasm_std::{Binary, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{
+    Binary, DepsMut, Env, Event, MessageInfo, Response, StdResult, Uint128, WasmMsg,
+};
 use cw20::{Cw20ReceiveMsg, Logo, LogoInfo};
 
 pub fn execute_transfer(
@@ -26,12 +28,12 @@ pub fn execute_transfer(
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
-    let res = Response::new()
-        .add_attribute("action", "transfer")
-        .add_attribute("from", info.sender)
-        .add_attribute("to", recipient)
-        .add_attribute("amount", amount);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("transfer")
+            .add_attribute("from", info.sender)
+            .add_attribute("to", recipient)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn execute_burn(
@@ -69,11 +71,11 @@ pub fn execute_burn(
         Ok(info)
     })?;
 
-    let res = Response::new()
-        .add_attribute("action", "burn")
-        .add_attribute("from", info.sender)
-        .add_attribute("amount", amount);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("burn")
+            .add_attribute("from", info.sender)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn execute_mint(
@@ -114,11 +116,11 @@ pub fn execute_mint(
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
-    let res = Response::new()
-        .add_attribute("action", "mint")
-        .add_attribute("to", recipient)
-        .add_attribute("amount", amount);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("mint")
+            .add_attribute("to", recipient)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn execute_send(
@@ -151,17 +153,18 @@ pub fn execute_send(
         msg,
     };
 
-    let res = Response::new()
-        .add_attribute("action", "send")
-        .add_attribute("from", &info.sender)
-        .add_attribute("to", &contract)
-        .add_attribute("amount", amount)
+    Ok(Response::new()
+        .add_event(
+            Event::new("send")
+                .add_attribute("from", &info.sender)
+                .add_attribute("to", &contract)
+                .add_attribute("amount", amount),
+        )
         .add_message(WasmMsg::Execute {
             contract_addr: contract.into(),
             msg: cw20_receive_msg.into_json_binary()?,
             funds: info.funds,
-        });
-    Ok(res)
+        }))
 }
 
 pub fn execute_update_minter(
@@ -191,15 +194,15 @@ pub fn execute_update_minter(
 
     TOKEN_INFO.save(deps.storage, &config)?;
 
-    Ok(Response::default()
-        .add_attribute("action", "update_minter")
-        .add_attribute(
+    Ok(Response::default().add_event(
+        Event::new("update_minter").add_attribute(
             "new_minter",
             config
                 .mint
                 .map(|m| m.minter.into_string())
                 .unwrap_or_else(|| "None".to_string()),
-        ))
+        ),
+    ))
 }
 
 pub fn execute_update_marketing(
@@ -251,8 +254,7 @@ pub fn execute_update_marketing(
         MARKETING_INFO.save(deps.storage, &marketing_info)?;
     }
 
-    let res = Response::new().add_attribute("action", "update_marketing");
-    Ok(res)
+    Ok(Response::new().add_event(Event::new("update_marketing")))
 }
 
 pub fn execute_upload_logo(
@@ -286,6 +288,5 @@ pub fn execute_upload_logo(
     marketing_info.logo = Some(logo_info);
     MARKETING_INFO.save(deps.storage, &marketing_info)?;
 
-    let res = Response::new().add_attribute("action", "upload_logo");
-    Ok(res)
+    Ok(Response::new().add_event(Event::new("upload_logo")))
 }

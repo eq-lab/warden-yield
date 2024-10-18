@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, Addr, Binary, BlockInfo, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    Addr, Binary, BlockInfo, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult,
     Storage, Uint128,
 };
 use cw20::{AllowanceResponse, Cw20ReceiveMsg, Expiration};
@@ -34,13 +34,12 @@ pub fn execute_increase_allowance(
     ALLOWANCES.update(deps.storage, (&info.sender, &spender_addr), update_fn)?;
     ALLOWANCES_SPENDER.update(deps.storage, (&spender_addr, &info.sender), update_fn)?;
 
-    let res = Response::new().add_attributes(vec![
-        attr("action", "increase_allowance"),
-        attr("owner", info.sender),
-        attr("spender", spender),
-        attr("amount", amount),
-    ]);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("increase_allowance")
+            .add_attribute("owner", info.sender)
+            .add_attribute("spender", spender)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn execute_decrease_allowance(
@@ -83,13 +82,12 @@ pub fn execute_decrease_allowance(
         ALLOWANCES_SPENDER.remove(deps.storage, reverse(key));
     }
 
-    let res = Response::new().add_attributes(vec![
-        attr("action", "decrease_allowance"),
-        attr("owner", info.sender),
-        attr("spender", spender),
-        attr("amount", amount),
-    ]);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("decrease_allowance")
+            .add_attribute("owner", info.sender)
+            .add_attribute("spender", spender)
+            .add_attribute("amount", amount),
+    ))
 }
 
 // this can be used to update a lower allowance - call bucket.update with proper keys
@@ -148,14 +146,13 @@ pub fn execute_transfer_from(
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
-    let res = Response::new().add_attributes(vec![
-        attr("action", "transfer_from"),
-        attr("from", owner),
-        attr("to", recipient),
-        attr("by", info.sender),
-        attr("amount", amount),
-    ]);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("transfer_from")
+            .add_attribute("from", owner)
+            .add_attribute("to", recipient)
+            .add_attribute("by", info.sender)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn execute_burn_from(
@@ -184,13 +181,12 @@ pub fn execute_burn_from(
         Ok(meta)
     })?;
 
-    let res = Response::new().add_attributes(vec![
-        attr("action", "burn_from"),
-        attr("from", owner),
-        attr("by", info.sender),
-        attr("amount", amount),
-    ]);
-    Ok(res)
+    Ok(Response::new().add_event(
+        Event::new("burn_from")
+            .add_attribute("from", owner)
+            .add_attribute("by", info.sender)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn execute_send_from(
@@ -222,24 +218,21 @@ pub fn execute_send_from(
         |balance: Option<Uint128>| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
-    let attrs = vec![
-        attr("action", "send_from"),
-        attr("from", &owner),
-        attr("to", &contract),
-        attr("by", &info.sender),
-        attr("amount", amount),
-    ];
-
     // create a send message
     let msg = Cw20ReceiveMsg {
-        sender: info.sender.into(),
+        sender: info.sender.to_string(),
         amount,
         msg,
     }
-    .into_cosmos_msg(contract)?;
+    .into_cosmos_msg(&contract)?;
 
-    let res = Response::new().add_message(msg).add_attributes(attrs);
-    Ok(res)
+    Ok(Response::new().add_message(msg).add_event(
+        Event::new("send_from")
+            .add_attribute("from", &owner)
+            .add_attribute("to", &contract)
+            .add_attribute("by", &info.sender)
+            .add_attribute("amount", amount),
+    ))
 }
 
 pub fn query_allowance(deps: Deps, owner: String, spender: String) -> StdResult<AllowanceResponse> {
