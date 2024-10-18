@@ -62,7 +62,7 @@ fn test_reinit() {
         UnstakeItem {
             user: ctx.unstake_user.clone(),
             lp_token_amount: unstake_details.lp_token_amount,
-            action_stage: UnstakeActionStage::Executed,
+            action_stage: UnstakeActionStage::Success,
             token_amount: Some(unstake_details.unstake_token_amount)
         }
     );

@@ -63,15 +63,15 @@ pub enum ActionType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum StakeActionStage {
-    WaitingExecution = 0,
-    Executed,
-    Failed,
+    Execution = 0,
+    Success,
+    Fail,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum UnstakeActionStage {
-    WaitingRegistration = 0,
-    Registered,
-    Executed,
-    Failed,
+    Execution = 0,
+    Queued,
+    Success,
+    Fail,
 }

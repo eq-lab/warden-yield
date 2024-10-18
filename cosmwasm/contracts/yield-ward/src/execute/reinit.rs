@@ -60,7 +60,7 @@ pub fn handle_reinit(
         create_bank_transfer_msg(&unstake_item.user, deposit_token_denom, token_amount);
 
     // update unstake item
-    unstake_item.action_stage = UnstakeActionStage::Executed;
+    unstake_item.action_stage = UnstakeActionStage::Success;
     unstake_item.token_amount = match unstake_item.token_amount {
         Some(amount) => Some(amount + token_amount),
         None => Some(token_amount),
