@@ -64,7 +64,7 @@ pub fn try_update_contract_config(
 
     CONTRACT_CONFIG.save(deps.storage, &contract_config)?;
 
-    Ok(Response::default())
+    Ok(Response::default().add_event(Event::new("update_contract_config")))
 }
 
 pub fn try_update_axelar_config(
@@ -77,5 +77,5 @@ pub fn try_update_axelar_config(
 
     AXELAR_CONFIG.save(deps.storage, &axelar_config)?;
 
-    Ok(Response::default())
+    Ok(Response::default().add_event(Event::new("update_axelar_config")))
 }
