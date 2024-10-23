@@ -111,7 +111,6 @@ pub fn execute(
             payload,
         } => try_handle_response(deps, env, info, source_chain, source_address, payload),
         ExecuteMsg::DisallowMint {} => try_disallow_mint(deps, env, info),
-
         ExecuteMsg::WithdrawBankToken { token_denom } => {
             try_withdraw_bank_token(deps, env, info, token_denom)
         }
