@@ -56,6 +56,20 @@ pub enum ExecuteMsg {
         payload: Binary,
     },
     DisallowMint {},
+    WithdrawBankToken {
+        token_denom: TokenDenom,
+    },
+    WithdrawCw20 {
+        token_address: Addr,
+    },
+    FailStake {
+        token_denom: TokenDenom,
+        stake_id: u64,
+    },
+    FailUnstake {
+        token_denom: TokenDenom,
+        unstake_id: u64,
+    },
 }
 
 #[cw_serde]

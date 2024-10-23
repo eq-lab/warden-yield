@@ -8,11 +8,15 @@ use crate::execute::add_token::try_add_token;
 use crate::execute::configs::{
     try_update_axelar_config, try_update_contract_config, try_update_token_config,
 };
+use crate::execute::fail_stake::try_fail_stake;
+use crate::execute::fail_unstake::try_fail_unstake;
 use crate::execute::mint_lpt::{try_disallow_mint, try_mint_lp_token};
 use crate::execute::receive_cw20::try_receive_cw20;
 use crate::execute::reinit::try_reinit;
 use crate::execute::response::try_handle_response;
 use crate::execute::stake::try_init_stake;
+use crate::execute::withdraw_bank_token::try_withdraw_bank_token;
+use crate::execute::withdraw_cw20_token::try_withdraw_cw20_token;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
     query_all_tokens_denoms_by_lpt_address, query_all_tokens_denoms_by_source, query_axelar_config,
@@ -107,6 +111,21 @@ pub fn execute(
             payload,
         } => try_handle_response(deps, env, info, source_chain, source_address, payload),
         ExecuteMsg::DisallowMint {} => try_disallow_mint(deps, env, info),
+
+        ExecuteMsg::WithdrawBankToken { token_denom } => {
+            try_withdraw_bank_token(deps, env, info, token_denom)
+        }
+        ExecuteMsg::WithdrawCw20 { token_address } => {
+            try_withdraw_cw20_token(deps, env, info, token_address)
+        }
+        ExecuteMsg::FailStake {
+            token_denom,
+            stake_id,
+        } => try_fail_stake(deps, env, info, token_denom, stake_id),
+        ExecuteMsg::FailUnstake {
+            token_denom,
+            unstake_id,
+        } => try_fail_unstake(deps, env, info, token_denom, unstake_id),
     }
 }
 
