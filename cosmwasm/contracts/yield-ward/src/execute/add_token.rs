@@ -8,7 +8,7 @@ use crate::ContractError;
 use cosmwasm_std::QueryRequest::Wasm;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, Addr, Binary, CodeInfoResponse, Deps, DepsMut, Env,
-    MessageInfo, Order, Response, StdError, StdResult, WasmMsg, WasmQuery,
+    Event, MessageInfo, Order, Response, StdError, StdResult, WasmMsg, WasmQuery,
 };
 use lp_token::msg::{InstantiateMarketingInfo, InstantiateMsg as LpInstantiateMsg};
 
@@ -60,7 +60,7 @@ pub fn try_add_token(
     )?;
 
     let msg = to_json_binary(&LpInstantiateMsg {
-        name: lpt_name,
+        name: lpt_name.clone(),
         symbol: lpt_symbol.clone(),
         decimals: token_decimals,
         initial_balances: vec![],
@@ -101,15 +101,26 @@ pub fn try_add_token(
             deposit_token_symbol: token_symbol,
             is_stake_enabled,
             is_unstake_enabled,
-            chain,
+            chain: chain.clone(),
             evm_yield_contract: evm_yield_contract.to_lowercase(),
             evm_address: evm_address.to_lowercase(),
-            lpt_symbol,
-            lpt_address,
+            lpt_symbol: lpt_symbol.clone(),
+            lpt_address: lpt_address.clone(),
         },
     )?;
 
-    Ok(Response::new().add_message(inst2_msg))
+    Ok(Response::new()
+        .add_event(
+            Event::new("add_token")
+                .add_attribute("lpt_symbol", lpt_symbol)
+                .add_attribute("lpt_name", lpt_name)
+                .add_attribute("lpt_address", lpt_address)
+                .add_attribute("decimals", token_decimals.to_string())
+                .add_attribute("token_denom", token_denom)
+                .add_attribute("chain", chain)
+                .add_attribute("yield_contract", evm_yield_contract),
+        )
+        .add_message(inst2_msg))
 }
 
 pub fn calculate_token_address(
