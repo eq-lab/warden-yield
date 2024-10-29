@@ -244,19 +244,16 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
     EthAddressData.eigenLayerOperator
   );
 
-  await upgrades.upgradeProxy(ethYield, await new EthYield__factory().connect(owner), {
-    call: {
-      fn: 'initializeV2',
-      args: [
-        EthAddressData.lidoWithdrawalQueue,
-        await axelarGateway.getAddress(),
-        EthAddressData.axelarGasService,
-        EVM_CHAIN_NAME,
-        WardenChain,
-        WardenContractAddress,
-      ],
-    },
-  });
+  await ethYield
+    .connect(owner)
+    .initializeV2(
+      EthAddressData.lidoWithdrawalQueue,
+      await axelarGateway.getAddress(),
+      EthAddressData.axelarGasService,
+      EVM_CHAIN_NAME,
+      WardenChain,
+      WardenContractAddress
+    );
 
   const weth9 = IWETH9__factory.connect(EthAddressData.weth, owner);
   const stEth = ERC20__factory.connect(EthAddressData.stEth, owner);
