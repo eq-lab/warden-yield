@@ -7,7 +7,7 @@ import {
   createAaveEthFork,
   createAaveForkWithUsdcUnderlying,
   createAaveForkWithUsdtUnderlying,
-  deployAaveYieldContract
+  deployAaveYieldContract,
 } from '../shared/fixtures';
 import {
   decodeWardenStakeResponse,
