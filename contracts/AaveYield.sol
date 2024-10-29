@@ -21,11 +21,20 @@ contract AaveYield is
   // /// @notice initialize function used during contract deployment
   // /// @param aavePool address of a Aave pool
   // /// @param tokens array with addresses of tokens which will be used in the Aave pool
-  // function initialize(address aavePool, address[] calldata tokens) external initializer {
-  //   __Ownable_init(msg.sender);
-  //   __UUPSUpgradeable_init();
-  //   __AaveInteractor_init(aavePool, tokens);
-  // }
+  function initialize(
+    address aavePool,
+    address underlyingToken,
+    address axelarGateway,
+    address axelarGasService,
+    string calldata evmChainName,
+    string calldata wardenChain,
+    string calldata wardenContractAddress
+  ) external reinitializer(2) {
+    __Ownable_init(msg.sender);
+    __UUPSUpgradeable_init();
+    __AaveInteractor_init(aavePool, underlyingToken);
+    __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
+  }
 
   function initializeV2(
     address underlyingToken,

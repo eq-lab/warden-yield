@@ -85,6 +85,48 @@ describe('Upgrade errors', () => {
       })
     ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'InvalidAddress');
   });
+
+  it('AaveYield wrong underlying token', async () => {
+    const aaveYield = EthAddressData.aaveYieldUsdt;
+    const owner = await getImpersonatedOwner(aaveYield);
+
+    await expect(
+      upgrades.upgradeProxy(aaveYield, new AaveYield__factory().connect(owner), {
+        call: {
+          fn: 'initializeV2',
+          args: [ EthAddressData.usdc, EthAddressData.axelarGateway, EthAddressData.axelarGasService, EVM_CHAIN_NAME, WardenChain, WardenContractAddress],
+        },
+      })
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'NotAllowedToken');
+  });
+
+  it('AaveYield invalid gateway address', async () => {
+    const aaveYield = EthAddressData.aaveYieldUsdt;
+    const owner = await getImpersonatedOwner(aaveYield);
+
+    await expect(
+      upgrades.upgradeProxy(aaveYield, new AaveYield__factory().connect(owner), {
+        call: {
+          fn: 'initializeV2',
+          args: [ EthAddressData.usdt, ethers.ZeroAddress, EthAddressData.axelarGasService, EVM_CHAIN_NAME, WardenChain, WardenContractAddress],
+        },
+      })
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'InvalidAddress');
+  });
+
+  it('AaveYield invalid gas service address', async () => {
+    const aaveYield = EthAddressData.aaveYieldUsdt;
+    const owner = await getImpersonatedOwner(aaveYield);
+
+    await expect(
+      upgrades.upgradeProxy(aaveYield, new AaveYield__factory().connect(owner), {
+        call: {
+          fn: 'initializeV2',
+          args: [ EthAddressData.usdt, EthAddressData.axelarGateway, ethers.ZeroAddress, EVM_CHAIN_NAME, WardenChain, WardenContractAddress],
+        },
+      })
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'InvalidAddress');
+  });
 });
 
 describe('Upgrades', () => {

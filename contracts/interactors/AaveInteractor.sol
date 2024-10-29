@@ -40,20 +40,13 @@ abstract contract AaveInteractor is Initializable {
 
   /// @dev initialize method
   /// @param aavePool address of Aave pool which this contract will interact with
-  /// @param tokens address of tokens which can be supplied to Aave pool via this contract
-  function __AaveInteractor_init(address aavePool, address[] calldata tokens) internal onlyInitializing {
+  /// @param underlyingToken address of token which can be supplied to Aave pool via this contract
+  function __AaveInteractor_init(address aavePool, address underlyingToken) internal onlyInitializing {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     if (aavePool == address(0)) revert Errors.ZeroAddress();
+    if (IPool(aavePool).getReserveNormalizedIncome(underlyingToken) == 0) revert Errors.UnknownToken(underlyingToken);
     $.aavePool = aavePool;
-
-    uint256 tokensCount = tokens.length;
-    for (uint256 i; i < tokensCount; ++i) {
-      address token = tokens[i];
-      uint256 coeff = IPool(aavePool).getReserveNormalizedIncome(token);
-      if (coeff == 0) revert Errors.UnknownToken(token);
-
-      $.allowedTokens[token] = true;
-    }
+    $.underlyingToken = underlyingToken;
   }
 
   function __AaveInteractor_initV2(address underlyingToken) internal onlyInitializing {
