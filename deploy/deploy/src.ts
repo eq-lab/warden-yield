@@ -6,7 +6,6 @@ import { createDefaultBaseState, DeployState, getStateFileName, StateFile, State
 import { SimpleLogger } from '../logger';
 import path from 'path';
 import { createDefaultBaseDeployment, DeploymentFile, DeploymentState, DeploymentStore } from '../deployment-store';
-import { EthConnectionConfig } from '../config-common';
 
 export async function deployWardenYield(
   signer: Signer,
@@ -38,10 +37,10 @@ export async function deployWardenYield(
   ).createDeploymentStore();
 
   if (config.aaveYield !== undefined) {
-    await deployAaveYield(signer, config.aaveYield, config.ethConnection, hre, stateStore, deploymentStore);
+    await deployAaveYield(signer, config.aaveYield, hre, stateStore, deploymentStore);
   }
   if (config.ethYield !== undefined) {
-    await deployEthYield(signer, config.ethYield, config.ethConnection, hre, stateStore, deploymentStore);
+    await deployEthYield(signer, config.ethYield, hre, stateStore, deploymentStore);
   }
 
   console.log(`State file: \n${stateStore.stringify()}`);
@@ -51,17 +50,11 @@ export async function deployWardenYield(
 async function deployAaveYield(
   signer: Signer,
   aaveConfig: AaveYieldDeploymentConfig,
-  ethConnectionConfig: EthConnectionConfig,
   hre: HardhatRuntimeEnvironment,
   stateStore: StateStore,
   deploymentStore: DeploymentStore
 ): Promise<void> {
-  const allowedTokens = aaveConfig.tokens.map((x) => x.address);
-
-  console.log(`Deploy AaveYield. AavePool: ${aaveConfig.aavePool}, allowedTokens: [${allowedTokens}]`);
-
-  const blockNumber = await hre.ethers.provider.provider.getBlockNumber();
-  const maxFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
+  console.log(`Deploy AaveYield. AavePool: ${aaveConfig.aavePool}, underlyingToken: [${aaveConfig.underlyingToken}]`);
 
   const state = stateStore.getById('aaveYield-proxy');
   let aaveYieldAddress: string;
@@ -71,14 +64,17 @@ async function deployAaveYield(
   } else {
     const aaveYield = (await hre.upgrades.deployProxy(
       await new AaveYield__factory().connect(signer),
-      [aaveConfig.aavePool, allowedTokens],
+      [
+        aaveConfig.aavePool,
+        aaveConfig.underlyingToken,
+        aaveConfig.wardenHandler.axelarGateway,
+        aaveConfig.wardenHandler.axelarGasService,
+        aaveConfig.wardenHandler.evmChainName,
+        aaveConfig.wardenHandler.wardenChain,
+        aaveConfig.wardenHandler.wardenContractAddress,
+      ],
       {
         initializer: 'initialize',
-        txOverrides: {
-          maxFeePerGas: maxFeePerGas,
-          gasLimit: ethConnectionConfig.ethOptions.gasLimit,
-          gasPrice: ethConnectionConfig.ethOptions.gasPrice,
-        },
       }
     )) as unknown as AaveYield;
 
@@ -102,7 +98,6 @@ async function deployAaveYield(
 async function deployEthYield(
   signer: Signer,
   ethConfig: EthYieldDeploymentConfig,
-  ethConnectionConfig: EthConnectionConfig,
   hre: HardhatRuntimeEnvironment,
   stateStore: StateStore,
   deploymentStore: DeploymentStore
@@ -114,9 +109,6 @@ async function deployEthYield(
     console.log(`EthYield already deployed. Skip.`);
     return;
   }
-
-  const blockNumber = await hre.ethers.provider.getBlockNumber();
-  const maxFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))!.baseFeePerGas! * 10n;
 
   const ethYield = (await hre.upgrades.deployProxy(
     await new EthYield__factory().connect(signer),
@@ -130,15 +122,21 @@ async function deployEthYield(
     ],
     {
       initializer: 'initialize',
-      txOverrides: {
-        maxFeePerGas: maxFeePerGas,
-        gasLimit: ethConnectionConfig.ethOptions.gasLimit,
-        gasPrice: ethConnectionConfig.ethOptions.gasPrice,
-      },
     }
   )) as unknown as EthYield;
 
   await ethYield.waitForDeployment();
+
+  await ethYield
+    .connect(signer)
+    .initializeV2(
+      ethConfig.lidoWithdrawalQueue,
+      ethConfig.wardenHandler.axelarGateway,
+      ethConfig.wardenHandler.axelarGasService,
+      ethConfig.wardenHandler.evmChainName,
+      ethConfig.wardenHandler.wardenChain,
+      ethConfig.wardenHandler.wardenContractAddress
+    );
 
   const ethYieldAddress = await ethYield.getAddress();
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(ethYieldAddress);

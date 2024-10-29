@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-import { BaseContract, isAddress, Provider } from 'ethers';
-import { assertWardenHandlerConfigValidity, EthConnectionConfig, WardenHandlerConfig } from '../config-common';
+import { isAddress, Provider } from 'ethers';
+import {
+  assertWardenHandlerConfigValidity,
+  EthConnectionConfig,
+  TokenConfig,
+  WardenHandlerConfig,
+} from '../config-common';
 import { ILidoWithdrawalQueue__factory } from '../../typechain-types';
 
 export interface UpgradeConfig {
@@ -11,7 +16,7 @@ export interface UpgradeConfig {
 }
 
 export interface AaveYieldUpgradeConfig {
-  underlyingToken: string;
+  underlyingToken: TokenConfig;
   wardenHandler: WardenHandlerConfig;
 }
 

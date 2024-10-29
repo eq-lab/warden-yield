@@ -6,7 +6,6 @@ import { SimpleLogger } from '../logger';
 import path from 'path';
 import { createDefaultBaseDeployment, DeploymentFile, DeploymentState, DeploymentStore } from '../deployment-store';
 import { AaveYieldUpgradeConfig, EthYieldUpgradeConfig, UpgradeConfig } from './config';
-import { EthConnectionConfig } from '../config-common';
 
 export async function upgradeWardenYield(
   signer: Signer,
@@ -38,18 +37,17 @@ export async function upgradeWardenYield(
   ).createDeploymentStore();
 
   if (config.ethYield !== undefined) {
-    await upgradeEthYield(signer, config.ethYield, config.ethConnection, hre, stateStore, deploymentStore);
+    await upgradeEthYield(signer, config.ethYield, hre, stateStore, deploymentStore);
   }
 
   if (config.aaveYield !== undefined) {
-    await upgradeAaveYield(signer, config.aaveYield, config.ethConnection, hre, stateStore, deploymentStore);
+    await upgradeAaveYield(signer, config.aaveYield, hre, stateStore, deploymentStore);
   }
 }
 
 async function upgradeEthYield(
   signer: Signer,
   ethConfig: EthYieldUpgradeConfig,
-  ethConnectionConfig: EthConnectionConfig,
   hre: HardhatRuntimeEnvironment,
   stateStore: StateStore,
   deploymentStore: DeploymentStore
@@ -67,14 +65,11 @@ async function upgradeEthYield(
         ethConfig.lidoWithdrawalQueue,
         ethConfig.wardenHandler.axelarGateway,
         ethConfig.wardenHandler.axelarGasService,
+        ethConfig.wardenHandler.evmChainName,
         ethConfig.wardenHandler.wardenChain,
         ethConfig.wardenHandler.wardenContractAddress,
       ],
     },
-    // txOverrides: {
-    //   gasLimit: ethConnectionConfig.ethOptions.gasLimit,
-    //   gasPrice: ethConnectionConfig.ethOptions.gasPrice,
-    // },
   });
 
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(ethYieldProxyAddress);
@@ -91,7 +86,6 @@ async function upgradeEthYield(
 async function upgradeAaveYield(
   signer: Signer,
   aaveConfig: AaveYieldUpgradeConfig,
-  ethConnectionConfig: EthConnectionConfig,
   hre: HardhatRuntimeEnvironment,
   stateStore: StateStore,
   deploymentStore: DeploymentStore
@@ -109,14 +103,11 @@ async function upgradeAaveYield(
         aaveConfig.underlyingToken,
         aaveConfig.wardenHandler.axelarGateway,
         aaveConfig.wardenHandler.axelarGasService,
+        aaveConfig.wardenHandler.evmChainName,
         aaveConfig.wardenHandler.wardenChain,
         aaveConfig.wardenHandler.wardenContractAddress,
       ],
     },
-    // txOverrides: {
-    //   gasLimit: ethConnectionConfig.ethOptions.gasLimit,
-    //   gasPrice: ethConnectionConfig.ethOptions.gasPrice,
-    // },
   });
 
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(aaveYieldProxyAddress);
