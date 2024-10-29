@@ -19,28 +19,38 @@ contract EthYield is
   IEthYield,
   WardenHandler
 {
-  // /// @notice initialize function used during contract deployment
-  // /// @param stETH address of a Lido StETH token
-  // /// @param wETH9 address of a wrapped ETH
-  // /// @param elStrategy address of an EigenLayer strategy (an StEth one specifically in this case)
-  // /// @param elStrategyManager address of an EigenLayer strategy manager
-  // /// @param elDelegationManager address of an EigenLayer delegation manager
-  // /// @param elOperator address of an EigenLayer operator to whom all the restaked stEth will be delegated
-  // /// @dev elOperator MUST NOT require any signature, otherwise the initialize tx will revert
-  // function initialize(
-  //   address stETH,
-  //   address wETH9,
-  //   address elStrategy,
-  //   address elStrategyManager,
-  //   address elDelegationManager,
-  //   address elOperator
-  // ) external initializer {
-  //   __Ownable_init(msg.sender);
-  //   __UUPSUpgradeable_init();
-  //   __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager, elDelegationManager, elOperator);
-  //   __LidoInteractor_init(stETH, wETH9);
-  // }
+  /// @notice initialize function used during contract deployment
+  /// @dev THIS METHOD IS INSUFFICIENT FOR DEPLOYMENT FROM SCRATCH, you need to call `initializeV2` after it
+  /// @dev These methods are separate to avoid contract size limitation
+  /// @param stETH address of a Lido StETH token
+  /// @param wETH9 address of a wrapped ETH
+  /// @param elStrategy address of an EigenLayer strategy (an StEth one specifically in this case)
+  /// @param elStrategyManager address of an EigenLayer strategy manager
+  /// @param elDelegationManager address of an EigenLayer delegation manager
+  /// @param elOperator address of an EigenLayer operator to whom all the restaked stEth will be delegated
+  /// @dev elOperator MUST NOT require any signature, otherwise the initialize tx will revert
+  function initialize(
+    address stETH,
+    address wETH9,
+    address elStrategy,
+    address elStrategyManager,
+    address elDelegationManager,
+    address elOperator
+  ) external initializer {
+    __Ownable_init(msg.sender);
+    __UUPSUpgradeable_init();
+    __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager, elDelegationManager, elOperator);
+    __LidoInteractor_init(stETH, wETH9);
+  }
 
+  /// @notice initialize function used during contract upgrade and deployment
+  /// @dev This method goes separate from the `initialize` during deployment to avoid contract size limitation
+  /// @param lidoWithdrawQueue address of lido withdrawal queue
+  /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
+  /// @param axelarGasService address of service to which Axelar fees are paid
+  /// @param evmChainName Axelar inner name of evm chain where this contract is deployed
+  /// @param wardenChain Axelar inner name of Warden chain
+  /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initializeV2(
     address lidoWithdrawQueue,
     address axelarGateway,

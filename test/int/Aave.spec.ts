@@ -2,13 +2,12 @@ import { expect } from 'chai';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { loadFixture, mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
-import { parseEther, parseUnits } from 'ethers';
+import { parseUnits } from 'ethers';
 import {
   createAaveEthFork,
   createAaveForkWithUsdcUnderlying,
   createAaveForkWithUsdtUnderlying,
   deployAaveYieldContract,
-  upgradeAaveYieldContractToV2,
 } from '../shared/fixtures';
 import {
   decodeWardenStakeResponse,
@@ -25,6 +24,7 @@ import { ActionType, CommandId, Status } from '../shared/warden-handler-fixtures
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import {
   AaveYield,
+  AaveYield__factory,
   AaveYieldUpgradeTest__factory,
   ERC20,
   ERC20__factory,
@@ -32,7 +32,6 @@ import {
   IERC20,
   IERC20Metadata__factory,
   IWETH9,
-  TestAaveYield__factory,
   TestAxelarGateway,
 } from '../../typechain-types';
 
@@ -338,105 +337,27 @@ describe('AaveYield init errors', () => {
   it('ZeroAddress', async () => {
     const [owner] = await ethers.getSigners();
     await expect(
-      deployAaveYieldContract(owner, ethers.ZeroAddress, [EthAddressData.weth])
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'ZeroAddress');
+      deployAaveYieldContract(
+        owner,
+        ethers.ZeroAddress,
+        EthAddressData.weth,
+        EthAddressData.axelarGateway,
+        EthAddressData.axelarGasService
+      )
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'ZeroAddress');
   });
 
   it('UnknownToken', async () => {
     const [owner] = await ethers.getSigners();
     await expect(
-      deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.stEth])
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'UnknownToken');
-  });
-
-  it('upgrade to v2: wrong underlying token', async () => {
-    const [owner] = await ethers.getSigners();
-
-    const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
-
-    await expect(
-      upgradeAaveYieldContractToV2(
+      deployAaveYieldContract(
         owner,
-        aaveYield,
-        EthAddressData.usdc,
+        EthAddressData.aaveEthPool,
+        EthAddressData.stEth,
         EthAddressData.axelarGateway,
         EthAddressData.axelarGasService
       )
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'NotAllowedToken');
-  });
-
-  it('upgrade to v2: invalid gateway address', async () => {
-    const [owner] = await ethers.getSigners();
-
-    const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
-
-    await expect(
-      upgradeAaveYieldContractToV2(
-        owner,
-        aaveYield,
-        EthAddressData.weth,
-        ethers.ZeroAddress,
-        EthAddressData.axelarGasService
-      )
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'InvalidAddress');
-  });
-
-  it('upgrade to v2: invalid gas service address', async () => {
-    const [owner] = await ethers.getSigners();
-
-    const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
-
-    await expect(
-      deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.stEth])
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'UnknownToken');
-  });
-
-  it('upgrade to v2: wrong underlying token', async () => {
-    const [owner] = await ethers.getSigners();
-
-    const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
-
-    await expect(
-      upgradeAaveYieldContractToV2(
-        owner,
-        aaveYield,
-        EthAddressData.usdc,
-        EthAddressData.axelarGateway,
-        EthAddressData.axelarGasService
-      )
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'NotAllowedToken');
-  });
-
-  it('upgrade to v2: invalid gateway address', async () => {
-    const [owner] = await ethers.getSigners();
-
-    const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
-
-    await expect(
-      upgradeAaveYieldContractToV2(
-        owner,
-        aaveYield,
-        EthAddressData.weth,
-        ethers.ZeroAddress,
-        EthAddressData.axelarGasService
-      )
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'InvalidAddress');
-  });
-
-  it('upgrade to v2: invalid gas service address', async () => {
-    const [owner] = await ethers.getSigners();
-
-    const aaveYield = await deployAaveYieldContract(owner, EthAddressData.aaveEthPool, [EthAddressData.weth]);
-
-    await expect(
-      upgradeAaveYieldContractToV2(
-        owner,
-        aaveYield,
-        EthAddressData.weth,
-        EthAddressData.axelarGateway,
-        ethers.ZeroAddress
-      )
-    ).to.be.revertedWithCustomError({ interface: TestAaveYield__factory.createInterface() }, 'InvalidAddress');
+    ).to.be.revertedWithCustomError({ interface: AaveYield__factory.createInterface() }, 'UnknownToken');
   });
 });
 

@@ -15,7 +15,7 @@ import {
   encodeUnstakeAction,
   finalizeLidoWithdraw,
 } from '../shared/utils';
-import { EthYield, EthYieldUpgradeTest__factory, TestEthYield__factory } from '../../typechain-types';
+import { EthYield, EthYieldUpgradeTest__factory, EthYield__factory } from '../../typechain-types';
 import { ActionType, CommandId, Status } from '../shared/warden-handler-fixtures';
 
 async function ensureSuccessCall(ethYield: EthYield) {
@@ -389,7 +389,7 @@ describe('EthYield init errors', () => {
         EthAddressData.elDelegationManager,
         notOperator.address
       )
-    ).to.be.revertedWithCustomError({ interface: TestEthYield__factory.createInterface() }, 'WrongOperator');
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongOperator');
   });
 
   it('wrong strategy', async () => {
@@ -404,7 +404,7 @@ describe('EthYield init errors', () => {
         EthAddressData.elDelegationManager,
         EthAddressData.eigenLayerOperator
       )
-    ).to.be.revertedWithCustomError({ interface: TestEthYield__factory.createInterface() }, 'WrongStrategy');
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongStrategy');
   });
 
   it('wrong underlying token', async () => {
@@ -419,7 +419,7 @@ describe('EthYield init errors', () => {
         EthAddressData.elDelegationManager,
         EthAddressData.eigenLayerOperator
       )
-    ).to.be.revertedWithCustomError({ interface: TestEthYield__factory.createInterface() }, 'UnknownToken');
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'UnknownToken');
   });
 
   it('weth zero address', async () => {
@@ -434,7 +434,7 @@ describe('EthYield init errors', () => {
         EthAddressData.elDelegationManager,
         EthAddressData.eigenLayerOperator
       )
-    ).to.be.revertedWithCustomError({ interface: TestEthYield__factory.createInterface() }, 'ZeroAddress');
+    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'ZeroAddress');
   });
 });
 

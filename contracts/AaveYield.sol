@@ -18,15 +18,36 @@ contract AaveYield is
   IAaveYield,
   WardenHandler
 {
-  // /// @notice initialize function used during contract deployment
-  // /// @param aavePool address of a Aave pool
-  // /// @param tokens array with addresses of tokens which will be used in the Aave pool
-  // function initialize(address aavePool, address[] calldata tokens) external initializer {
-  //   __Ownable_init(msg.sender);
-  //   __UUPSUpgradeable_init();
-  //   __AaveInteractor_init(aavePool, tokens);
-  // }
+  /// @notice initialize function used during contract deployment
+  /// @param aavePool address of a Aave pool
+  /// @param underlyingToken address of token which will be used in the Aave pool
+  /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
+  /// @param axelarGasService address of service to which Axelar fees are paid
+  /// @param evmChainName Axelar inner name of evm chain where this contract is deployed
+  /// @param wardenChain Axelar inner name of Warden chain
+  /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
+  function initialize(
+    address aavePool,
+    address underlyingToken,
+    address axelarGateway,
+    address axelarGasService,
+    string calldata evmChainName,
+    string calldata wardenChain,
+    string calldata wardenContractAddress
+  ) external reinitializer(2) {
+    __Ownable_init(msg.sender);
+    __UUPSUpgradeable_init();
+    __AaveInteractor_init(aavePool, underlyingToken);
+    __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
+  }
 
+  /// @notice initialize function used during contract upgrade
+  /// @param underlyingToken address of token which will be used in the Aave pool
+  /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
+  /// @param axelarGasService address of service to which Axelar fees are paid
+  /// @param evmChainName Axelar inner name of evm chain where this contract is deployed
+  /// @param wardenChain Axelar inner name of Warden chain
+  /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initializeV2(
     address underlyingToken,
     address axelarGateway,
