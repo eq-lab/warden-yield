@@ -19,27 +19,27 @@ contract EthYield is
   IEthYield,
   WardenHandler
 {
-  // /// @notice initialize function used during contract deployment
-  // /// @param stETH address of a Lido StETH token
-  // /// @param wETH9 address of a wrapped ETH
-  // /// @param elStrategy address of an EigenLayer strategy (an StEth one specifically in this case)
-  // /// @param elStrategyManager address of an EigenLayer strategy manager
-  // /// @param elDelegationManager address of an EigenLayer delegation manager
-  // /// @param elOperator address of an EigenLayer operator to whom all the restaked stEth will be delegated
-  // /// @dev elOperator MUST NOT require any signature, otherwise the initialize tx will revert
-  // function initialize(
-  //   address stETH,
-  //   address wETH9,
-  //   address elStrategy,
-  //   address elStrategyManager,
-  //   address elDelegationManager,
-  //   address elOperator
-  // ) external initializer {
-  //   __Ownable_init(msg.sender);
-  //   __UUPSUpgradeable_init();
-  //   __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager, elDelegationManager, elOperator);
-  //   __LidoInteractor_init(stETH, wETH9);
-  // }
+  /// @notice initialize function used during contract deployment
+  /// @param stETH address of a Lido StETH token
+  /// @param wETH9 address of a wrapped ETH
+  /// @param elStrategy address of an EigenLayer strategy (an StEth one specifically in this case)
+  /// @param elStrategyManager address of an EigenLayer strategy manager
+  /// @param elDelegationManager address of an EigenLayer delegation manager
+  /// @param elOperator address of an EigenLayer operator to whom all the restaked stEth will be delegated
+  /// @dev elOperator MUST NOT require any signature, otherwise the initialize tx will revert
+  function initialize(
+    address stETH,
+    address wETH9,
+    address elStrategy,
+    address elStrategyManager,
+    address elDelegationManager,
+    address elOperator
+  ) external initializer {
+    __Ownable_init(msg.sender);
+    __UUPSUpgradeable_init();
+    __EigenLayerInteractor_init(stETH, elStrategy, elStrategyManager, elDelegationManager, elOperator);
+    __LidoInteractor_init(stETH, wETH9);
+  }
 
   function initializeV2(
     address lidoWithdrawQueue,

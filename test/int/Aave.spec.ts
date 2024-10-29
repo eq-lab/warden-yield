@@ -2,13 +2,12 @@ import { expect } from 'chai';
 import * as helpers from '@nomicfoundation/hardhat-network-helpers';
 import { loadFixture, mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
-import { parseEther, parseUnits } from 'ethers';
+import { parseUnits } from 'ethers';
 import {
   createAaveEthFork,
   createAaveForkWithUsdcUnderlying,
   createAaveForkWithUsdtUnderlying,
-  deployAaveYieldContract,
-  upgradeAaveYieldContractToV2,
+  deployAaveYieldContract
 } from '../shared/fixtures';
 import {
   decodeWardenStakeResponse,

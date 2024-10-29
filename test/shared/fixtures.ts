@@ -27,7 +27,7 @@ import {
   ILidoWithdrawalQueueExtended__factory,
   TestWETH9,
   TestWETH9__factory,
-  TestEthYield__factory,
+  EthYield__factory,
   IWETH9__factory,
   IWETH9,
   TestAxelarGateway,
@@ -51,12 +51,12 @@ export async function deployEthYieldContract(
   eigenLayerOperator: string
 ): Promise<EthYield> {
   return upgrades.deployProxy(
-    await new TestEthYield__factory().connect(owner),
+    await new EthYield__factory().connect(owner),
     [stEth, weth, elStrategy, elStrategyManager, elDelegationManager, eigenLayerOperator],
     {
       initializer: 'initialize',
     }
-  ) as unknown as EthYield;
+  ) as unknown as Promise<EthYield>;
 }
 
 export async function deployTestAxelarGateway(owner: SignerWithAddress): Promise<TestAxelarGateway> {
@@ -88,31 +88,7 @@ export async function deployAaveYieldContract(
     {
       initializer: 'initialize',
     }
-  ) as unknown as AaveYield;
-}
-
-export async function upgradeAaveYieldContractToV2(
-  owner: SignerWithAddress,
-  aaveYield: AaveYield,
-  underlyingTokenAddress: string,
-  axelarGateway: string,
-  axelarGasService: string
-): Promise<AaveYield> {
-  await upgrades.upgradeProxy(aaveYield, new AaveYield__factory().connect(owner), {
-    call: {
-      fn: 'initializeV2',
-      args: [
-        underlyingTokenAddress,
-        axelarGateway,
-        axelarGasService,
-        EVM_CHAIN_NAME,
-        WardenChain,
-        WardenContractAddress,
-      ],
-    },
-  });
-
-  return aaveYield;
+  ) as unknown as Promise<AaveYield>;
 }
 
 export async function deployTestYieldStorageContract(
@@ -268,7 +244,7 @@ export async function createEthYieldFork(): Promise<EthYieldForkTestData> {
     EthAddressData.eigenLayerOperator
   );
 
-  await upgrades.upgradeProxy(ethYield, await new TestEthYield__factory().connect(owner), {
+  await upgrades.upgradeProxy(ethYield, await new EthYield__factory().connect(owner), {
     call: {
       fn: 'initializeV2',
       args: [
