@@ -18,9 +18,14 @@ contract AaveYield is
   IAaveYield,
   WardenHandler
 {
-  // /// @notice initialize function used during contract deployment
-  // /// @param aavePool address of a Aave pool
-  // /// @param tokens array with addresses of tokens which will be used in the Aave pool
+  /// @notice initialize function used during contract deployment
+  /// @param aavePool address of a Aave pool
+  /// @param underlyingToken address of token which will be used in the Aave pool
+  /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
+  /// @param axelarGasService address of service to which Axelar fees are paid
+  /// @param evmChainName Axelar inner name of evm chain where this contract is deployed
+  /// @param wardenChain Axelar inner name of Warden chain
+  /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initialize(
     address aavePool,
     address underlyingToken,
@@ -36,6 +41,13 @@ contract AaveYield is
     __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
   }
 
+  /// @notice initialize function used during contract upgrade
+  /// @param underlyingToken address of token which will be used in the Aave pool
+  /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
+  /// @param axelarGasService address of service to which Axelar fees are paid
+  /// @param evmChainName Axelar inner name of evm chain where this contract is deployed
+  /// @param wardenChain Axelar inner name of Warden chain
+  /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initializeV2(
     address underlyingToken,
     address axelarGateway,

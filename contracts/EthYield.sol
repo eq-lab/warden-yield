@@ -20,6 +20,8 @@ contract EthYield is
   WardenHandler
 {
   /// @notice initialize function used during contract deployment
+  /// @dev THIS METHOD IS INSUFFICIENT FOR DEPLOYMENT FROM SCRATCH, you need to call `initializeV2` after it
+  /// @dev These methods are separate to avoid contract size limitation
   /// @param stETH address of a Lido StETH token
   /// @param wETH9 address of a wrapped ETH
   /// @param elStrategy address of an EigenLayer strategy (an StEth one specifically in this case)
@@ -41,6 +43,14 @@ contract EthYield is
     __LidoInteractor_init(stETH, wETH9);
   }
 
+  /// @notice initialize function used during contract upgrade and deployment
+  /// @dev This method goes separate from the `initialize` during deployment to avoid contract size limitation
+  /// @param lidoWithdrawQueue address of lido withdrawal queue
+  /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
+  /// @param axelarGasService address of service to which Axelar fees are paid
+  /// @param evmChainName Axelar inner name of evm chain where this contract is deployed
+  /// @param wardenChain Axelar inner name of Warden chain
+  /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initializeV2(
     address lidoWithdrawQueue,
     address axelarGateway,
