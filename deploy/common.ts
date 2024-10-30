@@ -7,6 +7,6 @@ export async function getMaxFeePerGas(ethOptions: EthOptions, provider: Provider
   if (lastBaseFeePerGas == null) {
     throw new Error('Failed to fetch last block baseFeePerGas');
   }
-  const multiplier = ethOptions.maxFeePerGasMultiplier ? ethOptions.maxFeePerGasMultiplier : 1;
+  const multiplier = ethOptions.maxFeePerGasMultiplier ?? 1;
   return Number(lastBaseFeePerGas) * multiplier;
 }
