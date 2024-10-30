@@ -22,6 +22,7 @@ export interface EthConnectionConfig {
 }
 
 export interface EthOptions {
+  maxFeePerGasMultiplier: number | null | undefined;
   gasLimit: number | null | undefined;
   gasPrice: number | null | undefined;
 }
@@ -64,12 +65,9 @@ export async function assertWardenHandlerConfigValidity(
   await axelarGateway.tokenAddresses('WETH'); // throws an error if address has no right method hash
 
   const isLowerCase = config.wardenContractAddress === config.wardenContractAddress.toLowerCase();
-  const isUpperCase = config.wardenContractAddress === config.wardenContractAddress.toUpperCase();
 
-  if (!isLowerCase && !isUpperCase) {
-    throw new Error(
-      `Invalid warden contract address ${config.wardenContractAddress}: must be either upper or lower case`
-    );
+  if (!isLowerCase) {
+    throw new Error(`Invalid warden contract address ${config.wardenContractAddress}: must be lower case`);
   }
   const decoded = bech32.decode(config.wardenContractAddress);
   if (decoded.prefix != 'warden' || decoded.words.length != 32) {

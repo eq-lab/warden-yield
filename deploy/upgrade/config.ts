@@ -82,7 +82,7 @@ async function assertAaveYieldUpgradeConfigValidity(config: UpgradeConfig, provi
     throw new Error(`Invalid Aave underlyingToken: "${aave.underlyingToken}"`);
   }
 
-  assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
+  await assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
 }
 
 async function assertEthYieldUpgradeConfigValidity(config: UpgradeConfig, provider: Provider): Promise<void> {
@@ -96,5 +96,5 @@ async function assertEthYieldUpgradeConfigValidity(config: UpgradeConfig, provid
   const lidoQueue = ILidoWithdrawalQueue__factory.connect(ethYield.lidoWithdrawalQueue, provider);
   await lidoQueue.MAX_STETH_WITHDRAWAL_AMOUNT(); // throws an error if address has no right method hash
 
-  assertWardenHandlerConfigValidity(ethYield.wardenHandler, provider);
+  await assertWardenHandlerConfigValidity(ethYield.wardenHandler, provider);
 }

@@ -6,6 +6,8 @@ import { createDefaultBaseState, DeployState, getStateFileName, StateFile, State
 import { SimpleLogger } from '../logger';
 import path from 'path';
 import { createDefaultBaseDeployment, DeploymentFile, DeploymentState, DeploymentStore } from '../deployment-store';
+import { EthConnectionConfig, EthOptions } from '../config-common';
+import { getMaxFeePerGas } from '../common';
 
 export async function deployWardenYield(
   signer: Signer,
@@ -37,10 +39,10 @@ export async function deployWardenYield(
   ).createDeploymentStore();
 
   if (config.aaveYield !== undefined) {
-    await deployAaveYield(signer, config.aaveYield, hre, stateStore, deploymentStore);
+    await deployAaveYield(signer, config.aaveYield, config.ethConnection.ethOptions, hre, stateStore, deploymentStore);
   }
   if (config.ethYield !== undefined) {
-    await deployEthYield(signer, config.ethYield, hre, stateStore, deploymentStore);
+    await deployEthYield(signer, config.ethYield, config.ethConnection.ethOptions, hre, stateStore, deploymentStore);
   }
 
   console.log(`State file: \n${stateStore.stringify()}`);
@@ -50,6 +52,7 @@ export async function deployWardenYield(
 async function deployAaveYield(
   signer: Signer,
   aaveConfig: AaveYieldDeploymentConfig,
+  ethOptions: EthOptions,
   hre: HardhatRuntimeEnvironment,
   stateStore: StateStore,
   deploymentStore: DeploymentStore
@@ -63,7 +66,7 @@ async function deployAaveYield(
     aaveYieldAddress = state.address;
   } else {
     const aaveYield = (await hre.upgrades.deployProxy(
-      await new AaveYield__factory().connect(signer),
+      new AaveYield__factory().connect(signer),
       [
         aaveConfig.aavePool,
         aaveConfig.underlyingToken,
@@ -75,6 +78,11 @@ async function deployAaveYield(
       ],
       {
         initializer: 'initialize',
+        txOverrides: {
+          maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+          gasLimit: ethOptions.gasLimit,
+          gasPrice: ethOptions.gasPrice,
+        },
       }
     )) as unknown as AaveYield;
 
@@ -98,6 +106,7 @@ async function deployAaveYield(
 async function deployEthYield(
   signer: Signer,
   ethConfig: EthYieldDeploymentConfig,
+  ethOptions: EthOptions,
   hre: HardhatRuntimeEnvironment,
   stateStore: StateStore,
   deploymentStore: DeploymentStore
@@ -111,7 +120,7 @@ async function deployEthYield(
   }
 
   const ethYield = (await hre.upgrades.deployProxy(
-    await new EthYield__factory().connect(signer),
+    new EthYield__factory().connect(signer),
     [
       ethConfig.stETH,
       ethConfig.wETH9,
@@ -122,6 +131,11 @@ async function deployEthYield(
     ],
     {
       initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+        gasLimit: ethOptions.gasLimit,
+        gasPrice: ethOptions.gasPrice,
+      },
     }
   )) as unknown as EthYield;
 
@@ -135,7 +149,12 @@ async function deployEthYield(
       ethConfig.wardenHandler.axelarGasService,
       ethConfig.wardenHandler.evmChainName,
       ethConfig.wardenHandler.wardenChain,
-      ethConfig.wardenHandler.wardenContractAddress
+      ethConfig.wardenHandler.wardenContractAddress,
+      {
+        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+        gasLimit: ethOptions.gasLimit,
+        gasPrice: ethOptions.gasPrice,
+      }
     );
 
   const ethYieldAddress = await ethYield.getAddress();

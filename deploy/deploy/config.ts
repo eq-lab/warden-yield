@@ -110,7 +110,7 @@ async function assertAaveYieldDeployConfigValidity(config: DeployConfig, provide
     );
   }
 
-  assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
+  await assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
 }
 
 async function assertEthYieldDeployConfigValidity(config: DeployConfig, provider: Provider): Promise<void> {
@@ -158,5 +158,5 @@ async function assertEthYieldDeployConfigValidity(config: DeployConfig, provider
     throw new Error(`EL operator invalid!.`);
   }
 
-  assertWardenHandlerConfigValidity(ethYield.wardenHandler, provider);
+  await assertWardenHandlerConfigValidity(ethYield.wardenHandler, provider);
 }
