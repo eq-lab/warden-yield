@@ -42,6 +42,7 @@ contract AaveYield is
   }
 
   /// @notice initialize function used during contract upgrade
+  /// @param aavePoolProvider address of a Aave pool addresses provider
   /// @param underlyingToken address of token which will be used in the Aave pool
   /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
   /// @param axelarGasService address of service to which Axelar fees are paid

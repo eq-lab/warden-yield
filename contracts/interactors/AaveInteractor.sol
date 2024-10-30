@@ -17,7 +17,7 @@ abstract contract AaveInteractor is Initializable {
 
   /// @custom:storage-location erc7201:eq-lab.storage.AaveInteractor
   struct AaveInteractorData {
-    /// @dev replaced by aavePoolProvider in v2
+    /// @dev not used since v2, replaced by aavePoolProvider
     address aavePool;
     /// @dev not used since v2
     bool areWithdrawalsEnabled;
@@ -25,7 +25,7 @@ abstract contract AaveInteractor is Initializable {
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
     /// @dev token address used in stake/unstake operations
     address underlyingToken;
-    /// @dev the recommended way to get aave pool address
+    /// @dev the recommended way to get Aave pool address
     address aavePoolProvider;
   }
 
