@@ -3,11 +3,19 @@ import path from 'path';
 import { isAddress, Provider } from 'ethers';
 import {
   IDelegationManager__factory,
+  ILidoWithdrawalQueue__factory,
   IPool__factory,
+  IPoolAddressesProvider__factory,
   IStrategy__factory,
   IStrategyManager__factory,
 } from '../../typechain-types';
-import { assertTokenConfig, EthConnectionConfig, TokenConfig } from '../config-common';
+import {
+  assertTokenConfig,
+  assertWardenHandlerConfigValidity,
+  EthConnectionConfig,
+  TokenConfig,
+  WardenHandlerConfig,
+} from '../config-common';
 
 export interface DeployConfig {
   ethConnection: EthConnectionConfig;
@@ -16,15 +24,17 @@ export interface DeployConfig {
 }
 
 export interface AaveYieldDeploymentConfig {
-  aavePool: string;
-  tokens: TokenConfig[];
-  enableWithdrawals: boolean;
+  aavePoolProvider: string;
+  underlyingToken: TokenConfig;
+  wardenHandler: WardenHandlerConfig;
 }
 
 export interface EthYieldDeploymentConfig {
   stETH: string;
+  lidoWithdrawalQueue: string;
   wETH9: string;
   eigenLayer: EigenLayerDeploymentConfig;
+  wardenHandler: WardenHandlerConfig;
 }
 
 export interface EigenLayerDeploymentConfig {
@@ -87,18 +97,21 @@ async function assertAaveYieldDeployConfigValidity(config: DeployConfig, provide
   const aave = config.aaveYield;
   if (aave === undefined) return;
 
-  if (!isAddress(aave.aavePool)) {
-    throw new Error(`Invalid Aave pool address! Address: "${aave.aavePool}"`);
+  if (!isAddress(aave.aavePoolProvider)) {
+    throw new Error(`Invalid Aave pool provider address! Address: "${aave.aavePoolProvider}"`);
   }
-  const pool = IPool__factory.connect(aave.aavePool, provider);
-  for (const token of aave.tokens) {
-    await assertTokenConfig(token, provider);
 
-    const reserveNormalizedIncome = await pool.getReserveNormalizedIncome(token.address);
-    if (reserveNormalizedIncome === BigInt(0)) {
-      throw new Error(`Token reserveNormalizedIncome == 0! Address: ${token.address}, symbol: ${token.symbol}`);
-    }
+  await assertTokenConfig(aave.underlyingToken, provider);
+
+  const aavePool = await IPoolAddressesProvider__factory.connect(aave.aavePoolProvider).getPool();
+  const reserveNormalizedIncome = await IPool__factory.connect(aavePool, provider).getReserveNormalizedIncome(
+    aave.underlyingToken.address
+  );
+  if (reserveNormalizedIncome === BigInt(0)) {
+    throw new Error(`Token reserveNormalizedIncome == 0! Address: ${aave.underlyingToken.address}, pool: ${aavePool}`);
   }
+
+  await assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
 }
 
 async function assertEthYieldDeployConfigValidity(config: DeployConfig, provider: Provider): Promise<void> {
@@ -107,6 +120,9 @@ async function assertEthYieldDeployConfigValidity(config: DeployConfig, provider
 
   await assertTokenConfig(<TokenConfig>{ address: ethYield.wETH9, symbol: 'WETH', decimals: 18 }, provider);
   await assertTokenConfig(<TokenConfig>{ address: ethYield.stETH, symbol: 'stETH', decimals: 18 }, provider);
+
+  const lidoQueue = ILidoWithdrawalQueue__factory.connect(ethYield.lidoWithdrawalQueue, provider);
+  await lidoQueue.MAX_STETH_WITHDRAWAL_AMOUNT(); // throws an error if address has no right method hash
 
   const el = ethYield.eigenLayer;
   if (!isAddress(el.strategyManager)) {
@@ -142,4 +158,6 @@ async function assertEthYieldDeployConfigValidity(config: DeployConfig, provider
   if (!isOperator) {
     throw new Error(`EL operator invalid!.`);
   }
+
+  await assertWardenHandlerConfigValidity(ethYield.wardenHandler, provider);
 }

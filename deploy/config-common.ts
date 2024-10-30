@@ -1,3 +1,4 @@
+import { bech32 } from 'bech32';
 import { isAddress, Provider } from 'ethers';
 import { ERC20__factory, IAxelarGasService__factory, IAxelarGateway__factory } from '../typechain-types';
 
@@ -10,6 +11,7 @@ export interface TokenConfig {
 export interface WardenHandlerConfig {
   axelarGateway: string;
   axelarGasService: string;
+  evmChainName: string;
   wardenChain: string;
   wardenContractAddress: string;
 }
@@ -20,6 +22,7 @@ export interface EthConnectionConfig {
 }
 
 export interface EthOptions {
+  maxFeePerGasMultiplier: number | null | undefined;
   gasLimit: number | null | undefined;
   gasPrice: number | null | undefined;
 }
@@ -60,4 +63,14 @@ export async function assertWardenHandlerConfigValidity(
 
   const axelarGateway = IAxelarGateway__factory.connect(config.axelarGateway, provider);
   await axelarGateway.tokenAddresses('WETH'); // throws an error if address has no right method hash
+
+  const isLowerCase = config.wardenContractAddress === config.wardenContractAddress.toLowerCase();
+
+  if (!isLowerCase) {
+    throw new Error(`Invalid warden contract address ${config.wardenContractAddress}: must be lower case`);
+  }
+  const decoded = bech32.decode(config.wardenContractAddress);
+  if (decoded.prefix != 'warden' || decoded.words.length != 32) {
+    throw new Error(`Invalid warden contract address: ${config.wardenContractAddress}`);
+  }
 }
