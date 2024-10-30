@@ -95,6 +95,7 @@ describe('Upgrade errors', () => {
         call: {
           fn: 'initializeV2',
           args: [
+            EthAddressData.aaveEthPoolProvider,
             EthAddressData.usdc,
             EthAddressData.axelarGateway,
             EthAddressData.axelarGasService,
@@ -116,6 +117,7 @@ describe('Upgrade errors', () => {
         call: {
           fn: 'initializeV2',
           args: [
+            EthAddressData.aaveEthPoolProvider,
             EthAddressData.usdt,
             ethers.ZeroAddress,
             EthAddressData.axelarGasService,
@@ -137,6 +139,7 @@ describe('Upgrade errors', () => {
         call: {
           fn: 'initializeV2',
           args: [
+            EthAddressData.aaveEthPoolProvider,
             EthAddressData.usdt,
             EthAddressData.axelarGateway,
             ethers.ZeroAddress,
@@ -195,7 +198,15 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(aaveYieldUsdc, new AaveYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [underlyingToken, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
+        args: [
+          EthAddressData.aaveEthPoolProvider,
+          underlyingToken,
+          axelarGateway,
+          axelarGasService,
+          EVM_CHAIN_NAME,
+          wardenChain,
+          wardenContractAddress,
+        ],
       },
     });
 
@@ -224,7 +235,15 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(aaveYieldUsdt, new AaveYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [underlyingToken, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
+        args: [
+          EthAddressData.aaveEthPoolProvider,
+          underlyingToken,
+          axelarGateway,
+          axelarGasService,
+          EVM_CHAIN_NAME,
+          wardenChain,
+          wardenContractAddress,
+        ],
       },
     });
 

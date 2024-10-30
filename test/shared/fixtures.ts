@@ -33,6 +33,7 @@ import {
   TestAxelarGateway,
   TestAxelarGateway__factory,
   AaveYield__factory,
+  IPoolAddressesProvider__factory,
 } from '../../typechain-types';
 import { parseUnits } from 'ethers';
 import { EVM_CHAIN_NAME, EthAddressData, WardenChain, WardenContractAddress } from './utils';
@@ -69,7 +70,7 @@ export async function deployTestAxelarGateway(owner: SignerWithAddress): Promise
 
 export async function deployAaveYieldContract(
   owner: SignerWithAddress,
-  aavePoolAddress: string,
+  aavePoolAddressProvider: string,
   underlyingTokenAddress: string,
   axelarGateway: string,
   axelarGasService: string
@@ -77,7 +78,7 @@ export async function deployAaveYieldContract(
   return upgrades.deployProxy(
     await new AaveYield__factory().connect(owner),
     [
-      aavePoolAddress,
+      aavePoolAddressProvider,
       underlyingTokenAddress,
       axelarGateway,
       axelarGasService,
@@ -294,7 +295,11 @@ export async function createAaveEthFork(): Promise<AaveForkTestData> {
 
   const axelarGateway = await deployTestAxelarGateway(owner);
 
-  const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
+  const aavePoolAddressProvider = await IPoolAddressesProvider__factory.connect(
+    EthAddressData.aaveEthPoolProvider,
+    owner
+  );
+  const aavePool = IPool__factory.connect(await aavePoolAddressProvider.getPool(), owner);
   const weth9 = IWETH9__factory.connect(EthAddressData.weth, owner);
   const aEthWETH = IAToken__factory.connect(EthAddressData.aEth, owner);
   const usdt = ERC20__factory.connect(EthAddressData.usdt, owner);
@@ -304,7 +309,7 @@ export async function createAaveEthFork(): Promise<AaveForkTestData> {
 
   const aaveYield = await deployAaveYieldContract(
     owner,
-    EthAddressData.aaveEthPool,
+    EthAddressData.aaveEthPoolProvider,
     EthAddressData.weth,
     await axelarGateway.getAddress(),
     EthAddressData.axelarGasService
@@ -329,7 +334,11 @@ export async function createAaveForkWithUsdtUnderlying(): Promise<AaveForkTestDa
 
   const axelarGateway = await deployTestAxelarGateway(owner);
 
-  const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
+  const aavePoolAddressProvider = await IPoolAddressesProvider__factory.connect(
+    EthAddressData.aaveEthPoolProvider,
+    owner
+  );
+  const aavePool = IPool__factory.connect(await aavePoolAddressProvider.getPool(), owner);
   const weth9 = IWETH9__factory.connect(EthAddressData.weth, owner);
   const aEthWETH = IAToken__factory.connect(EthAddressData.aEth, owner);
   const usdt = ERC20__factory.connect(EthAddressData.usdt, owner);
@@ -339,7 +348,7 @@ export async function createAaveForkWithUsdtUnderlying(): Promise<AaveForkTestDa
 
   const aaveYield = await deployAaveYieldContract(
     owner,
-    EthAddressData.aaveEthPool,
+    EthAddressData.aaveEthPoolProvider,
     EthAddressData.usdt,
     await axelarGateway.getAddress(),
     EthAddressData.axelarGasService
@@ -364,7 +373,11 @@ export async function createAaveForkWithUsdcUnderlying(): Promise<AaveForkTestDa
 
   const axelarGateway = await deployTestAxelarGateway(owner);
 
-  const aavePool = IPool__factory.connect(EthAddressData.aaveEthPool, owner);
+  const aavePoolAddressProvider = await IPoolAddressesProvider__factory.connect(
+    EthAddressData.aaveEthPoolProvider,
+    owner
+  );
+  const aavePool = IPool__factory.connect(await aavePoolAddressProvider.getPool(), owner);
   const weth9 = IWETH9__factory.connect(EthAddressData.weth, owner);
   const aEthWETH = IAToken__factory.connect(EthAddressData.aEth, owner);
   const usdt = ERC20__factory.connect(EthAddressData.usdt, owner);
@@ -374,7 +387,7 @@ export async function createAaveForkWithUsdcUnderlying(): Promise<AaveForkTestDa
 
   const aaveYield = await deployAaveYieldContract(
     owner,
-    EthAddressData.aaveEthPool,
+    EthAddressData.aaveEthPoolProvider,
     EthAddressData.usdc,
     await axelarGateway.getAddress(),
     EthAddressData.axelarGasService

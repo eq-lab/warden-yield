@@ -18,4 +18,5 @@ library Errors {
   error WrongWardenAddress(address user, string currentWardenAddress, string passedWardenAddress);
   error LowWithdrawalAmount(uint256);
   error NoElementWithIndex(uint256 index);
+  error WrongPoolProvider(address provider, address returnedPool);
 }
