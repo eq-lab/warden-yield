@@ -189,6 +189,7 @@ describe('Upgrades', () => {
     const aaveYieldV1 = new BaseContract(aaveYieldUsdc, TOTAL_SHARES_V1_ABI, ethers.provider);
     const totalSharesBefore = await aaveYieldV1.connect(owner).getFunction('totalShares')(EthAddressData.usdc);
 
+    const aavePoolProvider = EthAddressData.aaveEthPoolProvider;
     const underlyingToken = EthAddressData.usdc;
     const axelarGateway = EthAddressData.axelarGateway;
     const axelarGasService = EthAddressData.axelarGasService;
@@ -199,7 +200,7 @@ describe('Upgrades', () => {
       call: {
         fn: 'initializeV2',
         args: [
-          EthAddressData.aaveEthPoolProvider,
+          aavePoolProvider,
           underlyingToken,
           axelarGateway,
           axelarGasService,
@@ -217,6 +218,7 @@ describe('Upgrades', () => {
     expect(await aaveYieldV2.totalLpTokens()).to.be.eq(await aToken.balanceOf(aaveYieldV2));
 
     expect(await aaveYieldV2.getUnderlyingToken()).to.be.eq(underlyingToken);
+    expect(await aaveYieldV2.getAavePoolProvider()).to.be.eq(aavePoolProvider);
   });
 
   it('AaveYield usdt upgrade', async () => {
@@ -226,6 +228,7 @@ describe('Upgrades', () => {
     const aaveYieldV1 = new BaseContract(aaveYieldUsdt, TOTAL_SHARES_V1_ABI, ethers.provider);
     const totalSharesBefore = await aaveYieldV1.connect(owner).getFunction('totalShares')(EthAddressData.usdt);
 
+    const aavePoolProvider = EthAddressData.aaveEthPoolProvider;
     const underlyingToken = EthAddressData.usdt;
     const axelarGateway = EthAddressData.axelarGateway;
     const axelarGasService = EthAddressData.axelarGasService;
@@ -236,7 +239,7 @@ describe('Upgrades', () => {
       call: {
         fn: 'initializeV2',
         args: [
-          EthAddressData.aaveEthPoolProvider,
+          aavePoolProvider,
           underlyingToken,
           axelarGateway,
           axelarGasService,
@@ -254,5 +257,6 @@ describe('Upgrades', () => {
     expect(await aaveYieldV2.totalLpTokens()).to.be.eq(await aToken.balanceOf(aaveYieldV2));
 
     expect(await aaveYieldV2.getUnderlyingToken()).to.be.eq(underlyingToken);
+    expect(await aaveYieldV2.getAavePoolProvider()).to.be.eq(aavePoolProvider);
   });
 });

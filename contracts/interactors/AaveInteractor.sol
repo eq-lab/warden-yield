@@ -102,6 +102,11 @@ abstract contract AaveInteractor is Initializable {
     if (withdrawn < amount) revert Errors.InvalidAmount(amount, withdrawn);
   }
 
+  function _getAavePoolProvider() internal view returns (address) {
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    return $.aavePoolProvider;
+  }
+
   function _getAavePool() internal view returns (address) {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
     return IPoolAddressesProvider($.aavePoolProvider).getPool();
@@ -123,8 +128,8 @@ abstract contract AaveInteractor is Initializable {
   }
 
   /// @notice returns address of Aave pool this contract interacts with
-  function getAavePool() external view returns (address) {
-    return _getAavePool();
+  function getAavePoolProvider() external view returns (address) {
+    return _getAavePoolProvider();
   }
 
   /// @notice returns address of the underlying token
