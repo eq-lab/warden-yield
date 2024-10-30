@@ -74,7 +74,7 @@ async function upgradeEthYield(
       ],
     },
     txOverrides: {
-      maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+      maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
       gasLimit: ethOptions.gasLimit,
       gasPrice: ethOptions.gasPrice,
     },
@@ -119,7 +119,7 @@ async function upgradeAaveYield(
       ],
     },
     txOverrides: {
-      maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+      maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
       gasLimit: ethOptions.gasLimit,
       gasPrice: ethOptions.gasPrice,
     },

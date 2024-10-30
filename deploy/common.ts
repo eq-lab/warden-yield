@@ -1,9 +1,9 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { EthOptions } from './config-common';
+import { Provider } from 'ethers';
 
-export async function getMaxFeePerGas(ethOptions: EthOptions, hre: HardhatRuntimeEnvironment): Promise<number> {
-  const blockNumber = await hre.ethers.provider.provider.getBlockNumber();
-  const lastBaseFeePerGas = (await hre.ethers.provider.getBlock(blockNumber))?.baseFeePerGas;
+export async function getMaxFeePerGas(ethOptions: EthOptions, provider: Provider): Promise<number> {
+  const blockNumber = await provider.provider.getBlockNumber();
+  const lastBaseFeePerGas = (await provider.getBlock(blockNumber))?.baseFeePerGas;
   if (lastBaseFeePerGas == null) {
     throw new Error('Failed to fetch last block baseFeePerGas');
   }

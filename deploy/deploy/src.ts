@@ -81,7 +81,7 @@ async function deployAaveYield(
       {
         initializer: 'initialize',
         txOverrides: {
-          maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+          maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
           gasLimit: ethOptions.gasLimit,
           gasPrice: ethOptions.gasPrice,
         },
@@ -134,7 +134,7 @@ async function deployEthYield(
     {
       initializer: 'initialize',
       txOverrides: {
-        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
         gasLimit: ethOptions.gasLimit,
         gasPrice: ethOptions.gasPrice,
       },
@@ -153,7 +153,7 @@ async function deployEthYield(
       ethConfig.wardenHandler.wardenChain,
       ethConfig.wardenHandler.wardenContractAddress,
       {
-        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre),
+        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
         gasLimit: ethOptions.gasLimit,
         gasPrice: ethOptions.gasPrice,
       }
