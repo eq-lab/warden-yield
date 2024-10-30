@@ -57,7 +57,9 @@ async function deployAaveYield(
   stateStore: StateStore,
   deploymentStore: DeploymentStore
 ): Promise<void> {
-  console.log(`Deploy AaveYield. AavePool: ${aaveConfig.aavePool}, underlyingToken: [${aaveConfig.underlyingToken}]`);
+  console.log(
+    `Deploy AaveYield. AavePoolProvider: ${aaveConfig.aavePoolProvider}, underlyingToken: [${aaveConfig.underlyingToken}]`
+  );
 
   const state = stateStore.getById('aaveYield-proxy');
   let aaveYieldAddress: string;
@@ -68,7 +70,7 @@ async function deployAaveYield(
     const aaveYield = (await hre.upgrades.deployProxy(
       new AaveYield__factory().connect(signer),
       [
-        aaveConfig.aavePool,
+        aaveConfig.aavePoolProvider,
         aaveConfig.underlyingToken,
         aaveConfig.wardenHandler.axelarGateway,
         aaveConfig.wardenHandler.axelarGasService,

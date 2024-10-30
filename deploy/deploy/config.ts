@@ -5,6 +5,7 @@ import {
   IDelegationManager__factory,
   ILidoWithdrawalQueue__factory,
   IPool__factory,
+  IPoolAddressesProvider__factory,
   IStrategy__factory,
   IStrategyManager__factory,
 } from '../../typechain-types';
@@ -23,7 +24,7 @@ export interface DeployConfig {
 }
 
 export interface AaveYieldDeploymentConfig {
-  aavePool: string;
+  aavePoolProvider: string;
   underlyingToken: TokenConfig;
   wardenHandler: WardenHandlerConfig;
 }
@@ -96,17 +97,19 @@ async function assertAaveYieldDeployConfigValidity(config: DeployConfig, provide
   const aave = config.aaveYield;
   if (aave === undefined) return;
 
-  if (!isAddress(aave.aavePool)) {
-    throw new Error(`Invalid Aave pool address! Address: "${aave.aavePool}"`);
+  if (!isAddress(aave.aavePoolProvider)) {
+    throw new Error(`Invalid Aave pool provider address! Address: "${aave.aavePoolProvider}"`);
   }
-  const pool = IPool__factory.connect(aave.aavePool, provider);
 
   await assertTokenConfig(aave.underlyingToken, provider);
 
-  const reserveNormalizedIncome = await pool.getReserveNormalizedIncome(aave.underlyingToken.address);
+  const aavePool = await IPoolAddressesProvider__factory.connect(aave.aavePoolProvider).getPool();
+  const reserveNormalizedIncome = await IPool__factory.connect(aavePool, provider).getReserveNormalizedIncome(
+    aave.underlyingToken.address
+  );
   if (reserveNormalizedIncome === BigInt(0)) {
     throw new Error(
-      `Token reserveNormalizedIncome == 0! Address: ${aave.underlyingToken.address}, symbol: ${aave.underlyingToken.symbol}`
+      `Token reserveNormalizedIncome == 0! Address: ${aave.underlyingToken.address}, pool: ${aavePool}`
     );
   }
 

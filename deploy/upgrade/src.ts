@@ -109,6 +109,7 @@ async function upgradeAaveYield(
     call: {
       fn: 'initializeV2',
       args: [
+        aaveConfig.aavePoolProvider,
         aaveConfig.underlyingToken,
         aaveConfig.wardenHandler.axelarGateway,
         aaveConfig.wardenHandler.axelarGasService,

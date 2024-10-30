@@ -2,12 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { isAddress, Provider } from 'ethers';
 import {
+  assertTokenConfig,
   assertWardenHandlerConfigValidity,
   EthConnectionConfig,
   TokenConfig,
   WardenHandlerConfig,
 } from '../config-common';
-import { ILidoWithdrawalQueue__factory } from '../../typechain-types';
+import { ILidoWithdrawalQueue__factory, IPool__factory, IPoolAddressesProvider__factory } from '../../typechain-types';
 
 export interface UpgradeConfig {
   ethConnection: EthConnectionConfig;
@@ -16,6 +17,7 @@ export interface UpgradeConfig {
 }
 
 export interface AaveYieldUpgradeConfig {
+  aavePoolProvider: string;
   underlyingToken: TokenConfig;
   wardenHandler: WardenHandlerConfig;
 }
@@ -78,8 +80,18 @@ async function assertAaveYieldUpgradeConfigValidity(config: UpgradeConfig, provi
   const aave = config.aaveYield;
   if (aave === undefined) return;
 
-  if (!isAddress(aave.underlyingToken)) {
-    throw new Error(`Invalid Aave underlyingToken: "${aave.underlyingToken}"`);
+  if (!isAddress(aave.aavePoolProvider)) {
+    throw new Error(`Invalid Aave pool provider: "${aave.aavePoolProvider}"`);
+  }
+
+  await assertTokenConfig(aave.underlyingToken, provider);
+
+  const aavePool = await IPoolAddressesProvider__factory.connect(aave.aavePoolProvider).getPool();
+  const reserveNormalizedIncome = await IPool__factory.connect(aavePool).getReserveNormalizedIncome(
+    aave.underlyingToken.address
+  );
+  if (reserveNormalizedIncome === BigInt(0)) {
+    throw new Error(`Token reserveNormalizedIncome == 0! Token: ${aave.underlyingToken.address}, pool: ${aavePool}`);
   }
 
   await assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
