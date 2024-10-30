@@ -95,6 +95,7 @@ describe('Upgrade errors', () => {
         call: {
           fn: 'initializeV2',
           args: [
+            EthAddressData.aaveEthPoolProvider,
             EthAddressData.usdc,
             EthAddressData.axelarGateway,
             EthAddressData.axelarGasService,
@@ -116,6 +117,7 @@ describe('Upgrade errors', () => {
         call: {
           fn: 'initializeV2',
           args: [
+            EthAddressData.aaveEthPoolProvider,
             EthAddressData.usdt,
             ethers.ZeroAddress,
             EthAddressData.axelarGasService,
@@ -137,6 +139,7 @@ describe('Upgrade errors', () => {
         call: {
           fn: 'initializeV2',
           args: [
+            EthAddressData.aaveEthPoolProvider,
             EthAddressData.usdt,
             EthAddressData.axelarGateway,
             ethers.ZeroAddress,
@@ -186,6 +189,7 @@ describe('Upgrades', () => {
     const aaveYieldV1 = new BaseContract(aaveYieldUsdc, TOTAL_SHARES_V1_ABI, ethers.provider);
     const totalSharesBefore = await aaveYieldV1.connect(owner).getFunction('totalShares')(EthAddressData.usdc);
 
+    const aavePoolProvider = EthAddressData.aaveEthPoolProvider;
     const underlyingToken = EthAddressData.usdc;
     const axelarGateway = EthAddressData.axelarGateway;
     const axelarGasService = EthAddressData.axelarGasService;
@@ -195,7 +199,15 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(aaveYieldUsdc, new AaveYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [underlyingToken, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
+        args: [
+          aavePoolProvider,
+          underlyingToken,
+          axelarGateway,
+          axelarGasService,
+          EVM_CHAIN_NAME,
+          wardenChain,
+          wardenContractAddress,
+        ],
       },
     });
 
@@ -206,6 +218,7 @@ describe('Upgrades', () => {
     expect(await aaveYieldV2.totalLpTokens()).to.be.eq(await aToken.balanceOf(aaveYieldV2));
 
     expect(await aaveYieldV2.getUnderlyingToken()).to.be.eq(underlyingToken);
+    expect(await aaveYieldV2.getAavePoolProvider()).to.be.eq(aavePoolProvider);
   });
 
   it('AaveYield usdt upgrade', async () => {
@@ -215,6 +228,7 @@ describe('Upgrades', () => {
     const aaveYieldV1 = new BaseContract(aaveYieldUsdt, TOTAL_SHARES_V1_ABI, ethers.provider);
     const totalSharesBefore = await aaveYieldV1.connect(owner).getFunction('totalShares')(EthAddressData.usdt);
 
+    const aavePoolProvider = EthAddressData.aaveEthPoolProvider;
     const underlyingToken = EthAddressData.usdt;
     const axelarGateway = EthAddressData.axelarGateway;
     const axelarGasService = EthAddressData.axelarGasService;
@@ -224,7 +238,15 @@ describe('Upgrades', () => {
     await upgrades.upgradeProxy(aaveYieldUsdt, new AaveYield__factory().connect(owner), {
       call: {
         fn: 'initializeV2',
-        args: [underlyingToken, axelarGateway, axelarGasService, EVM_CHAIN_NAME, wardenChain, wardenContractAddress],
+        args: [
+          aavePoolProvider,
+          underlyingToken,
+          axelarGateway,
+          axelarGasService,
+          EVM_CHAIN_NAME,
+          wardenChain,
+          wardenContractAddress,
+        ],
       },
     });
 
@@ -235,5 +257,6 @@ describe('Upgrades', () => {
     expect(await aaveYieldV2.totalLpTokens()).to.be.eq(await aToken.balanceOf(aaveYieldV2));
 
     expect(await aaveYieldV2.getUnderlyingToken()).to.be.eq(underlyingToken);
+    expect(await aaveYieldV2.getAavePoolProvider()).to.be.eq(aavePoolProvider);
   });
 });

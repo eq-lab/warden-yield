@@ -19,7 +19,7 @@ contract AaveYield is
   WardenHandler
 {
   /// @notice initialize function used during contract deployment
-  /// @param aavePool address of a Aave pool
+  /// @param aavePoolProvider address of a Aave pool addresses provider
   /// @param underlyingToken address of token which will be used in the Aave pool
   /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
   /// @param axelarGasService address of service to which Axelar fees are paid
@@ -27,7 +27,7 @@ contract AaveYield is
   /// @param wardenChain Axelar inner name of Warden chain
   /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initialize(
-    address aavePool,
+    address aavePoolProvider,
     address underlyingToken,
     address axelarGateway,
     address axelarGasService,
@@ -37,11 +37,12 @@ contract AaveYield is
   ) external reinitializer(2) {
     __Ownable_init(msg.sender);
     __UUPSUpgradeable_init();
-    __AaveInteractor_init(aavePool, underlyingToken);
+    __AaveInteractor_init(aavePoolProvider, underlyingToken);
     __WardenHandler_init(axelarGateway, axelarGasService, evmChainName, wardenChain, wardenContractAddress);
   }
 
   /// @notice initialize function used during contract upgrade
+  /// @param aavePoolProvider address of a Aave pool addresses provider
   /// @param underlyingToken address of token which will be used in the Aave pool
   /// @param axelarGateway address of Axelar gateway which is used to broadcast calls to Warden
   /// @param axelarGasService address of service to which Axelar fees are paid
@@ -49,6 +50,7 @@ contract AaveYield is
   /// @param wardenChain Axelar inner name of Warden chain
   /// @param wardenContractAddress Warden contract address to where the callbacks are broadcasted
   function initializeV2(
+    address aavePoolProvider,
     address underlyingToken,
     address axelarGateway,
     address axelarGasService,
@@ -56,7 +58,7 @@ contract AaveYield is
     string calldata wardenChain,
     string calldata wardenContractAddress
   ) external reinitializer(2) {
-    __AaveInteractor_initV2(underlyingToken);
+    __AaveInteractor_initV2(aavePoolProvider, underlyingToken);
     __YieldStorage_initV2(
       underlyingToken,
       _getBalanceFromScaled(_getStakingDataStorage()._totalShares[underlyingToken])
@@ -135,7 +137,7 @@ contract AaveYield is
       result.status = WardenHandler.Status.Success;
       result.reinitUnstakeId = unstakeId;
       result.unstakeTokenAmount = uint128(withdrawnAmount);
-      result.unstakeTokenAddress = getUnderlyingToken();
+      result.unstakeTokenAddress = _getUnderlyingToken();
     } catch (bytes memory reason) {
       emit RequestFailed(ActionType.Unstake, unstakeId, reason);
     }
