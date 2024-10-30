@@ -6,7 +6,7 @@ import { createDefaultBaseState, DeployState, getStateFileName, StateFile, State
 import { SimpleLogger } from '../logger';
 import path from 'path';
 import { createDefaultBaseDeployment, DeploymentFile, DeploymentState, DeploymentStore } from '../deployment-store';
-import { EthConnectionConfig, EthOptions } from '../config-common';
+import { EthOptions } from '../config-common';
 import { getMaxFeePerGas } from '../common';
 
 export async function deployWardenYield(
@@ -62,47 +62,46 @@ async function deployAaveYield(
   );
 
   const state = stateStore.getById('aaveYield-proxy');
-  let aaveYieldAddress: string;
   if (state !== undefined) {
     console.log(`AaveYield already deployed. Skip.`);
-    aaveYieldAddress = state.address;
-  } else {
-    const aaveYield = (await hre.upgrades.deployProxy(
-      new AaveYield__factory().connect(signer),
-      [
-        aaveConfig.aavePoolProvider,
-        aaveConfig.underlyingToken,
-        aaveConfig.wardenHandler.axelarGateway,
-        aaveConfig.wardenHandler.axelarGasService,
-        aaveConfig.wardenHandler.evmChainName,
-        aaveConfig.wardenHandler.wardenChain,
-        aaveConfig.wardenHandler.wardenContractAddress,
-      ],
-      {
-        initializer: 'initialize',
-        txOverrides: {
-          maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
-          gasLimit: ethOptions.gasLimit,
-          gasPrice: ethOptions.gasPrice,
-        },
-      }
-    )) as unknown as AaveYield;
-
-    await aaveYield.waitForDeployment();
-    aaveYieldAddress = await aaveYield.getAddress();
-
-    const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(aaveYieldAddress);
-    console.log(`AaveYield proxy: ${aaveYieldAddress}, implementation: ${implementationAddress}`);
-
-    const txHash = aaveYield.deploymentTransaction()?.hash;
-
-    stateStore.setById('aaveYield-proxy', <DeployState>{ txHash, address: aaveYieldAddress });
-    stateStore.setById('aaveYield-impl', <DeployState>{ address: implementationAddress });
-    deploymentStore.setById('aaveYield', <DeploymentState>{
-      address: aaveYieldAddress,
-      implementation: implementationAddress,
-    });
+    return;
   }
+
+  const aaveYield = (await hre.upgrades.deployProxy(
+    new AaveYield__factory().connect(signer),
+    [
+      aaveConfig.aavePoolProvider,
+      aaveConfig.underlyingToken,
+      aaveConfig.wardenHandler.axelarGateway,
+      aaveConfig.wardenHandler.axelarGasService,
+      aaveConfig.wardenHandler.evmChainName,
+      aaveConfig.wardenHandler.wardenChain,
+      aaveConfig.wardenHandler.wardenContractAddress,
+    ],
+    {
+      initializer: 'initialize',
+      txOverrides: {
+        maxFeePerGas: await getMaxFeePerGas(ethOptions, hre.ethers.provider),
+        gasLimit: ethOptions.gasLimit,
+        gasPrice: ethOptions.gasPrice,
+      },
+    }
+  )) as unknown as AaveYield;
+
+  await aaveYield.waitForDeployment();
+  const aaveYieldAddress = await aaveYield.getAddress();
+
+  const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(aaveYieldAddress);
+  console.log(`AaveYield proxy: ${aaveYieldAddress}, implementation: ${implementationAddress}`);
+
+  const txHash = aaveYield.deploymentTransaction()?.hash;
+
+  stateStore.setById('aaveYield-proxy', <DeployState>{ txHash, address: aaveYieldAddress });
+  stateStore.setById('aaveYield-impl', <DeployState>{ address: implementationAddress });
+  deploymentStore.setById('aaveYield', <DeploymentState>{
+    address: aaveYieldAddress,
+    implementation: implementationAddress,
+  });
 }
 
 async function deployEthYield(

@@ -6,7 +6,7 @@ import { SimpleLogger } from '../logger';
 import path from 'path';
 import { createDefaultBaseDeployment, DeploymentFile, DeploymentState, DeploymentStore } from '../deployment-store';
 import { AaveYieldUpgradeConfig, EthYieldUpgradeConfig, UpgradeConfig } from './config';
-import { EthConnectionConfig, EthOptions } from '../config-common';
+import { EthOptions } from '../config-common';
 import { getMaxFeePerGas } from '../common';
 
 export async function upgradeWardenYield(

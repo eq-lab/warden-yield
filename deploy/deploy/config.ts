@@ -108,9 +108,7 @@ async function assertAaveYieldDeployConfigValidity(config: DeployConfig, provide
     aave.underlyingToken.address
   );
   if (reserveNormalizedIncome === BigInt(0)) {
-    throw new Error(
-      `Token reserveNormalizedIncome == 0! Address: ${aave.underlyingToken.address}, pool: ${aavePool}`
-    );
+    throw new Error(`Token reserveNormalizedIncome == 0! Address: ${aave.underlyingToken.address}, pool: ${aavePool}`);
   }
 
   await assertWardenHandlerConfigValidity(aave.wardenHandler, provider);
