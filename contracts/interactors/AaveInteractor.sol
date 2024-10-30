@@ -5,6 +5,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {WadRayMath} from '@aave/core-v3/contracts/protocol/libraries/math/WadRayMath.sol';
 import '@aave/core-v3/contracts/interfaces/IPool.sol';
+import '@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol';
 
 import '../libraries/Errors.sol';
 import '../interfaces/Aave/IAToken.sol';
@@ -16,7 +17,7 @@ abstract contract AaveInteractor is Initializable {
 
   /// @custom:storage-location erc7201:eq-lab.storage.AaveInteractor
   struct AaveInteractorData {
-    /// @dev address of Aave pool
+    /// @dev not used since v2, replaced by aavePoolProvider
     address aavePool;
     /// @dev not used since v2
     bool areWithdrawalsEnabled;
@@ -24,6 +25,8 @@ abstract contract AaveInteractor is Initializable {
     mapping(address /* token */ => bool /* isAllowed */) allowedTokens;
     /// @dev token address used in stake/unstake operations
     address underlyingToken;
+    /// @dev the recommended way to get Aave pool address
+    address aavePoolProvider;
   }
 
   /// @dev 'AaveInteractorData' storage slot address
@@ -38,22 +41,37 @@ abstract contract AaveInteractor is Initializable {
     }
   }
 
-  /// @dev initialize method
-  /// @param aavePool address of Aave pool which this contract will interact with
+  /// @notice initialize method used during deployment from scratch
+  /// @param aavePoolProvider address of Aave pool provider which this contract will interact with
   /// @param underlyingToken address of token which can be supplied to Aave pool via this contract
-  function __AaveInteractor_init(address aavePool, address underlyingToken) internal onlyInitializing {
+  function __AaveInteractor_init(address aavePoolProvider, address underlyingToken) internal onlyInitializing {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    if (aavePool == address(0)) revert Errors.ZeroAddress();
+    if (aavePoolProvider == address(0)) revert Errors.ZeroAddress();
+
+    address aavePool = IPoolAddressesProvider(aavePoolProvider).getPool();
     if (IPool(aavePool).getReserveNormalizedIncome(underlyingToken) == 0) revert Errors.UnknownToken(underlyingToken);
-    $.aavePool = aavePool;
+
+    $.aavePoolProvider = aavePoolProvider;
     $.underlyingToken = underlyingToken;
   }
 
-  function __AaveInteractor_initV2(address underlyingToken) internal onlyInitializing {
+  /// @notice initialize method used during upgrade
+  /// @param aavePoolProvider address of Aave pool provider which this contract will interact with
+  /// @param underlyingToken address of token which can be supplied to Aave pool via this contract
+  /// @dev both pool provider and token must be corresponding to the previous setup
+  function __AaveInteractor_initV2(address aavePoolProvider, address underlyingToken) internal onlyInitializing {
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
 
     if (!$.allowedTokens[underlyingToken]) revert Errors.NotAllowedToken(underlyingToken);
+
+    address aavePool = IPoolAddressesProvider(aavePoolProvider).getPool();
+    if (aavePool != $.aavePool) revert Errors.WrongPoolProvider(aavePoolProvider, aavePool);
+
     $.underlyingToken = underlyingToken;
+    $.aavePoolProvider = aavePoolProvider;
+    delete $.aavePool;
+    delete $.allowedTokens[underlyingToken];
+    delete $.areWithdrawalsEnabled;
   }
 
   /// @dev method implementing 'stake' interaction with Aave pool
@@ -63,7 +81,7 @@ abstract contract AaveInteractor is Initializable {
     if (amount == 0) revert Errors.ZeroAmount();
 
     AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    address aavePool = $.aavePool;
+    address aavePool = _getAavePool();
     address token = $.underlyingToken;
     address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
 
@@ -80,31 +98,42 @@ abstract contract AaveInteractor is Initializable {
   function _aaveWithdraw(uint256 amount) internal returns (uint256 withdrawn) {
     if (amount == 0) revert Errors.ZeroAmount();
 
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-
-    withdrawn = IPool($.aavePool).withdraw($.underlyingToken, amount, address(this));
+    withdrawn = IPool(_getAavePool()).withdraw(_getUnderlyingToken(), amount, address(this));
     if (withdrawn < amount) revert Errors.InvalidAmount(amount, withdrawn);
+  }
+
+  function _getAavePoolProvider() internal view returns (address) {
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    return $.aavePoolProvider;
+  }
+
+  function _getAavePool() internal view returns (address) {
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    return IPoolAddressesProvider($.aavePoolProvider).getPool();
+  }
+
+  function _getUnderlyingToken() internal view returns (address) {
+    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
+    return $.underlyingToken;
   }
 
   /// @dev returns current balance of token supplied to Aave pool by this contract
   /// @param scaledAmount amount of the withdrawn token
   function _getBalanceFromScaled(uint256 scaledAmount) internal view returns (uint256) {
-    return scaledAmount.rayMul(IPool(getAavePool()).getReserveNormalizedIncome(getUnderlyingToken()));
+    return scaledAmount.rayMul(IPool(_getAavePool()).getReserveNormalizedIncome(_getUnderlyingToken()));
   }
 
   function _getScaledFromBalance(uint256 balanceAmount) internal view returns (uint256) {
-    return balanceAmount.rayDiv(IPool(getAavePool()).getReserveNormalizedIncome(getUnderlyingToken()));
+    return balanceAmount.rayDiv(IPool(_getAavePool()).getReserveNormalizedIncome(_getUnderlyingToken()));
   }
 
   /// @notice returns address of Aave pool this contract interacts with
-  function getAavePool() public view returns (address) {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    return $.aavePool;
+  function getAavePoolProvider() external view returns (address) {
+    return _getAavePoolProvider();
   }
 
   /// @notice returns address of the underlying token
-  function getUnderlyingToken() public view returns (address) {
-    AaveInteractorData storage $ = _getAaveInteractorDataStorage();
-    return $.underlyingToken;
+  function getUnderlyingToken() external view returns (address) {
+    return _getUnderlyingToken();
   }
 }

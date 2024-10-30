@@ -352,7 +352,7 @@ describe('AaveYield init errors', () => {
     await expect(
       deployAaveYieldContract(
         owner,
-        EthAddressData.aaveEthPool,
+        EthAddressData.aaveEthPoolProvider,
         EthAddressData.stEth,
         EthAddressData.axelarGateway,
         EthAddressData.axelarGasService
