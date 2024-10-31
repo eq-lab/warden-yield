@@ -26,6 +26,13 @@ pub fn try_handle_stake_response(
     let mut stake_item = STAKES.load(deps.storage, (&token_denom, stake_response.stake_id))?;
     let stake_amount = stake_item.token_amount;
 
+    if stake_item.action_stage != StakeActionStage::Execution {
+        return Err(ContractError::StakeRequestInvalidStage {
+            symbol: token_config.deposit_token_symbol,
+            stake_id: stake_response.stake_id,
+        });
+    }
+
     let mut stake_stats = STAKE_STATS.load(deps.storage, &token_denom)?;
 
     let mut response = Response::new();

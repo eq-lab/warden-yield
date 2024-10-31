@@ -1,13 +1,16 @@
+use crate::msg::ExecuteMsg;
 use crate::state::{QueueParams, StakeItem, StakeStatsItem, UnstakeItem};
 use crate::tests::utils::call::{call_stake, call_stake_and_unstake, call_stake_response};
+use crate::tests::utils::calldata::create_stake_response_payload;
 use crate::tests::utils::init::instantiate_yield_ward_contract_with_tokens;
 use crate::tests::utils::query::{
     get_all_tokens_configs, get_stake_item, get_stake_params, get_stake_stats, get_unstake_item,
     get_unstake_params,
 };
-use crate::types::{StakeActionStage, Status, UnstakeActionStage};
+use crate::types::{StakeActionStage, StakeResponseData, Status, UnstakeActionStage};
 use crate::ContractError;
-use cosmwasm_std::{coins, Uint128, Uint256};
+use cosmwasm_std::CosmosMsg::Wasm;
+use cosmwasm_std::{coins, to_json_binary, Uint128, Uint256, WasmMsg};
 use cw_multi_test::error::anyhow;
 use cw_multi_test::Executor;
 
@@ -736,5 +739,139 @@ fn test_wrong_stake_response() {
             .root_cause()
             .to_string()
         ),
+    }
+}
+
+#[test]
+fn test_stake_wrong_stage_finished() {
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+
+    let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
+    let token_info = ctx.tokens.first().unwrap();
+
+    // init stake
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
+
+    // response for stake action
+    call_stake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Success,
+        1,
+        0,
+        Uint128::zero(),
+        Uint128::zero(),
+    );
+
+    let response_payload = create_stake_response_payload(StakeResponseData {
+        status: Status::Success,
+        stake_id: 1,
+        reinit_unstake_id: 0,
+        lp_token_amount: 1000_u64.into(),
+    });
+
+    let non_stake_denom = &ctx.tokens.get(1).unwrap().deposit_token_denom;
+
+    match app.execute(
+        ctx.axelar.clone(),
+        Wasm(WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: to_json_binary(&ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: coins(1, non_stake_denom),
+        }),
+    ) {
+        Ok(_) => panic!("Must fail on second stake response!"),
+        Err(err) => {
+            assert_eq!(
+                err.root_cause().to_string(),
+                anyhow!(ContractError::StakeRequestInvalidStage {
+                    symbol: token_info.deposit_token_symbol.clone(),
+                    stake_id: 1,
+                })
+                .root_cause()
+                .to_string()
+            );
+        }
+    }
+}
+
+#[test]
+fn test_stake_wrong_stage_fail() {
+    let (mut app, ctx) = instantiate_yield_ward_contract_with_tokens();
+
+    let stake_amount = Uint128::from(1000_u32);
+    let fee_amount = Uint128::from(100_u32);
+    let token_info = ctx.tokens.first().unwrap();
+
+    // init stake
+    call_stake(
+        &mut app,
+        &ctx,
+        &ctx.user,
+        token_info,
+        stake_amount,
+        fee_amount,
+    );
+
+    // response for stake action
+    call_stake_response(
+        &mut app,
+        &ctx,
+        token_info,
+        Status::Fail,
+        1,
+        0,
+        Uint128::zero(),
+        Uint128::zero(),
+    );
+
+    let response_payload = create_stake_response_payload(StakeResponseData {
+        status: Status::Success,
+        stake_id: 1,
+        reinit_unstake_id: 0,
+        lp_token_amount: 1000_u64.into(),
+    });
+
+    let non_stake_denom = &ctx.tokens.get(1).unwrap().deposit_token_denom;
+
+    match app.execute(
+        ctx.axelar.clone(),
+        Wasm(WasmMsg::Execute {
+            contract_addr: ctx.yield_ward_address.to_string(),
+            msg: to_json_binary(&ExecuteMsg::HandleResponse {
+                source_chain: token_info.chain.to_string(),
+                source_address: token_info.evm_yield_contract.to_string(),
+                payload: response_payload,
+            })
+            .unwrap(),
+            funds: coins(1, non_stake_denom),
+        }),
+    ) {
+        Ok(_) => panic!("Must fail on second stake response!"),
+        Err(err) => {
+            assert_eq!(
+                err.root_cause().to_string(),
+                anyhow!(ContractError::StakeRequestInvalidStage {
+                    symbol: token_info.deposit_token_symbol.clone(),
+                    stake_id: 1,
+                })
+                .root_cause()
+                .to_string()
+            );
+        }
     }
 }

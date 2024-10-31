@@ -47,6 +47,9 @@ pub enum ContractError {
     #[error("Nothing to unstake")]
     NothingToUnstake,
 
+    #[error("Stake request has invalid stage for {symbol} token, stake id: {stake_id}")]
+    StakeRequestInvalidStage { symbol: String, stake_id: u64 },
+
     #[error("Unstake request has invalid stage for {symbol} token, unstake id: {unstake_id}")]
     UnstakeRequestInvalidStage { symbol: String, unstake_id: u64 },
 
