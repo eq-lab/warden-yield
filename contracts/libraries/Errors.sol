@@ -16,4 +16,5 @@ library Errors {
   error WrongOperator(address);
   error NotWETH9(address);
   error WrongWardenAddress(address user, string currentWardenAddress, string passedWardenAddress);
+  error StakingDisabled();
 }

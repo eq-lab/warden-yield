@@ -1,6 +1,6 @@
 import { Signer } from 'ethers';
 import { AaveYieldConfig, Config, EthConnectionConfig, EthYieldConfig } from './config';
-import { AaveYield, AaveYield__factory, EthYield, EthYield__factory } from '../typechain-types';
+import { AaveYield, AaveYield__factory, AaveYieldV2__factory, EthYield, EthYield__factory, UUPSUpgradeable__factory } from '../typechain-types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { createDefaultBaseState, DeployState, StateFile, StateStore } from './state-store';
 import { SimpleLogger } from './logger';
@@ -107,6 +107,130 @@ async function deployAaveYield(
       });
     }
   }
+}
+
+export async function deployAaveYieldImplementationV2(
+  signer: Signer,
+  network: string,
+  dryRun: boolean,
+  hre: HardhatRuntimeEnvironment
+): Promise<string> {
+  const statesDirName = 'states';
+  const stateFileName = getStateFileName(network, statesDirName);
+  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
+  const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
+
+  const logger = new SimpleLogger((x) => console.error(x));
+  const stateStore = new StateFile(
+    'AaveYieldV2',
+    createDefaultBaseState,
+    actualStateFile,
+    !dryRun,
+    logger
+  ).createStateStore();
+
+  const deploymentStore = new DeploymentFile(
+    'AaveYieldV2',
+    createDefaultBaseDeployment,
+    actualDeploymentFile,
+    !dryRun,
+    logger
+  ).createDeploymentStore();
+
+  const address = await deployAaveYieldImplementationV2Impl(signer, hre, stateStore, deploymentStore);
+
+  console.log(`State file: \n${stateStore.stringify()}`);
+  console.log(`Deployment file: \n${deploymentStore.stringify()}`);
+
+  return address;
+}
+
+async function deployAaveYieldImplementationV2Impl(
+  signer: Signer,
+  hre: HardhatRuntimeEnvironment,
+  stateStore: StateStore,
+  deploymentStore: DeploymentStore
+): Promise<string> {
+  console.log(`Deploy AaveYield V2 implementation`);
+
+  const blockNumber = await hre.ethers.provider.provider.getBlockNumber();
+  console.log(`Block number: ${blockNumber}`);
+  const implV2 = await new AaveYieldV2__factory().connect(signer).deploy();
+  await implV2.waitForDeployment();
+  const implV2Address = await implV2.getAddress();
+  console.log(`AaveYield V2 implementation: ${implV2Address}`);
+
+  const txHash = implV2.deploymentTransaction()?.hash;
+  stateStore.setById('aaveYield-v2-impl', <DeployState>{ txHash, address: implV2Address });
+  deploymentStore.setById('aaveYield-v2-impl', <DeploymentState>{
+    address: implV2Address,
+  });
+  return implV2Address;
+}
+
+export async function upgradeAaveYieldToV2(
+  signer: Signer,
+  proxyAddress: string,
+  newImplementationAddress: string,
+  token: string,
+  network: string,
+  dryRun: boolean,
+  hre: HardhatRuntimeEnvironment
+): Promise<void> {
+  const statesDirName = 'states';
+  const stateFileName = getStateFileName(network, statesDirName);
+  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
+  const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
+
+  const logger = new SimpleLogger((x) => console.error(x));
+  const stateStore = new StateFile(
+    'WardenYield',
+    createDefaultBaseState,
+    actualStateFile,
+    !dryRun,
+    logger
+  ).createStateStore();
+
+  const deploymentStore = new DeploymentFile(
+    'WardenYield',
+    createDefaultBaseDeployment,
+    actualDeploymentFile,
+    !dryRun,
+    logger
+  ).createDeploymentStore();
+
+  await upgradeAaveYieldToV2Impl(signer, proxyAddress, newImplementationAddress, token, hre, stateStore, deploymentStore);
+
+  console.log(`State file: \n${stateStore.stringify()}`);
+  console.log(`Deployment file: \n${deploymentStore.stringify()}`);
+}
+
+async function upgradeAaveYieldToV2Impl(
+  signer: Signer,
+  proxyAddress: string,
+  newImplementationAddress: string,
+  token: string,
+  hre: HardhatRuntimeEnvironment,
+  stateStore: StateStore,
+  deploymentStore: DeploymentStore
+): Promise<void> {
+  console.log(`Deploy AaveYield V2`);
+
+  const blockNumber = await hre.ethers.provider.provider.getBlockNumber();
+  console.log(`Block number: ${blockNumber}`);
+
+  const proxy = UUPSUpgradeable__factory.connect(proxyAddress, signer);
+  console.log(`Upgrade proxy...`);
+  const tx = await proxy.upgradeToAndCall(newImplementationAddress, "0x");
+  console.log(`Transaction hash: ${tx.hash}`);
+  await tx.wait();
+  
+  console.log(`AaveYield proxy: ${proxyAddress}, new implementation: ${newImplementationAddress}`);
+  stateStore.setById(`aaveYield-impl-v2`, <DeployState>{ txHash: tx.hash, address: proxyAddress });
+  deploymentStore.setById(`aaveYield-${token}`, <DeploymentState>{
+    address: proxyAddress,
+    implementation: newImplementationAddress,
+  });
 }
 
 async function deployEthYield(

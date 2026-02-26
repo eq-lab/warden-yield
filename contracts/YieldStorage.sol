@@ -116,7 +116,7 @@ abstract contract YieldStorage {
 
   /// @notice returns total amount of tokens transfered to staking protocols in stake calls by user
   /// @param user user address whose staked tokens are returned
-  function userStakedAmount(address user, address token) external view returns (uint256) {
+  function userStakedAmount(address user, address token) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._stakedAmount[token][user];
   }

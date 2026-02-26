@@ -3,6 +3,9 @@ import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-contract-sizer';
 
 import './tasks/deploy';
+import './tasks/deploy-AaveYield-v2-impl';
+import './tasks/upgrade-AaveYield-to-v2';
+import './tasks/test-upgrade-AaveYield-to-v2';
 
 import * as defaultConfig from './hardhat.common';
 
