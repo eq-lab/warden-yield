@@ -226,7 +226,7 @@ async function upgradeAaveYieldToV2Impl(
   await tx.wait();
   
   console.log(`AaveYield proxy: ${proxyAddress}, new implementation: ${newImplementationAddress}`);
-  stateStore.setById(`aaveYield-impl-v2`, <DeployState>{ txHash: tx.hash, address: proxyAddress });
+  stateStore.setById(`aaveYield-impl-v2`, <DeployState>{ txHash: tx.hash, address: newImplementationAddress });
   deploymentStore.setById(`aaveYield-${token}`, <DeploymentState>{
     address: proxyAddress,
     implementation: newImplementationAddress,

@@ -18,10 +18,10 @@ const usdcTestCase: TestCase = {
   tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 }
 const usdtTestCase: TestCase = {
-  from: '',
-  proxy: '',
+  from: '0x40b88b09610487A26b18FB52DBe319D1268fCa22',
+  proxy: '0x0F9d2C03AD21a30746A4b4f07919e1C5F3641F35',
   tokenName: 'usdt',
-  tokenAddress: ''
+  tokenAddress: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 }
 
 interface UpgradeArgs {
@@ -76,7 +76,7 @@ task('task:test-upgrade-AaveYield-to-v2', 'Upgrade AaeYield from v1 to v2')
       dryRun,
       hre);
     
-    await simulateWithdrawal(usdcTestCase, hre);
+    await simulateWithdrawal(testCase, hre);
 
     const balanceAfter = await signer.provider.getBalance(signer.address);
     console.log(`\nBalance after: ${hre.ethers.formatEther(balanceAfter)} Eth`);
