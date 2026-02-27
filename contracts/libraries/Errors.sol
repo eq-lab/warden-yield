@@ -17,4 +17,8 @@ library Errors {
   error NotWETH9(address);
   error WrongWardenAddress(address user, string currentWardenAddress, string passedWardenAddress);
   error StakingDisabled();
+  error ReceiveValueFail(address);
+  error NoElementWithIndex(uint128);
+  error NoActiveWithdrawal();
+  error Forbidden();
 }

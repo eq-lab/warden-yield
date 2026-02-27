@@ -1,174 +1,124 @@
 import { expect } from 'chai';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { createEthYieldFork, deployEthYieldContract } from '../shared/fixtures';
+import { mine, setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import { ethers, upgrades } from 'hardhat';
 import { parseEther } from 'ethers';
-import { EthAddressData, USER_WARDEN_ADDRESS, setTokenBalance } from '../shared/utils';
-import { EthYieldUpgradeTest__factory, EthYield__factory } from '../../typechain-types';
+import {
+  EthYield__factory,
+  IDelegationManager__factory,
+  Ownable2StepUpgradeable__factory,
+  IERC20__factory,
+  ILidoWithdrawalQueue__factory,
+  IStrategy__factory,
+} from '../../typechain-types';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 
-describe('EthYield', () => {
-  it('user stake, native', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, eigenLayerStrategy, ethYield, weth9, stEth } =
-      await loadFixture(createEthYieldFork);
-    // set up during EthYield contract init
-    expect(await eigenLayerDelegationManager.delegatedTo(ethYield.target)).to.be.eq(eigenLayerOperator);
-    const [_, user] = await ethers.getSigners();
+const ETH_YIELD_ADDRESS = '0x4DF66BCA96319C6A033cfd86c38BCDb9B3c11a72';
+const LIDO_WITHDRAWAL_QUEUE = '0x889edc2edab5f40e902b864ad4d7ade8e412f9b1';
+const DELEGATION_MANAGER = '0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A';
+const STRATEGY = '0x93c4b944D05dfe6df7645A86cd2206016c51564D';
+const WRAPPED_ETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
+const USER = '0x32894d77fF28398eBa315FFA2775A79263866D4c';
 
-    const userEthBalanceBefore = await user.provider.getBalance(user.address);
-    const filter = eigenLayerDelegationManager.filters.OperatorSharesIncreased;
+async function getImpersonatedOwner(contractAddress: string): Promise<HardhatEthersSigner> {
+  const ownable = await Ownable2StepUpgradeable__factory.connect(contractAddress, ethers.provider);
+  const owner = await ethers.getImpersonatedSigner(await ownable.owner());
+  setBalance(owner.address, parseEther('1'));
+  return owner;
+}
 
-    const input = parseEther('1');
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input });
+async function lidoFinalize(owner: HardhatEthersSigner) {
+  const withdrawalQueue = ILidoWithdrawalQueue__factory.connect(LIDO_WITHDRAWAL_QUEUE, owner);
+  const finalizerAddress = await withdrawalQueue.getRoleMember(await withdrawalQueue.FINALIZE_ROLE(), 0);
+  const finalizer = await ethers.getImpersonatedSigner(finalizerAddress);
 
-    expect(await ethYield.totalStakedAmount(await ethYield.getWeth())).to.be.eq(input);
-    expect(await ethYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
+  const ethersToFinalize = await withdrawalQueue.unfinalizedStETH();
+  await setBalance(finalizerAddress, 2n * ethersToFinalize);
 
-    const userEthBalanceAfter = await user.provider.getBalance(user.address);
-    expect(userEthBalanceBefore - userEthBalanceAfter).to.be.gte(input);
+  const lastRequestId = await withdrawalQueue.getLastRequestId();
+  const maxShares = 10n ** 50n;
 
-    const contractShares = await eigenLayerStrategy.shares(ethYield.target);
-    expect(contractShares).to.be.eq(await ethYield.totalShares(weth9.target));
+  await withdrawalQueue.connect(finalizer).finalize(lastRequestId, maxShares, { value: ethersToFinalize });
+}
 
-    expect(await ethYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+describe.only('EthYield', () => {
+  it('EthYield withdrawals', async () => {
+    const owner = await getImpersonatedOwner(ETH_YIELD_ADDRESS);
 
-    const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
-    expect(event.args[0]).to.be.eq(eigenLayerOperator);
-    expect(event.args[1]).to.be.eq(ethYield.target);
-    expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
-    expect(event.args[3]).to.be.eq(contractShares);
+    const withdrawalQueue = ILidoWithdrawalQueue__factory.connect(LIDO_WITHDRAWAL_QUEUE, owner);
+    const delegationManager = IDelegationManager__factory.connect(DELEGATION_MANAGER, owner);
+    const strategy = IStrategy__factory.connect(STRATEGY, owner);
+    const weth = IERC20__factory.connect(WRAPPED_ETH, owner);
+    const user = await ethers.getImpersonatedSigner(USER);
+    await setBalance(USER, 10n ** 18n);
 
-    expect(await stEth.balanceOf(ethYield.target)).to.be.lessThanOrEqual(1);
-  });
+    const shares = await strategy.shares(ETH_YIELD_ADDRESS);
+    const underlying = await strategy.sharesToUnderlyingView(shares);
 
-  it('user stake, weth', async () => {
-    const { eigenLayerStrategy, eigenLayerDelegationManager, eigenLayerOperator, weth9, ethYield, stEth } =
-      await loadFixture(createEthYieldFork);
-    // set up during EthYield contract init
-    expect(await eigenLayerDelegationManager.delegatedTo(ethYield.target)).to.be.eq(eigenLayerOperator);
-    const [_, user] = await ethers.getSigners();
+    await upgrades.upgradeProxy(ETH_YIELD_ADDRESS, new EthYield__factory().connect(owner), {
+      call: {
+        fn: 'initializeV2',
+        args: [LIDO_WITHDRAWAL_QUEUE],
+      },
+    });
 
-    const filter = eigenLayerDelegationManager.filters.OperatorSharesIncreased;
+    const ethYield = EthYield__factory.connect(ETH_YIELD_ADDRESS, owner);
 
-    const input = parseEther('1');
-    await setTokenBalance(await weth9.getAddress(), user.address, input);
-    const userWethBalanceBefore = await weth9.balanceOf(user.address);
-    await weth9.connect(user).approve(ethYield.target, input);
+    expect(await ethYield.userWithdrawalsActive()).to.be.false;
+    await expect(ethYield.connect(user).withdrawAll()).to.be.revertedWithCustomError(ethYield, 'Forbidden');
 
-    await ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS);
+    let withdrawalData = await ethYield.getEigenLayerWithdrawalData();
+    expect(withdrawalData[1]).to.be.not.eq(0);
+    expect(withdrawalData[1]).to.be.eq(shares);
 
-    expect(await ethYield.totalStakedAmount(weth9.target)).to.be.eq(input);
-    expect(await ethYield.userStakedAmount(user.address, weth9.target)).to.be.eq(input);
+    const blocksToMine = await delegationManager.minWithdrawalDelayBlocks();
+    await mine(blocksToMine);
 
-    const userWethBalanceAfter = await weth9.balanceOf(user.address);
-    expect(userWethBalanceBefore - userWethBalanceAfter).to.be.eq(input);
+    await ethYield.startLidoWithdrawal();
 
-    const contractShares = await eigenLayerStrategy.shares(ethYield.target);
-    expect(contractShares).to.be.eq(await ethYield.totalShares(weth9.target));
+    expect(await ethYield.userWithdrawalsActive()).to.be.false;
+    await expect(ethYield.connect(user).withdrawAll()).to.be.revertedWithCustomError(ethYield, 'Forbidden');
 
-    expect(await ethYield.wardenAddress(user.address)).to.be.eq(USER_WARDEN_ADDRESS);
+    withdrawalData = await ethYield.getEigenLayerWithdrawalData();
+    expect(withdrawalData[1]).to.be.eq(0);
+    expect(withdrawalData[1]).to.be.eq(0);
 
-    const [event] = await eigenLayerDelegationManager.queryFilter(filter, -1);
-    expect(event.args[0]).to.be.eq(eigenLayerOperator);
-    expect(event.args[1]).to.be.eq(ethYield.target);
-    expect(event.args[2]).to.be.eq(eigenLayerStrategy.target);
-    expect(event.args[3]).to.be.eq(contractShares);
+    expect(await ethYield.hasPendingLidoWithdrawal()).to.be.true;
 
-    expect(await stEth.balanceOf(ethYield.target)).to.be.lessThanOrEqual(1);
-  });
+    const requestId = await withdrawalQueue.getLastRequestId();
+    let withdrawalStatus = (await withdrawalQueue.getWithdrawalStatus([requestId]))[0];
 
-  it('user stake, wrong msg.value', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, ethYield } = await loadFixture(createEthYieldFork);
-    // set up during EthYield contract init
-    expect(await eigenLayerDelegationManager.delegatedTo(ethYield.target)).to.be.eq(eigenLayerOperator);
-    const [_, user] = await ethers.getSigners();
+    expect(withdrawalStatus.owner).to.be.eq(ETH_YIELD_ADDRESS);
+    expect(withdrawalStatus.amountOfStETH).to.be.closeTo(underlying, 100);
+    expect(withdrawalStatus.isClaimed).to.be.false;
+    expect(withdrawalStatus.isFinalized).to.be.false;
 
-    const input = parseEther('1');
-    await expect(
-      ethYield.connect(user).stake(input, USER_WARDEN_ADDRESS, { value: input - 1n })
-    ).to.be.revertedWithCustomError(ethYield, 'WrongMsgValue');
-  });
+    await lidoFinalize(owner);
+    withdrawalStatus = (await withdrawalQueue.getWithdrawalStatus([requestId]))[0];
+    expect(withdrawalStatus.isFinalized).to.be.true;
 
-  it('user stake, zero amount', async () => {
-    const { eigenLayerDelegationManager, eigenLayerOperator, ethYield } = await loadFixture(createEthYieldFork);
-    // set up during EthYield contract init
-    expect(await eigenLayerDelegationManager.delegatedTo(ethYield.target)).to.be.eq(eigenLayerOperator);
-    const [_, user] = await ethers.getSigners();
+    await ethYield.completeLidoWithdrawal();
 
-    await expect(ethYield.connect(user).stake(0, USER_WARDEN_ADDRESS)).to.be.revertedWithCustomError(
-      ethYield,
-      'ZeroAmount'
-    );
-  });
-});
+    expect(await ethYield.userWithdrawalsActive()).to.be.true;
 
-describe('EthYield onlyOwner actions', () => {
-  it('authorizeUpgrade', async () => {
-    const { owner, ethYield } = await loadFixture(createEthYieldFork);
-    expect(function () {
-      ethYield.interface.getFunctionName('upgradedTest');
-    }).to.throw(TypeError);
+    withdrawalStatus = (await withdrawalQueue.getWithdrawalStatus([requestId]))[0];
+    expect(withdrawalStatus.isClaimed).to.be.true;
 
-    const ethYieldV2 = await upgrades.upgradeProxy(
-      ethYield.target,
-      await new EthYieldUpgradeTest__factory().connect(owner)
-    );
+    expect(await ethYield.hasPendingLidoWithdrawal()).to.be.false;
+    expect(await weth.balanceOf(ETH_YIELD_ADDRESS)).to.be.eq(withdrawalStatus.amountOfStETH);
 
-    expect(await ethYieldV2.upgradedTest()).to.be.true;
-  });
+    const wethBalanceBefore = await weth.balanceOf(USER);
 
-  it('authorizeUpgrade, not owner', async () => {
-    const { owner, ethYield } = await loadFixture(createEthYieldFork);
-    const [_, user] = await ethers.getSigners();
-    expect(user.address).to.be.not.eq(owner.address);
-    await expect(
-      upgrades.upgradeProxy(ethYield.target, await new EthYieldUpgradeTest__factory().connect(user))
-    ).to.be.revertedWithCustomError(ethYield, 'OwnableUnauthorizedAccount');
-  });
-});
+    const totalShares = await ethYield.totalShares(WRAPPED_ETH);
+    const userShares = await ethYield.userShares(USER, WRAPPED_ETH);
 
-describe('EthYield init errors', () => {
-  it('wrong operator', async () => {
-    const [owner, notOperator] = await ethers.getSigners();
-    await expect(
-      deployEthYieldContract(
-        owner,
-        EthAddressData.stEth,
-        EthAddressData.weth,
-        EthAddressData.elStrategy,
-        EthAddressData.elStrategyManager,
-        EthAddressData.elDelegationManager,
-        notOperator.address
-      )
-    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongOperator');
-  });
+    const withdrawalAmount = (withdrawalStatus.amountOfStETH * userShares) / totalShares;
 
-  it('wrong strategy', async () => {
-    const [owner, notStrategy] = await ethers.getSigners();
-    await expect(
-      deployEthYieldContract(
-        owner,
-        EthAddressData.stEth,
-        EthAddressData.weth,
-        notStrategy.address,
-        EthAddressData.elStrategyManager,
-        EthAddressData.elDelegationManager,
-        EthAddressData.eigenLayerOperator
-      )
-    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'WrongStrategy');
-  });
+    await ethYield.connect(user).withdrawAll();
+    expect(await weth.balanceOf(USER)).to.be.eq(wethBalanceBefore + withdrawalAmount);
+    expect(await weth.balanceOf(ETH_YIELD_ADDRESS)).to.be.eq(withdrawalStatus.amountOfStETH - withdrawalAmount);
+    expect(await ethYield.userShares(USER, WRAPPED_ETH)).to.be.eq(0);
+    expect(await ethYield.totalShares(WRAPPED_ETH)).to.be.eq(totalShares - userShares);
 
-  it('wrong underlying token', async () => {
-    const [owner] = await ethers.getSigners();
-    await expect(
-      deployEthYieldContract(
-        owner,
-        EthAddressData.weth,
-        EthAddressData.weth,
-        EthAddressData.elStrategy,
-        EthAddressData.elStrategyManager,
-        EthAddressData.elDelegationManager,
-        EthAddressData.eigenLayerOperator
-      )
-    ).to.be.revertedWithCustomError({ interface: EthYield__factory.createInterface() }, 'UnknownToken');
+    await expect(ethYield.connect(user).withdrawAll()).to.be.revertedWithCustomError(ethYield, 'ZeroAmount');
   });
 });

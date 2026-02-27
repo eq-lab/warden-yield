@@ -96,7 +96,7 @@ abstract contract YieldStorage {
   }
 
   /// @notice returns total shares recieved in all stake calls
-  function totalShares(address token) external view returns (uint256) {
+  function totalShares(address token) public view returns (uint256) {
     StakingData storage $ = _getStakingDataStorage();
     return $._totalShares[token];
   }
