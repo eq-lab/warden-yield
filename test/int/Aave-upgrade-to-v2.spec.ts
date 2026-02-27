@@ -130,8 +130,8 @@ describe('AaveYieldV2 actions', () => {
     console.log(`\nAaveYield USDC case. Stats:`);
     const totalSharesBefore = await aaveYieldUsdcV2.totalShares(usdc);
     const totalStakedAmountBefore = await aaveYieldUsdcV2.totalStakedAmount(usdc);
-    console.log(` - totalShares: ${totalSharesBefore}`);
-    console.log(` - totalStakedAmount: ${totalStakedAmountBefore} USDC`);
+    console.log(` - totalShares: ${ethers.formatUnits(totalSharesBefore, 6)}`);
+    console.log(` - totalStakedAmount: ${ethers.formatUnits(totalStakedAmountBefore, 6)} USDC`);
 
     for (const user of aaveYieldUsdcUsers) {
       await network.provider.request({
@@ -146,8 +146,8 @@ describe('AaveYieldV2 actions', () => {
     const totalSharesAfter = await aaveYieldUsdcV2.totalShares(usdc);
     const totalStakedAmountAfter = await aaveYieldUsdcV2.totalStakedAmount(usdc);
     console.log(`\nFinal AaveYield contract stats:`);
-    console.log(` - totalShares: ${totalSharesAfter}`);
-    console.log(` - totalStakedAmount: ${totalStakedAmountAfter} USDC`);
+    console.log(` - totalShares: ${ethers.formatUnits(totalSharesAfter, 6)}`);
+    console.log(` - totalStakedAmount: ${ethers.formatUnits(totalStakedAmountAfter, 6)} USDC`);
     expect(totalSharesAfter).to.be.equal(0n);
     expect(totalStakedAmountAfter).to.be.equal(0n);
   });
@@ -156,8 +156,8 @@ describe('AaveYieldV2 actions', () => {
     console.log(`\nAaveYield USDT case. Stats:`);
     const totalSharesBefore = await aaveYieldUsdtV2.totalShares(usdt);
     const totalStakedAmountBefore = await aaveYieldUsdtV2.totalStakedAmount(usdt);
-    console.log(` - totalShares: ${totalSharesBefore}`);
-    console.log(` - totalStakedAmount: ${totalStakedAmountBefore} USDT`);
+    console.log(` - totalShares: ${ethers.formatUnits(totalSharesBefore, 6)}`);
+    console.log(` - totalStakedAmount: ${ethers.formatUnits(totalStakedAmountBefore, 6)} USDT`);
 
     for (const user of aaveYieldUsdtUsers) {
       await network.provider.request({
@@ -172,8 +172,8 @@ describe('AaveYieldV2 actions', () => {
     const totalSharesAfter = await aaveYieldUsdtV2.totalShares(usdt);
     const totalStakedAmountAfter = await aaveYieldUsdtV2.totalStakedAmount(usdt);
     console.log(`\nFinal AaveYield contract stats:`);
-    console.log(` - totalShares: ${totalSharesAfter}`);
-    console.log(` - totalStakedAmount: ${totalStakedAmountAfter} USDT`);
+    console.log(` - totalShares: ${ethers.formatUnits(totalSharesAfter, 6)}`);
+    console.log(` - totalStakedAmount: ${ethers.formatUnits(totalStakedAmountAfter, 6)} USDT`);
     expect(totalSharesAfter).to.be.equal(0n);
     expect(totalStakedAmountAfter).to.be.equal(0n);
   });

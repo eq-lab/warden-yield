@@ -14,7 +14,6 @@ contract AaveYieldV2 is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
   function withdraw(address token) external {
-    uint256 userShares = userShares(msg.sender, token);
     uint256 withdrawAmount = getUserUnderlyingAmount(msg.sender, token);
 
     address aavePool = getAavePool();
