@@ -25,6 +25,7 @@ export interface EthYieldConfig {
   stETH: string;
   wETH9: string;
   eigenLayer: EigenLayerConfig;
+  lidoWithdrawalQueue: string
 }
 
 export interface EigenLayerConfig {

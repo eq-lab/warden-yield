@@ -24,6 +24,7 @@
   "ethYield": {
     "wETH9": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     "stETH": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "lidoWithdrawalQueue": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
     "eigenLayer": {
       "strategy": "0x93c4b944D05dfe6df7645A86cd2206016c51564D",
       "strategyManager": "0x858646372CC42E1A627fcE94aa7A7033e7CF075A",

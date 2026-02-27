@@ -1,4 +1,4 @@
-import { Signer } from 'ethers';
+import { Contract, Signer } from 'ethers';
 import { AaveYieldConfig, Config, EthConnectionConfig, EthYieldConfig } from './config';
 import { AaveYield, AaveYield__factory, AaveYieldV2__factory, EthYield, EthYield__factory, UUPSUpgradeable__factory } from '../typechain-types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -279,6 +279,64 @@ async function deployEthYield(
   const txHash = ethYield.deploymentTransaction()?.hash;
 
   stateStore.setById('ethYield-proxy', <DeployState>{ txHash, address: ethYieldAddress });
+  stateStore.setById('ethYield-impl', <DeployState>{ address: implementationAddress });
+  deploymentStore.setById('ethYield', <DeploymentState>{
+    address: ethYieldAddress,
+    implementation: implementationAddress,
+  });
+}
+
+export async function upgradeEthYield(
+  signer: Signer,
+  ethConfig: EthYieldConfig,
+  ethConnectionConfig: EthConnectionConfig,
+  hre: HardhatRuntimeEnvironment,
+  network: string,
+  dryRun: boolean,
+): Promise<void> {
+  const statesDirName = 'states';
+  const stateFileName = getStateFileName(network, statesDirName);
+  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
+  const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
+
+  const logger = new SimpleLogger((x) => console.error(x));
+  const stateStore = new StateFile(
+    'WardenYield',
+    createDefaultBaseState,
+    actualStateFile,
+    !dryRun,
+    logger
+  ).createStateStore();
+
+  const deploymentStore = new DeploymentFile(
+    'WardenYield',
+    createDefaultBaseDeployment,
+    actualDeploymentFile,
+    !dryRun,
+    logger
+  ).createDeploymentStore();
+
+  const state = stateStore.getById('ethYield-proxy');
+  if (state === undefined) {
+    throw new Error('Failed to obtain EthYield proxy address');
+  }
+
+  const ethYieldAddress = state.address;
+
+  hre.upgrades.upgradeProxy(ethYieldAddress, new EthYield__factory().connect(signer), {
+    call: {
+      fn: 'initializeV2',
+      args: [ethConfig.lidoWithdrawalQueue],
+    },
+    txOverrides: {
+      gasLimit: ethConnectionConfig.ethOptions.gasLimit,
+      gasPrice: ethConnectionConfig.ethOptions.gasPrice,
+    },
+  });
+
+  const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(ethYieldAddress);
+  console.log(`EthYield proxy: ${ethYieldAddress}, implementation: ${implementationAddress}`);
+
   stateStore.setById('ethYield-impl', <DeployState>{ address: implementationAddress });
   deploymentStore.setById('ethYield', <DeploymentState>{
     address: ethYieldAddress,
