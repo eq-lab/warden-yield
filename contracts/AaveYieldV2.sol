@@ -13,8 +13,17 @@ contract AaveYieldV2 is UUPSUpgradeable, Ownable2StepUpgradeable, AaveInteractor
   /// @dev method called during the contract upgrade
   function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-  function withdraw(address token) external returns (uint256 withdrawAmount) {
-    withdrawAmount = userStakedAmount(msg.sender, token);
+  function withdraw(address token) external {
+    uint256 userShares = userShares(msg.sender, token);
+    uint256 withdrawAmount = getUserUnderlyingAmount(msg.sender, token);
+
+    address aavePool = getAavePool();
+    address aToken = IPool(aavePool).getReserveData(token).aTokenAddress;
+    uint256 poolBalance = IERC20(aToken).balanceOf(address(this));
+    if (poolBalance < withdrawAmount) {
+      withdrawAmount = poolBalance;
+    }
+
     if (withdrawAmount == 0) revert Errors.ZeroAmount();
     _removeStake(msg.sender, token);
     _aaveWithdraw(token, withdrawAmount);
