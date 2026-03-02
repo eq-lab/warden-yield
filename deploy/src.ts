@@ -322,8 +322,8 @@ export async function upgradeEthYield(
   }
 
   const ethYieldAddress = state.address;
-
-  hre.upgrades.upgradeProxy(ethYieldAddress, new EthYield__factory().connect(signer), {
+  const implementationAddressBefore = await hre.upgrades.erc1967.getImplementationAddress(ethYieldAddress);
+  const contract = await hre.upgrades.upgradeProxy(ethYieldAddress, new EthYield__factory().connect(signer), {
     call: {
       fn: 'initializeV2',
       args: [ethConfig.lidoWithdrawalQueue],
@@ -333,9 +333,9 @@ export async function upgradeEthYield(
       gasPrice: ethConnectionConfig.ethOptions.gasPrice,
     },
   });
-
+  await contract.waitForDeployment();
   const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(ethYieldAddress);
-  console.log(`EthYield proxy: ${ethYieldAddress}, implementation: ${implementationAddress}`);
+  console.log(`EthYield proxy: ${ethYieldAddress}, old implementation: ${implementationAddressBefore}, new implementation: ${implementationAddress}`);
 
   stateStore.setById('ethYield-impl', <DeployState>{ address: implementationAddress });
   deploymentStore.setById('ethYield', <DeploymentState>{
