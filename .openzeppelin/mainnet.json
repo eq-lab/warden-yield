@@ -605,6 +605,469 @@
           ]
         }
       }
+    },
+    "8a3331c44437c86018fdf28d093d331a2b13a5ccf85b2362e8f8377bfdfd9a68": {
+      "address": "0xD0433453aBC64f6c93a78BEF944d4539647C37aD",
+      "txHash": "0xae6fe06d69262ea8a83d743f1ac591f8cb690063a711905c374c9b713c242523",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "userWithdrawalsActive",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "EthYield",
+            "src": "contracts/EthYield.sol:15"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_string_storage)": {
+            "label": "mapping(address => string)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint128,t_struct(LidoWithdrawQueueElement)1824_storage)": {
+            "label": "mapping(uint128 => struct LidoInteractor.LidoWithdrawQueueElement)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(EigenLayerInteractorData)1730_storage": {
+            "label": "struct EigenLayerInteractor.EigenLayerInteractorData",
+            "members": [
+              {
+                "label": "underlyingToken",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "strategy",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "strategyManager",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "delegationManager",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "operator",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(EigenLayerWithdraw)1739_storage": {
+            "label": "struct EigenLayerInteractor.EigenLayerWithdraw",
+            "members": [
+              {
+                "label": "shares",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "blockNumber",
+                "type": "t_uint32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(InitializableStorage)778_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(LidoInteractorData)1796_storage": {
+            "label": "struct LidoInteractor.LidoInteractorData",
+            "members": [
+              {
+                "label": "stETH",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "wETH9",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "lidoWithdrawalQueue",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(LidoWithdrawQueue)1813_storage": {
+            "label": "struct LidoInteractor.LidoWithdrawQueue",
+            "members": [
+              {
+                "label": "start",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "end",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "items",
+                "type": "t_mapping(t_uint128,t_struct(LidoWithdrawQueueElement)1824_storage)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(LidoWithdrawQueueElement)1824_storage": {
+            "label": "struct LidoInteractor.LidoWithdrawQueueElement",
+            "members": [
+              {
+                "label": "requestId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "requested",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Ownable2StepStorage)685_storage": {
+            "label": "struct Ownable2StepUpgradeable.Ownable2StepStorage",
+            "members": [
+              {
+                "label": "_pendingOwner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)727_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(StakingData)1571_storage": {
+            "label": "struct YieldStorage.StakingData",
+            "members": [
+              {
+                "label": "_totalStakedAmount",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_totalShares",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "_stakedAmount",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "_shares",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(UserWardenData)1581_storage": {
+            "label": "struct YieldStorage.UserWardenData",
+            "members": [
+              {
+                "label": "_wardenAddress",
+                "type": "t_mapping(t_address,t_string_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          }
+        },
+        "namespaces": {
+          "erc7201:eq-lab.storage.StakingData": [
+            {
+              "contract": "YieldStorage",
+              "label": "_totalStakedAmount",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "contracts/YieldStorage.sol:15",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_totalShares",
+              "type": "t_mapping(t_address,t_uint256)",
+              "src": "contracts/YieldStorage.sol:17",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_stakedAmount",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "contracts/YieldStorage.sol:19",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "YieldStorage",
+              "label": "_shares",
+              "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+              "src": "contracts/YieldStorage.sol:21",
+              "offset": 0,
+              "slot": "3"
+            }
+          ],
+          "erc7201:eq-lab.storage.UserWardenData": [
+            {
+              "contract": "YieldStorage",
+              "label": "_wardenAddress",
+              "type": "t_mapping(t_address,t_string_storage)",
+              "src": "contracts/YieldStorage.sol:27",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:eq-lab.storage.LidoInteractor": [
+            {
+              "contract": "LidoInteractor",
+              "label": "stETH",
+              "type": "t_address",
+              "src": "contracts/interactors/LidoInteractor.sol:22",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "LidoInteractor",
+              "label": "wETH9",
+              "type": "t_address",
+              "src": "contracts/interactors/LidoInteractor.sol:24",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "LidoInteractor",
+              "label": "lidoWithdrawalQueue",
+              "type": "t_address",
+              "src": "contracts/interactors/LidoInteractor.sol:26",
+              "offset": 0,
+              "slot": "2"
+            }
+          ],
+          "erc7201:eq-lab.storage.LidoWithdrawQueue": [
+            {
+              "contract": "LidoInteractor",
+              "label": "start",
+              "type": "t_uint128",
+              "src": "contracts/interactors/LidoInteractor.sol:32",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "LidoInteractor",
+              "label": "end",
+              "type": "t_uint128",
+              "src": "contracts/interactors/LidoInteractor.sol:34",
+              "offset": 16,
+              "slot": "0"
+            },
+            {
+              "contract": "LidoInteractor",
+              "label": "items",
+              "type": "t_mapping(t_uint128,t_struct(LidoWithdrawQueueElement)1824_storage)",
+              "src": "contracts/interactors/LidoInteractor.sol:36",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:eq-lab.storage.EigenLayerInteractor": [
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "underlyingToken",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:23",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "strategy",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:25",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "strategyManager",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:27",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "delegationManager",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:29",
+              "offset": 0,
+              "slot": "3"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "operator",
+              "type": "t_address",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:31",
+              "offset": 0,
+              "slot": "4"
+            }
+          ],
+          "erc7201:eq-lab.storage.EigenLayerWithdraw": [
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "shares",
+              "type": "t_uint256",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:36",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "EigenLayerInteractor",
+              "label": "blockNumber",
+              "type": "t_uint32",
+              "src": "contracts/interactors/EigenLayerInteractor.sol:37",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable2Step": [
+            {
+              "contract": "Ownable2StepUpgradeable",
+              "label": "_pendingOwner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:23",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
     }
   }
 }

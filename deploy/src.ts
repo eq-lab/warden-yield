@@ -177,19 +177,9 @@ export async function upgradeAaveYieldToV2(
   dryRun: boolean,
   hre: HardhatRuntimeEnvironment
 ): Promise<void> {
-  const statesDirName = 'states';
-  const stateFileName = getStateFileName(network, statesDirName);
-  const actualStateFile = path.join(__dirname, `data`, `configs`, network, stateFileName);
   const actualDeploymentFile = path.join(__dirname, `data`, `contracts`, `${network}.json`);
 
   const logger = new SimpleLogger((x) => console.error(x));
-  const stateStore = new StateFile(
-    'WardenYield',
-    createDefaultBaseState,
-    actualStateFile,
-    !dryRun,
-    logger
-  ).createStateStore();
 
   const deploymentStore = new DeploymentFile(
     'WardenYield',
@@ -199,9 +189,8 @@ export async function upgradeAaveYieldToV2(
     logger
   ).createDeploymentStore();
 
-  await upgradeAaveYieldToV2Impl(signer, proxyAddress, newImplementationAddress, token, hre, stateStore, deploymentStore);
+  await upgradeAaveYieldToV2Impl(signer, proxyAddress, newImplementationAddress, token, hre, deploymentStore);
 
-  console.log(`State file: \n${stateStore.stringify()}`);
   console.log(`Deployment file: \n${deploymentStore.stringify()}`);
 }
 
@@ -211,7 +200,6 @@ async function upgradeAaveYieldToV2Impl(
   newImplementationAddress: string,
   token: string,
   hre: HardhatRuntimeEnvironment,
-  stateStore: StateStore,
   deploymentStore: DeploymentStore
 ): Promise<void> {
   console.log(`Deploy AaveYield V2`);
@@ -226,7 +214,6 @@ async function upgradeAaveYieldToV2Impl(
   await tx.wait();
   
   console.log(`AaveYield proxy: ${proxyAddress}, new implementation: ${newImplementationAddress}`);
-  stateStore.setById(`aaveYield-impl-v2`, <DeployState>{ txHash: tx.hash, address: newImplementationAddress });
   deploymentStore.setById(`aaveYield-${token}`, <DeploymentState>{
     address: proxyAddress,
     implementation: newImplementationAddress,

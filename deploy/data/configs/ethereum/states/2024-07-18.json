@@ -16,7 +16,11 @@
       "address": "0x4DF66BCA96319C6A033cfd86c38BCDb9B3c11a72"
     },
     "ethYield-impl": {
-      "address": "0x2c9dA53d37F77dAe5B941CF9a0FC66E680dfF41D"
+      "address": "0xD0433453aBC64f6c93a78BEF944d4539647C37aD"
+    },
+    "aaveYield-v2-impl": {
+      "txHash": "0xd63c87d44879057f188735591d632314b6260d426d964904ac636e13b026796c",
+      "address": "0xa7031b135C922547F42233c51c853351Fb8bC655"
     }
   }
 }
